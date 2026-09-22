@@ -1,17 +1,16 @@
-#!/usr/bin/env python3
+
 """
 AutoPost LinkedIn Autonomous Agent
-Cycle: Extract Trending Tech -> DeepSeek 3-Role Generation (400-600 chars)
-       -> Hugging Face FLUX.1 Image (Fallback to Pure Text) -> Publish to LinkedIn API.
-Zero local server required. Runs 100% serverless in GitHub Actions.
+Ciclo: Tendencia Tech -> DeepSeek Post (3 Roles) -> DeepSeek Visual Prompt
+       -> NanoGPT (FLUX.1 Schnell) -> Publicación en LinkedIn API.
 """
 
 import os
 import sys
 import json
 import time
+import base64
 import datetime
-import urllib.parse
 import requests
 
 if sys.platform == "win32":
@@ -20,6 +19,7 @@ if sys.platform == "win32":
         sys.stderr.reconfigure(encoding="utf-8")
     except Exception:
         pass
+
 
 def log(msg: str):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -30,6 +30,25 @@ def log(msg: str):
         print(f"[{timestamp}] {safe_msg}", flush=True)
 
 
+def load_env_file():
+    """Carga variables desde .env si existe para pruebas locales."""
+    for path in [".env", "../.env"]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith("#") and "=" in line:
+                            k, v = line.split("=", 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k not in os.environ:
+                                os.environ[k] = v
+                break
+            except Exception:
+                pass
+
+
 def truncate_at_sentence_boundary(text: str, limit: int = 600) -> str:
     """Corta el texto en el límite natural de una oración antes del límite máximo."""
     if not text or len(text) <= limit:
@@ -38,14 +57,12 @@ def truncate_at_sentence_boundary(text: str, limit: int = 600) -> str:
     search_floor = max(limit - 120, limit // 2)
     cut_pos = -1
 
-    # Buscar delimitador de fin de oración
     for i in range(limit - 1, search_floor - 1, -1):
         c = text[i]
         if c in ('.', '!', '?', '\n') and (i + 1 == len(text) or text[i + 1].isspace()):
             cut_pos = i + 1
             break
 
-    # Si no hay delimitador, cortar en el último espacio
     if cut_pos == -1:
         for i in range(limit - 1, search_floor - 1, -1):
             if text[i].isspace():
@@ -57,14 +74,9 @@ def truncate_at_sentence_boundary(text: str, limit: int = 600) -> str:
 
     return text[:cut_pos].strip()
 
-# función busqueda de temas virales
 def fetch_trending_tech_topic() -> dict:
-    """
-    Extrae un tema o herramienta de tecnología/IA viral desde Hacker News o GitHub Search API.
-    """
     log("🔍 Paso 1: Buscando tendencias tecnológicas en tiempo real...")
 
-    # 1. Intentar con Hacker News API (100% gratuita y pública)
     try:
         hn_top_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
         res = requests.get(hn_top_url, timeout=10)
@@ -118,7 +130,6 @@ def fetch_trending_tech_topic() -> dict:
     except Exception as e:
         log(f"⚠️ Aviso al consultar GitHub API: {e}")
 
-    # Fallback contextual sólido si no hay conexión externa
     log("📌 Utilizando tema contextual de arquitectura técnica...")
     return {
         "title": "Arquitectura Moderna de Software: Eficiencia y Simplicidad en Producción",
@@ -127,22 +138,14 @@ def fetch_trending_tech_topic() -> dict:
     }
 
 
-# Genera el prompt de deepseek
 def generate_post_text(topic: dict, niche_prompt: str, api_key: str) -> str:
-    """
-    Genera un Micro-Post de 400 a 600 caracteres con DeepSeek.
-    La IA analiza el tema y adopta automáticamente uno de los 3 roles:
-    1. Consultor Técnico B2B (Comparativa, ROI, Criterio)
-    2. Tech Storyteller (Reto en producción, lección real en 1ra persona)
-    3. Provocador Técnico (Mito vs Realidad, debate constructivo)
-    """
     log("🧠 Paso 2: Generando contenido con DeepSeek (Evaluación de 3 roles dinámicos)...")
 
     system_prompt = f"""
 Eres un especialista y creador de contenido técnico en LinkedIn con la siguiente identidad:
 {niche_prompt}
 
-Tu misión es analizar la tendencia técnica provista y REDACTAR UN MICRO-POST TÉCNICO CONCRETO (400 a 600 CARACTERES MÁXIMO).
+Tu misión es analizar la tendencia técnica provista y REDACTAR UN MICRO-POST TÉCNICO CONCRETO (ENTRE 65 Y 85 PALABRAS).
 
 EVALUACIÓN DE ROLES (Elige autónomamente el que mejor encaje con el tema):
 1. ROL: CONSULTOR TÉCNICO B2B (Si el tema trata de herramientas, arquitecturas, costos o trade-offs):
@@ -161,13 +164,11 @@ EVALUACIÓN DE ROLES (Elige autónomamente el que mejor encaje con el tema):
    - 1 pregunta de debate binario o directo (ej. '¿Team A o Team B? Justifica en 1 frase 👇').
 
 REGLAS ESTRICTAS DE FORMATO:
-- LONGITUD: 400 a 600 CARACTERES MÁXIMO. Prohibido superar 600 caracteres.
-- CERO ASTERISCOS (**): En LinkedIn los asteriscos ** no funcionan como negrita y ensucian el texto. NUNCA los uses.
+- LONGITUD: Entre 65 y 85 palabras (máximo 600 caracteres).
+- CERO ASTERISCOS (**): Prohibido usar asteriscos, no funcionan en LinkedIn.
 - Emojis profesionales en puntos clave (🎯, ⚡, 💡, 🔹, 👇).
 - Cierra siempre con la pregunta de remate y exactamente 2 hashtags pertinentes.
-- RESPUESTA PURA Y DIRECTA: Devuelve ÚNICAMENTE el texto final del post. Prohibido incluir preámbulos, saludos,
-aclaraciones, descargos de responsabilidad o frases como "Aquí está el micro-post:". Comienza directamente con la primera
-palabra del post.
+- RESPUESTA PURA Y DIRECTA: Devuelve ÚNICAMENTE el texto final del post. Comienza directamente con la primera palabra.
 """
 
     user_prompt = f"""
@@ -176,12 +177,12 @@ TEMA DE TENDENCIA A EVALUAR:
 - CONTEXTO: {topic['context']}
 - REFERENCIA: {topic['url']}
 
-Redacta el Micro-Post para LinkedIn en español de 400 a 600 caracteres aplicando el rol más adecuado.
+Redacta el Micro-Post para LinkedIn en español respetando el rol más adecuado y el rango de 65 a 85 palabras.
 """
 
     url = "https://api.deepseek.com/chat/completions"
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {api_key.strip()}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -190,84 +191,118 @@ Redacta el Micro-Post para LinkedIn en español de 400 a 600 caracteres aplicand
             {"role": "system", "content": system_prompt.strip()},
             {"role": "user", "content": user_prompt.strip()}
         ],
-        "max_tokens": 240,
-        "temperature": 0.7
+        "max_tokens": 220,
+        "temperature": 0.6
     }
 
     res = requests.post(url, headers=headers, json=payload, timeout=45)
     res.raise_for_status()
 
     content = res.json()["choices"][0]["message"]["content"]
-    # Limpieza de asteriscos
     clean_text = content.replace("**", "").strip()
 
-    # Validación post-generación de 600 caracteres
     if len(clean_text) > 600:
         log(f"✂️ Ajustando post de {len(clean_text)} a un máximo de 600 caracteres...")
         clean_text = truncate_at_sentence_boundary(clean_text, 600)
 
-    log(f"✅ Post generado exitosamente ({len(clean_text)} caracteres):")
+    log(f"✅ Post generado exitosamente ({len(clean_text)} caracteres, {len(clean_text.split())} palabras):")
     print("\n" + "=" * 50)
     print(clean_text)
     print("=" * 50 + "\n")
     return clean_text
 
-# Generación de imagen
-def generate_hf_flux_image(topic_concept: str, hf_token: str | None) -> bytes | None:
-    """
-    Genera una ilustración 3D técnica limpia con Hugging Face (FLUX.1-schnell).
-    Si Hugging Face falla o no hay token, retorna None para fallback a Solo Texto.
-    """
-    if not hf_token or not hf_token.strip():
-        log("ℹ️ No se detectó HF_TOKEN. Fallback activado: Se publicará como Post de Solo Texto.")
-        return None
-
-    log("🎨 Paso 3: Solicitando ilustración 3D a Hugging Face Inference API (FLUX.1-schnell)...")
-
-    # Prompt anti-texto estricto
-    prompt = (
-        f"minimalist 3d technical isometric illustration representing {topic_concept}, "
-        "clay render style, soft ambient studio lighting, clean geometric composition, "
-        "modern tech color palette, octane render, 8k resolution, "
-        "strictly no text, no words, no letters, no typography, no watermark, no logos"
+def generate_technical_visual_prompt(topic: dict, api_key: str) -> str:
+    """DeepSeek traduce el tema a una escena 3D abstracta y limpia para que FLUX no dibuje cosas raras."""
+    log("📐 Paso 3A: Diseñando concepto visual técnico con DeepSeek...")
+    system_instruction = (
+        "You are a specialized prompt designer for 3D technical illustrations using FLUX.1. "
+        "Create a brief visual prompt in English describing an abstract, clean 3D isometric diagram of the core tech concept. "
+        "Keywords to include: minimalist 3D isometric illustration, matte materials, dark technical background, "
+        "octane render, soft ambient lighting, high detail. "
+        "Negative constraints: strictly NO text, NO letters, NO words, NO humans, NO faces, NO watermark, NO cartoon. "
+        "Output ONLY the prompt in English."
     )
 
-    hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
+    url = "https://api.deepseek.com/chat/completions"
     headers = {
-        "Authorization": f"Bearer {hf_token.strip()}",
+        "Authorization": f"Bearer {api_key.strip()}",
         "Content-Type": "application/json"
     }
     payload = {
-        "inputs": prompt,
-        "parameters": {
-            "num_inference_steps": 4
-        }
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": f"Topic: {topic['title']}. Context: {topic['context']}"}
+        ],
+        "max_tokens": 100,
+        "temperature": 0.3
     }
 
     try:
-        res = requests.post(hf_url, headers=headers, json=payload, timeout=60)
-        if res.status_code == 200 and len(res.content) > 1000:
-            log(f"✅ Imagen generada exitosamente con Hugging Face ({len(res.content)} bytes).")
-            return res.content
-        else:
-            log(f"⚠️ Hugging Face respondió con status {res.status_code}: {res.text[:150]}")
-            log("ℹ️ Fallback activado: Se publicará como Post de Solo Texto.")
-            return None
+        res = requests.post(url, headers=headers, json=payload, timeout=30)
+        res.raise_for_status()
+        visual_prompt = res.json()["choices"][0]["message"]["content"].strip()
+        final_prompt = f"{visual_prompt}, strictly no text, clean render"
+        log(f"🎨 Visual Prompt diseñado: {final_prompt[:80]}...")
+        return final_prompt
     except Exception as e:
-        log(f"⚠️ Error conectando con Hugging Face API: {e}")
-        log("ℹ️ Fallback activado: Se publicará como Post de Solo Texto.")
+        log(f"⚠️ Error generando prompt visual: {e}. Usando fallback...")
+        return (
+            f"minimalist 3d technical isometric illustration representing modern software architecture, "
+            "servers and data pipeline, octane render, soft studio lighting, strictly no text"
+        )
+
+
+def generate_image_with_nanogpt(prompt: str, api_key: str | None) -> bytes | None:
+    """Genera la imagen con NanoGPT (FLUX.1 Schnell) y descarga sus bytes binarios."""
+    if not api_key or not api_key.strip():
+        log("ℹ️ No se detectó NANOGPT_KEY. Fallback activado: Se publicará como Post de Solo Texto.")
         return None
 
+    log("🎨 Paso 3B: Solicitando imagen a NanoGPT (FLUX.1 Schnell)...")
+    headers = {
+        "Authorization": f"Bearer {api_key.strip()}",
+        "Content-Type": "application/json"
+    }
+    url = "https://nano-gpt.com/api/v1/images/generations"
+    payload = {
+        "prompt": prompt,
+        "model": "flux-schnell",
+        "n": 1,
+        "size": "1024x1024"
+    }
+
+    try:
+        res = requests.post(url, headers=headers, json=payload, timeout=60)
+        if res.status_code == 200:
+            res_data = res.json()
+            data_arr = res_data.get("data", [])
+            if data_arr:
+                img_url = data_arr[0].get("url")
+                if img_url:
+                    log("📥 Descargando imagen desde CDN de NanoGPT...")
+                    img_res = requests.get(img_url, timeout=30)
+                    if img_res.status_code == 200 and len(img_res.content) > 1000:
+                        log(f"✅ Imagen descargada con éxito ({len(img_res.content)} bytes).")
+                        return img_res.content
+
+                b64_val = data_arr[0].get("b64_json")
+                if b64_val:
+                    img_bytes = base64.b64decode(b64_val)
+                    if len(img_bytes) > 1000:
+                        log(f"✅ Imagen en base64 procesada con éxito ({len(img_bytes)} bytes).")
+                        return img_bytes
+        else:
+            log(f"⚠️ NanoGPT respondió [HTTP {res.status_code}]: {res.text[:150]}")
+    except Exception as e:
+        log(f"⚠️ Error conectando con NanoGPT: {e}")
+
+    log("ℹ️ Fallback activado: Se publicará como Post de Solo Texto.")
+    return None
 
 def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: str, access_token: str, dry_run: bool = False) -> str:
-    """
-    Publica en LinkedIn API.
-    Si image_bytes está presente: Ejecuta registro en /v2/assets -> PUT binario -> POST /v2/ugcPosts (con media).
-    Si image_bytes es None o la subida falla: Publica directamente en /v2/ugcPosts como Solo Texto.
-    Si dry_run es True: Simula la publicación e imprime los payloads sin enviar la petición a LinkedIn.
-    """
     if dry_run:
-        log("🔍 [DRY-RUN] Simulación activa. No se realizarán peticiones de publicación a LinkedIn.")
+        log("🔍 [DRY-RUN] Simulación activa. No se realizarán peticiones reales a LinkedIn.")
         if image_bytes:
             log(f"🔍 [DRY-RUN] Se habría subido una imagen de {len(image_bytes)} bytes vía /v2/assets.")
         else:
@@ -285,6 +320,7 @@ def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: s
         "X-Restli-Protocol-Version": "2.0.0"
     }
 
+    # Flujo con Imagen
     if image_bytes is not None and len(image_bytes) > 0:
         try:
             log("💼 Paso 4: Registrando carga de imagen en LinkedIn API (/v2/assets?action=registerUpload)...")
@@ -292,7 +328,7 @@ def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: s
             register_payload = {
                 "registerUploadRequest": {
                     "recipes": ["urn:li:digitalmediaRecipe:feedshare-image"],
-                    "owner": author_urn,
+                    "owner": author_urn.strip(),
                     "supportedUploadMechanism": ["SYNCHRONOUS_UPLOAD"]
                 }
             }
@@ -317,7 +353,7 @@ def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: s
                         log("✅ Binario de imagen subido exitosamente. Creando post con imagen adjunta...")
                         ugc_url = "https://api.linkedin.com/v2/ugcPosts"
                         post_payload = {
-                            "author": author_urn,
+                            "author": author_urn.strip(),
                             "lifecycleState": "PUBLISHED",
                             "specificContent": {
                                 "com.linkedin.ugc.ShareContent": {
@@ -351,13 +387,10 @@ def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: s
 
         log("ℹ️ Conmutando a fallback: Publicando post como Solo Texto...")
 
-    # =========================================================================
-    # RAMA B: Publicación de Solo Texto (shareMediaCategory: NONE)
-    # =========================================================================
     log("💼 Publicando post como Solo Texto en LinkedIn (/v2/ugcPosts)...")
     ugc_url = "https://api.linkedin.com/v2/ugcPosts"
     text_payload = {
-        "author": author_urn,
+        "author": author_urn.strip(),
         "lifecycleState": "PUBLISHED",
         "specificContent": {
             "com.linkedin.ugc.ShareContent": {
@@ -373,11 +406,17 @@ def publish_to_linkedin(post_text: str, image_bytes: bytes | None, author_urn: s
         post_id = res.json().get("id", "PUBLISHED")
         log(f"🎉 ¡Post de solo texto publicado con éxito en LinkedIn! ID: {post_id}")
         return post_id
+    elif res.status_code == 401:
+        raise RuntimeError(
+            f"❌ Error 401 Unauthorized de LinkedIn: Token expirado o inválido. "
+            f"Detalles: {res.text}"
+        )
     else:
         raise RuntimeError(f"Fallo crítico al publicar en LinkedIn [HTTP {res.status_code}]: {res.text}")
 
 
 def main():
+    load_env_file()
     dry_run = "--dry-run" in sys.argv
     log("🚀 Iniciando Agente Autónomo de LinkedIn (GitHub Actions Serverless)...")
     if dry_run:
@@ -385,8 +424,8 @@ def main():
 
     deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
     linkedin_token = os.getenv("LINKEDIN_ACCESS_TOKEN", "mock_linkedin_token" if dry_run else None)
-    linkedin_urn = os.getenv("LINKEDIN_PERSON_URN", "urn:li:person:mock_dry_run_user" if dry_run else None)
-    hf_token = os.getenv("HF_TOKEN")
+    linkedin_urn = os.getenv("LINKEDIN_PERSON_URN", "urn:li:person:mock_urn" if dry_run else None)
+    nanogpt_key = os.getenv("NANOGPT_KEY")
     niche_prompt = os.getenv(
         "USER_NICHE_PROMPT",
         "Consultor de Software Fullstack especializado en Spring Boot, Angular, IA generativa y arquitecturas modernas."
@@ -397,23 +436,25 @@ def main():
         sys.exit(1)
 
     if not linkedin_token or not linkedin_token.strip():
-        log("❌ ERROR: La variable 'LINKEDIN_ACCESS_TOKEN' no está configurada en los Secretos de GitHub.")
+        log("❌ ERROR: La variable 'LINKEDIN_ACCESS_TOKEN' no está configurada.")
         sys.exit(1)
 
     if not linkedin_urn or not linkedin_urn.strip():
-        log("❌ ERROR: La variable 'LINKEDIN_PERSON_URN' no está configurada en los Secretos de GitHub.")
+        log("❌ ERROR: La variable 'LINKEDIN_PERSON_URN' no está configurada.")
         sys.exit(1)
 
-    # 1. Extraer tendencia
     topic = fetch_trending_tech_topic()
 
-    # 2. Generar Micro-Post (400-600 caracteres) con selección de 3 roles
     post_text = generate_post_text(topic, niche_prompt, deepseek_api_key)
 
-    # 3. Generar imagen con Hugging Face (con fallback a Solo Texto)
-    image_bytes = generate_hf_flux_image(topic["title"], hf_token)
+    force_text_only = os.getenv("FORCE_TEXT_ONLY", "false").lower() in ("true", "1", "yes")
+    if force_text_only:
+        log("⚡ Opción 'FORCE_TEXT_ONLY' activada. Se omitirá la generación de imagen.")
+        image_bytes = None
+    else:
+        visual_prompt = generate_technical_visual_prompt(topic, deepseek_api_key)
+        image_bytes = generate_image_with_nanogpt(visual_prompt, nanogpt_key)
 
-    # 4. Publicar en LinkedIn (o simular con dry-run)
     post_id = publish_to_linkedin(post_text, image_bytes, linkedin_urn, linkedin_token, dry_run=dry_run)
 
     log(f"🏁 Pipeline autónomo finalizado con éxito. Post ID: {post_id}")

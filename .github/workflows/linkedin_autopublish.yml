@@ -2,9 +2,19 @@ name: LinkedIn Autonomous Publisher Agent
 
 on:
   schedule:
-    # Lunes a viernes a las 13:00 UTC (08:00 AM hora Perú/Colombia/Ecuador/México)
     - cron: '0 13 * * 1-5'
-  workflow_dispatch: # Permite ejecutar manualmente con un clic en la pestaña Actions
+  workflow_dispatch:
+    inputs:
+      custom_prompt:
+        description: 'Prompt de nicho o tema personalizado (dejar vacio para auto-detectar)'
+        required: false
+        type: string
+        default: ''
+      force_text_only:
+        description: 'Forzar publicacion de solo texto (sin imagen)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   run-autonomous-agent:
@@ -28,8 +38,9 @@ jobs:
       - name: Ejecutar Agente Autónomo
         env:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          NANOGPT_KEY: ${{ secrets.NANOGPT_KEY }}
           LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
           LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
-          USER_NICHE_PROMPT: ${{ secrets.USER_NICHE_PROMPT }}
+          USER_NICHE_PROMPT: ${{ inputs.custom_prompt != '' && inputs.custom_prompt || secrets.USER_NICHE_PROMPT }}
+          FORCE_TEXT_ONLY: ${{ inputs.force_text_only }}
         run: python scripts/auto_linkedin_agent.py
