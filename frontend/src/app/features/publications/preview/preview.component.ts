@@ -1,0 +1,164 @@
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { PublicationService } from '../../../core/services/publication.service';
+import { GeneratedPreview } from '../../../core/models/publication.model';
+
+@Component({
+  selector: 'app-preview',
+  standalone: true,
+  template: `
+    <div class="max-w-2xl mx-auto space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Previsualización IA de Post</h1>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Simulación exacta de cómo lucirá el siguiente post en tu feed de LinkedIn</p>
+        </div>
+
+        <button (click)="loadPreview()" [disabled]="loading()"
+                class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold text-xs transition-all flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Regenerar Post
+        </button>
+      </div>
+
+      @if (alertMessage()) {
+        <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          {{ alertMessage() }}
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="p-12 text-center text-slate-400 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+          <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div class="text-sm font-semibold text-slate-700 dark:text-slate-300">Generando preview con DeepSeek IA...</div>
+        </div>
+      } @else if (preview()) {
+        <!-- MOCK CARD LINKEDIN -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold">
+                U
+              </div>
+              <div>
+                <div class="font-bold text-slate-900 dark:text-white text-base">Tu Nombre (Perfil LinkedIn)</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">Desarrollador Fullstack Senior | Spring Boot 4 & Angular 22</div>
+              </div>
+            </div>
+
+            <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+              Modo: {{ preview()?.sourceMode }}
+            </span>
+          </div>
+
+          <div class="text-slate-800 dark:text-slate-200 text-sm whitespace-pre-line leading-relaxed">
+            {{ preview()?.generatedText }}
+          </div>
+
+          <!-- IMAGEN Y PANEL DE REEMPLAZO -->
+          <div class="space-y-3">
+            @if (customImage() || preview()?.imageUrl) {
+              <div class="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative group">
+                <img [src]="customImage() || preview()?.imageUrl" class="w-full max-h-96 object-cover" />
+                <div class="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                  <label class="px-4 py-2 rounded-xl bg-white text-slate-900 font-bold text-xs cursor-pointer shadow-lg hover:bg-slate-100">
+                    🖼️ Reemplazar por Imagen Real (PC)
+                    <input type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden" />
+                  </label>
+                </div>
+              </div>
+            }
+
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 flex items-center justify-between gap-3 text-xs">
+              <span class="text-slate-500 dark:text-slate-400 font-semibold">¿Quieres usar tu propia imagen real?</span>
+              <label class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold cursor-pointer transition-all">
+                Subir Imagen de mi PC
+                <input type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex justify-around text-slate-500 dark:text-slate-400 text-xs font-semibold">
+            <span class="hover:text-blue-500 cursor-pointer">👍 Reaccionar</span>
+            <span class="hover:text-blue-500 cursor-pointer">💬 Comentar</span>
+            <span class="hover:text-blue-500 cursor-pointer">🔄 Compartir</span>
+          </div>
+        </div>
+
+        <!-- BOTON APROBAR Y PUBLICAR -->
+        <button (click)="approveAndPublish()" [disabled]="publishing()"
+                class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+          @if (publishing()) {
+            <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            Publicando en LinkedIn...
+          } @else {
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            Aprobar y Publicar Ahora en LinkedIn
+          }
+        </button>
+      }
+    </div>
+  `
+})
+export class PreviewComponent implements OnInit {
+  private publicationService = inject(PublicationService);
+
+  loading = signal(true);
+  publishing = signal(false);
+  preview = signal<GeneratedPreview | null>(null);
+  alertMessage = signal<string | null>(null);
+  customImage = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.loadPreview();
+  }
+
+  loadPreview(): void {
+    this.loading.set(true);
+    this.alertMessage.set(null);
+    this.customImage.set(null);
+
+    this.publicationService.getPreview().subscribe({
+      next: (data) => {
+        this.preview.set(data);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error obteniendo preview:', err);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.customImage.set(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  approveAndPublish(): void {
+    this.publishing.set(true);
+    this.alertMessage.set(null);
+
+    const text = this.preview()?.generatedText;
+    const img = this.customImage() || this.preview()?.imageUrl;
+
+    this.publicationService.publishPreviewNow(text, img).subscribe({
+      next: (res) => {
+        this.publishing.set(false);
+        this.alertMessage.set(res?.message || '✅ Post aprobado y publicado exitosamente en tu perfil de LinkedIn.');
+      },
+      error: (err) => {
+        this.publishing.set(false);
+        this.alertMessage.set('❌ Error al publicar: ' + (err?.error?.message || 'Fallo de conexión con LinkedIn'));
+        console.error('Error al publicar:', err);
+      }
+    });
+  }
+}
