@@ -12,6 +12,23 @@ CREATE TABLE tenants (
 );
 
 -- =============================================
+-- TABLA: roles
+-- Catálogo de roles del sistema
+-- =============================================
+CREATE TABLE roles (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Insertar roles por defecto
+INSERT INTO roles (name, description) VALUES
+    ('ROLE_ADMIN', 'Administrador total del sistema'),
+    ('ROLE_DESARROLLADOR', 'Desarrollador con acceso a depuración y flujos'),
+    ('ROLE_USER', 'Usuario estándar del SaaS');
+
+-- =============================================
 -- TABLA: users
 -- Usuarios del sistema vinculados a un Tenant
 -- =============================================
@@ -22,11 +39,19 @@ CREATE TABLE users (
     google_id       VARCHAR(255) UNIQUE,
     picture_url     TEXT,
     password_hash   VARCHAR(255),
-    role            VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER' 
-                    CHECK (role IN ('ROLE_ADMIN', 'ROLE_DESARROLLADOR', 'ROLE_USER')),
     tenant_id       UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- =============================================
+-- TABLA: user_roles (Many-to-Many entre users y roles)
+-- =============================================
+CREATE TABLE user_roles (
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id     UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, role_id)
 );
 
 -- =============================================
@@ -277,6 +302,8 @@ CREATE TABLE qrtz_locks (
 -- =============================================
 CREATE INDEX idx_users_tenant ON users(tenant_id);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_user_roles_user ON user_roles(user_id);
+CREATE INDEX idx_user_roles_role ON user_roles(role_id);
 CREATE INDEX idx_publication_logs_tenant ON publication_logs(tenant_id);
 CREATE INDEX idx_publication_logs_status ON publication_logs(tenant_id, status);
 CREATE INDEX idx_publication_logs_date ON publication_logs(tenant_id, created_at DESC);

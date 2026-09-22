@@ -1,5 +1,6 @@
 package com.deyvid.backend.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,35 +15,67 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AiNotConfiguredException.class)
+    public ResponseEntity<com.deyvid.backend.dto.response.ErrorResponse> handleAiNotConfigured(AiNotConfiguredException ex) {
+        log.warn("IA no configurada: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FAILED_DEPENDENCY) // 424
+                .body(new com.deyvid.backend.dto.response.ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(AiServiceException.class)
+    public ResponseEntity<com.deyvid.backend.dto.response.ErrorResponse> handleAiService(AiServiceException ex) {
+        log.error("Fallo de servicio IA [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        HttpStatus status = switch (ex.getErrorCode()) {
+            case "AI_NOT_CONFIGURED" -> HttpStatus.FAILED_DEPENDENCY;  // 424
+            case "AI_RATE_LIMIT" -> HttpStatus.TOO_MANY_REQUESTS;      // 429
+            case "AI_TIMEOUT" -> HttpStatus.GATEWAY_TIMEOUT;           // 504
+            default -> HttpStatus.BAD_GATEWAY;                         // 502 - AI_GENERATION_FAILED
+        };
+        return ResponseEntity.status(status)
+                .body(new com.deyvid.backend.dto.response.ErrorResponse(ex.getErrorCode(), ex.getMessage()));
+    }
 
     @ExceptionHandler(TokenExpiredException.class)
     public ResponseEntity<Map<String, Object>> handleTokenExpiredException(TokenExpiredException ex) {
-        Map<String, Object> body = createErrorBody(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        log.warn("Token expired exception: {}", ex.getMessage());
+        Map<String, Object> body = createErrorBody(HttpStatus.UNAUTHORIZED, "Tu sesión o token de acceso ha expirado. Por favor inicia sesión nuevamente.");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     @ExceptionHandler(PipelineExecutionException.class)
     public ResponseEntity<Map<String, Object>> handlePipelineExecutionException(PipelineExecutionException ex) {
-        Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+        log.error("Pipeline execution exception: ", ex);
+        Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Error durante la ejecución del pipeline de publicación: " + ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleBadCredentialsException(BadCredentialsException ex) {
+        log.warn("Bad credentials attempt: {}", ex.getMessage());
         Map<String, Object> body = createErrorBody(HttpStatus.UNAUTHORIZED, "Credenciales inválidas");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied exception: {}", ex.getMessage());
         Map<String, Object> body = createErrorBody(HttpStatus.FORBIDDEN, "Acceso denegado: permisos insuficientes");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        log.warn("Illegal argument exception: {}", ex.getMessage());
+        Map<String, Object> body = createErrorBody(HttpStatus.BAD_REQUEST, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, Object> body = createErrorBody(HttpStatus.BAD_REQUEST, "Error de validación de campos");
+        Map<String, Object> body = createErrorBody(HttpStatus.BAD_REQUEST, "Error de validación en los datos enviados");
         Map<String, String> errors = new HashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
@@ -53,7 +86,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(Exception ex) {
-        Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Ha ocurrido un error interno: " + ex.getMessage());
+        log.error("Unhandled internal server exception: ", ex);
+        Map<String, Object> body = createErrorBody(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Ha ocurrido un error inesperado al procesar la solicitud. Por favor intenta más tarde."
+        );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 

@@ -20,6 +20,7 @@ public class BackupTopic {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "tenant_id", nullable = false)
     private Tenant tenant;
@@ -33,9 +34,21 @@ public class BackupTopic {
     @Column(name = "category", length = 100)
     private String category;
 
+    @Column(name = "is_ai_research")
+    @Builder.Default
+    private Boolean isAiResearch = false; // false = Tema fijo curado, true = Investigación abierta con IA
+
+    @Column(name = "is_active")
+    @Builder.Default
+    private Boolean isActive = true;
+
     @Column(name = "is_used", nullable = false)
     @Builder.Default
     private Boolean isUsed = false;
+
+    @Column(name = "is_rejected", nullable = false)
+    @Builder.Default
+    private Boolean isRejected = false;
 
     @Column(name = "used_at")
     private LocalDateTime usedAt;

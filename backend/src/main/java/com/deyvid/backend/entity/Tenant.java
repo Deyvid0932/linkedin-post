@@ -32,6 +32,14 @@ public class Tenant {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "is_emergency_paused")
+    @Builder.Default
+    private Boolean isEmergencyPaused = false;
+
+    @Column(name = "is_dry_run")
+    @Builder.Default
+    private Boolean isDryRun = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

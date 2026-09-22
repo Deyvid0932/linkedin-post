@@ -1,0 +1,36 @@
+# Environment & Secrets
+.env
+.env.local
+*.env
+
+# Backend Build & Dependencies
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend Dependencies & Build
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# IDEs & OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+.agents
+
+# Python & Virtual Environments (Vital para el script)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+*.log
+
+# Sub-archivos de entorno (en backend o frontend si existieran)
+**/.env
+**/.env.*
+
+postman_collection.json

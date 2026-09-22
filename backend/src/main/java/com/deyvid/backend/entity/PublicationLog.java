@@ -1,5 +1,6 @@
 package com.deyvid.backend.entity;
 
+import com.deyvid.backend.entity.enums.LinkedInAccountType;
 import com.deyvid.backend.entity.enums.PublicationStatus;
 import com.deyvid.backend.entity.enums.SourceMode;
 import jakarta.persistence.*;
@@ -34,6 +35,13 @@ public class PublicationLog {
     @Column(name = "status", nullable = false, length = 20)
     private PublicationStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_type", length = 30)
+    private LinkedInAccountType accountType;
+
+    @Column(name = "author_urn")
+    private String authorUrn;
+
     @Column(name = "generated_text", columnDefinition = "TEXT")
     private String generatedText;
 
@@ -45,6 +53,9 @@ public class PublicationLog {
 
     @Column(name = "source_reference", columnDefinition = "TEXT")
     private String sourceReference;
+
+    @Column(name = "text_hash", length = 64)
+    private String textHash;
 
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;

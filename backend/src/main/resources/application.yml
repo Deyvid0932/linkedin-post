@@ -2,12 +2,18 @@ spring:
   application:
     name: linkedin-automation-backend
 
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.chat.observation.ChatObservationAutoConfiguration
+      - org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
+      - org.springframework.ai.autoconfigure.vectorstore.observation.VectorStoreObservationAutoConfiguration
+
   threads:
     virtual:
       enabled: true
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/linkedin_automation}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/linkedin_automation}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
@@ -18,13 +24,13 @@ spring:
       connection-timeout: 20000
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   flyway:
     enabled: true
@@ -34,7 +40,7 @@ spring:
   quartz:
     job-store-type: jdbc
     jdbc:
-      initialize-schema: never
+      initialize-schema: always
     wait-for-jobs-to-complete-on-shutdown: true
     overwrite-existing-jobs: true
     properties:
@@ -56,36 +62,24 @@ spring:
           starttls:
             enable: true
 
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID:google-client-id-placeholder}
-            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret-placeholder}
-            scope:
-              - email
-              - profile
-          linkedin:
-            client-id: ${LINKEDIN_CLIENT_ID:linkedin-client-id-placeholder}
-            client-secret: ${LINKEDIN_CLIENT_SECRET:linkedin-client-secret-placeholder}
-            scope:
-              - openid
-              - profile
-              - email
-              - w_member_social
-
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY:openai-api-key-placeholder}
+      base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+      api-key: ${DEEPSEEK_API_KEY:${LLM_API_KEY:}}
       chat:
         options:
-          model: gpt-4o
+          model: ${LLM_MODEL:deepseek-chat}
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1536
+        initialize-schema: true
 
 app:
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250655368566D5971}
-    expiration-ms: 86400000 # 24 horas
+    expiration-ms: 86400000
 
   security:
     encryption-key: ${ENCRYPTION_KEY:MySuperSecretEncryptionKey32Chars!}
@@ -97,4 +91,10 @@ app:
     api-base-url: https://api.github.com
 
   linkedin:
-    api-base-url: https://api.linkedin.com
+    api-base-url: ${LINKEDIN_API_BASE_URL:https://api.linkedin.com}
+    api-version: ${LINKEDIN_API_VERSION:202607}
+
+  llm:
+    api-key: ${DEEPSEEK_API_KEY:${LLM_API_KEY:}}
+    base-url: ${LLM_BASE_URL:https://api.deepseek.com}
+    model: ${LLM_MODEL:deepseek-chat}

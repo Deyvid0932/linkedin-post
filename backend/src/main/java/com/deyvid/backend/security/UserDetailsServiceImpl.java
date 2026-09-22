@@ -21,16 +21,17 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + email));
+        String cleanEmail = email != null ? email.trim().toLowerCase() : "";
+        User user = userRepository.findByEmailIgnoreCase(cleanEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con email: " + cleanEmail));
 
         if (!user.getIsActive()) {
             throw new UsernameNotFoundException("El usuario está inactivo");
         }
 
-        List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole().name())
-        );
+        List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getName()))
+                .toList();
 
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),

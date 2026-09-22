@@ -10,8 +10,18 @@ import java.util.UUID;
 
 @Repository
 public interface BackupTopicRepository extends JpaRepository<BackupTopic, UUID> {
+    List<BackupTopic> findByTenantIdOrderByPriorityDescCreatedAtAsc(UUID tenantId);
     List<BackupTopic> findByTenantId(UUID tenantId);
-    
-    // Obtener el siguiente tema no usado ordenado por prioridad descendente y fecha de creación ascendente
+
+    // Búsqueda de temas NO usados (isUsed = false)
+    Optional<BackupTopic> findFirstByTenantIdAndIsUsedFalseAndIsActiveTrueOrderByPriorityDescCreatedAtAsc(UUID tenantId);
     Optional<BackupTopic> findFirstByTenantIdAndIsUsedFalseOrderByPriorityDescCreatedAtAsc(UUID tenantId);
+
+    // Reciclaje de temas (cuando todos ya fueron usados): rota el usado hace más tiempo (menor usedAt)
+    Optional<BackupTopic> findFirstByTenantIdAndIsActiveTrueOrderByUsedAtAscCreatedAtAsc(UUID tenantId);
+    Optional<BackupTopic> findFirstByTenantIdOrderByUsedAtAscCreatedAtAsc(UUID tenantId);
+
+    // Búsqueda por título para marcar como usado
+    Optional<BackupTopic> findFirstByTenantIdAndTitleIgnoreCase(UUID tenantId, String title);
+    Optional<BackupTopic> findFirstByTenantIdAndTitleContainingIgnoreCase(UUID tenantId, String title);
 }
