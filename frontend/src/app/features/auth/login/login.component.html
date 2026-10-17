@@ -1,0 +1,204 @@
+<main
+  class="relative grid min-h-dvh bg-slate-50 transition-colors dark:bg-neutral-950 lg:grid-cols-2"
+>
+  <div class="fixed right-4 top-4 z-50 sm:right-6 sm:top-6">
+    <app-theme-toggle variant="floating" />
+  </div>
+
+  <section
+    class="order-1 flex min-h-[calc(100dvh-220px)] items-center justify-center px-5 py-16 sm:px-8 lg:min-h-dvh lg:px-12 xl:px-20"
+    aria-labelledby="login-title"
+  >
+    <div class="w-full max-w-md animate-fadeIn">
+      <a
+        routerLink="/auth/login"
+        class="mb-10 inline-flex items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-indigo-600"
+        aria-label="AutoPost, inicio de sesión"
+      >
+        <span
+          class="grid size-11 place-items-center rounded-xl bg-indigo-600 text-lg font-black text-white shadow-lg shadow-indigo-600/20"
+          >in</span
+        >
+        <span
+          ><strong class="block text-sm font-bold text-slate-900 dark:text-white">AutoPost</strong
+          ><small class="text-xs text-slate-500 dark:text-neutral-400"
+            >Estudio editorial</small
+          ></span
+        >
+      </a>
+
+      <div class="mb-8">
+        <p
+          class="mb-2 text-xs font-semibold uppercase tracking-[.16em] text-indigo-700 dark:text-indigo-300"
+        >
+          Tu espacio de creación
+        </p>
+        <h1
+          id="login-title"
+          class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white"
+        >
+          Bienvenido de nuevo
+        </h1>
+        <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-neutral-400">
+          Inicia sesión para organizar tus ideas y preparar tu siguiente publicación.
+        </p>
+      </div>
+
+      @if (errorMessage()) {
+        <div
+          role="alert"
+          class="mb-6 flex items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm font-medium text-rose-700 dark:text-rose-300 animate-fadeIn"
+        >
+          <svg
+            class="size-5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            /></svg
+          ><span>{{ errorMessage() }}</span>
+        </div>
+      }
+      @if (successMessage()) {
+        <div
+          role="status"
+          class="mb-6 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+        >
+          {{ successMessage() }}
+        </div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
+        <div class="grid gap-2">
+          <label
+            for="login-email"
+            class="text-sm font-semibold text-slate-700 dark:text-neutral-300"
+            >Correo electrónico</label
+          ><input
+            id="login-email"
+            formControlName="email"
+            type="email"
+            autocomplete="username"
+            inputmode="email"
+            placeholder="tu@email.com"
+            class="ui-input"
+          />
+        </div>
+
+        <div class="grid gap-2">
+          <div class="flex items-center justify-between gap-3">
+            <label
+              for="login-password"
+              class="text-sm font-semibold text-slate-700 dark:text-neutral-300"
+              >Contraseña</label
+            ><a
+              routerLink="/auth/forgot-password"
+              class="text-xs font-semibold text-indigo-700 hover:underline dark:text-indigo-300"
+              >¿Olvidaste tu contraseña?</a
+            >
+          </div>
+          <div class="relative">
+            <input
+              id="login-password"
+              formControlName="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="ui-input pr-12"
+            /><button
+              type="button"
+              (click)="showPassword.set(!showPassword())"
+              class="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:text-slate-100"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+            >
+              <svg
+                class="size-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.8"
+                  d="M2.5 12s3.2-7 9.5-7 9.5 7 9.5 7-3.2 7-9.5 7-9.5-7-9.5-7Z"
+                />
+                <circle cx="12" cy="12" r="3" stroke-width="1.8" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button
+          [disabled]="form.invalid || loading()"
+          type="submit"
+          class="ui-button ui-button--primary w-full !min-h-12 !rounded-xl !text-sm"
+        >
+          @if (loading()) {
+            <span
+              class="size-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+            ></span
+            ><span>Iniciando sesión…</span>
+          } @else {
+            <span>Iniciar sesión</span>
+          }
+        </button>
+      </form>
+
+      <p class="mt-7 text-center text-sm text-slate-500 dark:text-neutral-400">
+        ¿No tienes una cuenta?
+        <a
+          routerLink="/auth/register"
+          class="ml-1 font-bold text-indigo-700 hover:underline dark:text-indigo-300"
+          >Regístrate gratis</a
+        >
+      </p>
+    </div>
+  </section>
+
+  <aside
+    class="relative order-2 isolate min-h-56 overflow-hidden bg-slate-900 sm:min-h-72 lg:min-h-dvh"
+    aria-label="Estudio de creación de publicaciones"
+  >
+    <img
+      src="/images/autopost-login-editorial.png"
+      alt="Creador preparando una publicación profesional frente a su computadora"
+      class="absolute inset-0 size-full object-cover object-center"
+    />
+    <div
+      class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-slate-950/5 lg:bg-gradient-to-br lg:from-slate-950/65 lg:via-slate-950/10 lg:to-indigo-950/40"
+    ></div>
+    <div
+      class="relative flex min-h-56 flex-col justify-end p-6 sm:min-h-72 sm:p-10 lg:min-h-dvh lg:p-12 xl:p-16"
+    >
+      <div class="max-w-xl text-white">
+        <span
+          class="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-semibold backdrop-blur-md"
+          ><span class="size-2 rounded-full bg-violet-300"></span>Tu estudio editorial</span
+        >
+        <h2 class="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl xl:text-5xl">
+          De una idea a una publicación que suena a ti.
+        </h2>
+        <p class="mt-4 max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">
+          Organiza tus temas, define tu voz y revisa cada borrador antes de compartirlo en LinkedIn.
+        </p>
+        <div class="mt-8 flex flex-wrap gap-2 text-xs font-medium text-white/90">
+          <span class="rounded-full border border-white/20 bg-black/20 px-3 py-2 backdrop-blur"
+            >Escribe</span
+          ><span class="rounded-full border border-white/20 bg-black/20 px-3 py-2 backdrop-blur"
+            >Revisa</span
+          ><span class="rounded-full border border-white/20 bg-black/20 px-3 py-2 backdrop-blur"
+            >Aprueba</span
+          >
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>

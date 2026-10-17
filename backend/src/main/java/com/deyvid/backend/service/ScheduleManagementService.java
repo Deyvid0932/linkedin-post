@@ -22,6 +22,9 @@ import java.util.UUID;
 @Slf4j
 public class ScheduleManagementService {
 
+    @org.springframework.beans.factory.annotation.Value("${app.scheduler.mode:quartz}")
+    private String schedulerMode;
+
     private final Scheduler scheduler;
     private final PublishingScheduleRepository scheduleRepository;
     private final TenantRepository tenantRepository;
@@ -31,6 +34,7 @@ public class ScheduleManagementService {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void syncAllActiveSchedulesOnStartup() {
+        if (!"quartz".equals(schedulerMode)) return;
         log.info("Sincronizando horarios activos de PostgreSQL con Quartz Scheduler al arrancar el servidor...");
         List<PublishingSchedule> activeSchedules = scheduleRepository.findAll().stream()
                 .filter(s -> Boolean.TRUE.equals(s.getIsActive()))
@@ -65,6 +69,7 @@ public class ScheduleManagementService {
         UUID tenantId = tenant != null ? tenant.getId() : null;
         Tenant managedTenant = tenantId != null ? tenantRepository.findById(tenantId).orElse(tenant) : tenant;
         String cleanCron = normalizeCronExpression(cronExpression);
+        if (!org.quartz.CronExpression.isValidExpression(cleanCron)) throw new IllegalArgumentException("Expresión cron inválida");
         PublishingSchedule schedule = PublishingSchedule.builder()
                 .tenant(managedTenant)
                 .cronExpression(cleanCron)
@@ -93,6 +98,7 @@ public class ScheduleManagementService {
         }
 
         String cleanCron = normalizeCronExpression(cronExpression);
+        if (!org.quartz.CronExpression.isValidExpression(cleanCron)) throw new IllegalArgumentException("Expresión cron inválida");
         schedule.setCronExpression(cleanCron);
         schedule.setDescription(description);
         PublishingSchedule saved = scheduleRepository.save(schedule);
@@ -175,6 +181,7 @@ public class ScheduleManagementService {
     }
 
     public void registerQuartzJob(PublishingSchedule schedule) {
+        if (!"quartz".equals(schedulerMode)) return;
         try {
             UUID tenantId = schedule.getTenant() != null ? schedule.getTenant().getId() : null;
             Tenant tenant = tenantId != null ? tenantRepository.findById(tenantId).orElse(schedule.getTenant()) : schedule.getTenant();
@@ -199,7 +206,7 @@ public class ScheduleManagementService {
                     .withIdentity(triggerKey)
                     .withSchedule(CronScheduleBuilder.cronSchedule(cleanCron)
                             .inTimeZone(timeZone)
-                            .withMisfireHandlingInstructionFireAndProceed())
+                            .withMisfireHandlingInstructionDoNothing())
                     .build();
 
             if (scheduler.checkExists(jobKey)) {

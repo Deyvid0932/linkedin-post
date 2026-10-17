@@ -2,10 +2,16 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ConnectLinkedInAccountRequest, GitHubRepo, GitHubStatus, LinkedInAccount, LinkedInStatus } from '../models/credential.model';
+import {
+  ConnectLinkedInAccountRequest,
+  GitHubRepo,
+  GitHubStatus,
+  LinkedInAccount,
+  LinkedInStatus,
+} from '../models/credential.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class CredentialService {
   private readonly API_URL = environment.apiUrl;
@@ -18,24 +24,37 @@ export class CredentialService {
     return this.http.get<LinkedInAccount[]>(`${this.API_URL}/credentials/linkedin/accounts`);
   }
 
+  startLinkedInOAuth(): Observable<{ authorizationUrl: string }> {
+    return this.http.post<{ authorizationUrl: string }>(
+      `${this.API_URL}/credentials/linkedin/oauth/start`,
+      {},
+      { withCredentials: true },
+    );
+  }
+
   connectLinkedInAccount(req: ConnectLinkedInAccountRequest): Observable<LinkedInAccount> {
     return this.http.post<LinkedInAccount>(`${this.API_URL}/credentials/linkedin/accounts`, req);
   }
 
   toggleLinkedInAccount(id: string): Observable<LinkedInAccount> {
-    return this.http.patch<LinkedInAccount>(`${this.API_URL}/credentials/linkedin/accounts/${id}/toggle`, {});
+    return this.http.patch<LinkedInAccount>(
+      `${this.API_URL}/credentials/linkedin/accounts/${id}/toggle`,
+      {},
+    );
   }
 
   setPrimaryLinkedInAccount(id: string): Observable<LinkedInAccount> {
-    return this.http.patch<LinkedInAccount>(`${this.API_URL}/credentials/linkedin/accounts/${id}/set-primary`, {});
+    return this.http.patch<LinkedInAccount>(
+      `${this.API_URL}/credentials/linkedin/accounts/${id}/set-primary`,
+      {},
+    );
   }
 
   updateAccountLimit(id: string, maxPostsPerDay: number): Observable<LinkedInAccount> {
-    return this.http.patch<LinkedInAccount>(`${this.API_URL}/credentials/linkedin/accounts/${id}/limit`, { maxPostsPerDay });
-  }
-
-  resetTodayQuota(id: string): Observable<{ success: boolean; message: string }> {
-    return this.http.post<{ success: boolean; message: string }>(`${this.API_URL}/credentials/linkedin/accounts/${id}/reset-today-count`, {});
+    return this.http.patch<LinkedInAccount>(
+      `${this.API_URL}/credentials/linkedin/accounts/${id}/limit`,
+      { maxPostsPerDay },
+    );
   }
 
   deleteLinkedInAccount(id: string): Observable<void> {
@@ -48,18 +67,33 @@ export class CredentialService {
     return this.http.get<LinkedInStatus>(`${this.API_URL}/credentials/linkedin/status`);
   }
 
-  saveLinkedInCredential(accessToken: string, personUrn?: string, expiresInDays?: number): Observable<any> {
-    return this.http.post(`${this.API_URL}/credentials/linkedin`, { accessToken, personUrn, expiresInDays });
+  saveLinkedInCredential(
+    accessToken: string,
+    personUrn?: string,
+    expiresInDays?: number,
+  ): Observable<any> {
+    return this.http.post(`${this.API_URL}/credentials/linkedin`, {
+      accessToken,
+      personUrn,
+      expiresInDays,
+    });
   }
 
-  updateLinkedInCredential(accessToken: string, personUrn?: string, expiresInDays?: number): Observable<any> {
-    return this.http.put(`${this.API_URL}/credentials/linkedin`, { accessToken, personUrn, expiresInDays });
+  updateLinkedInCredential(
+    accessToken: string,
+    personUrn?: string,
+    expiresInDays?: number,
+  ): Observable<any> {
+    return this.http.put(`${this.API_URL}/credentials/linkedin`, {
+      accessToken,
+      personUrn,
+      expiresInDays,
+    });
   }
 
   deleteLinkedInCredential(): Observable<any> {
     return this.http.delete(`${this.API_URL}/credentials/linkedin`);
   }
-
 
   // --- GITHUB ---
 
@@ -68,11 +102,17 @@ export class CredentialService {
   }
 
   saveGitHubCredential(personalAccessToken: string, githubUsername: string): Observable<any> {
-    return this.http.post(`${this.API_URL}/credentials/github`, { personalAccessToken, githubUsername });
+    return this.http.post(`${this.API_URL}/credentials/github`, {
+      personalAccessToken,
+      githubUsername,
+    });
   }
 
   updateGitHubCredential(personalAccessToken: string, githubUsername: string): Observable<any> {
-    return this.http.put(`${this.API_URL}/credentials/github`, { personalAccessToken, githubUsername });
+    return this.http.put(`${this.API_URL}/credentials/github`, {
+      personalAccessToken,
+      githubUsername,
+    });
   }
 
   deleteGitHubCredential(): Observable<any> {

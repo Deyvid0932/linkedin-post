@@ -17,7 +17,7 @@ describe('AuthService', () => {
     tenantId: 'tenant-1',
     name: 'Deyvi Test',
     email: 'test@example.com',
-    roles: ['ROLE_USER']
+    roles: ['ROLE_USER'],
   };
 
   beforeEach(() => {
@@ -29,8 +29,8 @@ describe('AuthService', () => {
         AuthService,
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: Router, useValue: routerSpy }
-      ]
+        { provide: Router, useValue: routerSpy },
+      ],
     });
 
     service = TestBed.inject(AuthService);
@@ -71,7 +71,7 @@ describe('AuthService', () => {
     const registerReq: RegisterRequest = {
       name: 'Deyvi Test',
       email: 'test@example.com',
-      password: 'Password123!'
+      password: 'Password123!',
     };
 
     service.register(registerReq).subscribe((res) => {

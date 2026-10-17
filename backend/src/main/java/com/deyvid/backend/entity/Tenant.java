@@ -28,6 +28,18 @@ public class Tenant {
     @Builder.Default
     private String timezone = "America/Lima";
 
+    @Column(name = "app_approval_mode", nullable = false, length = 24)
+    @Builder.Default
+    private String appApprovalMode = "REQUIRE_APPROVAL";
+
+    @Column(name = "app_target_characters", nullable = false)
+    @Builder.Default
+    private Integer appTargetCharacters = 1200;
+
+    @Column(name = "app_image_model", nullable = false, length = 80)
+    @Builder.Default
+      private String appImageModel = "qwen-image-2.1/text-to-image";
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;

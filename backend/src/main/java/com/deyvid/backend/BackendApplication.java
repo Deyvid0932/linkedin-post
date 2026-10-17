@@ -55,6 +55,8 @@ public class BackendApplication {
 						int eqIdx = trimmed.indexOf('=');
 						if (eqIdx > 0) {
 							String key = trimmed.substring(0, eqIdx).trim();
+							// Host secrets and explicit JVM configuration take priority over local development files.
+							if (System.getenv(key) != null || System.getProperty(key) != null) continue;
 							String value = trimmed.substring(eqIdx + 1).trim();
 							if (value.startsWith("\"") && value.endsWith("\"") && value.length() >= 2) {
 								value = value.substring(1, value.length() - 1);

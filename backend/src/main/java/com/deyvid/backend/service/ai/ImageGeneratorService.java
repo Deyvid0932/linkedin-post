@@ -16,8 +16,8 @@ public class ImageGeneratorService {
     @org.springframework.beans.factory.annotation.Value("${pexels.api-key:${PEXELS_API_KEY:}}")
     private String configuredPexelsApiKey;
 
-    @org.springframework.beans.factory.annotation.Value("${replicate.api-key:${REPLICATE_API_KEY:}}")
-    private String configuredReplicateApiKey;
+    @org.springframework.beans.factory.annotation.Value("${nanogpt.api-key:${NANOGPT_API_KEY:${NANOGPT_KEY:}}}")
+    private String configuredNanoGptApiKey;
 
     private final WebClient genericWebClient;
 
@@ -33,17 +33,21 @@ public class ImageGeneratorService {
         this.genericWebClient = genericWebClient;
     }
 
-    private String getEffectiveReplicateApiKey() {
-        if (configuredReplicateApiKey != null && !configuredReplicateApiKey.isBlank() && !configuredReplicateApiKey.contains("placeholder")) {
-            return configuredReplicateApiKey.trim();
+    private String getEffectiveNanoGptApiKey() {
+        if (configuredNanoGptApiKey != null && !configuredNanoGptApiKey.isBlank() && !configuredNanoGptApiKey.contains("placeholder")) {
+            return configuredNanoGptApiKey.trim();
         }
-        String sysProp = System.getProperty("REPLICATE_API_KEY");
+        String sysProp = System.getProperty("NANOGPT_API_KEY");
         if (sysProp != null && !sysProp.isBlank()) {
             return sysProp.trim();
         }
-        String envVal = System.getenv("REPLICATE_API_KEY");
+        String envVal = System.getenv("NANOGPT_API_KEY");
         if (envVal != null && !envVal.isBlank()) {
             return envVal.trim();
+        }
+        String legacyEnvVal = System.getenv("NANOGPT_KEY");
+        if (legacyEnvVal != null && !legacyEnvVal.isBlank()) {
+            return legacyEnvVal.trim();
         }
         return null;
     }
@@ -63,63 +67,90 @@ public class ImageGeneratorService {
         return null;
     }
 
-    public ImageData generateAiImageWithReplicate(String topicTitle) {
-        String apiKey = getEffectiveReplicateApiKey();
+    public ImageData generateAiImageWithNanoGpt(String topicTitle) {
+        return generateAiImageWithNanoGpt(topicTitle, "", NanoGptImageModels.DEFAULT_MODEL);
+    }
+
+    public ImageData generateAiImageWithNanoGpt(String topicTitle, String postText, String requestedModel) {
+        String apiKey = getEffectiveNanoGptApiKey();
         if (apiKey == null || apiKey.isBlank()) {
+            log.warn("No se configuró NANOGPT_API_KEY; se usará la imagen de respaldo disponible.");
             return null;
         }
 
-        String prompt = String.format(
-                "A clean, modern 3D tech illustration about %s, sleek dark background, vibrant cyber blue and violet accents, cinematic lighting, 4k digital art, minimal aesthetic, no text",
-                topicTitle != null ? topicTitle : "Software Engineering"
-        );
+        String model = NanoGptImageModels.normalize(requestedModel);
+        String topic = (topicTitle == null || topicTitle.isBlank()) ? "software engineering" : topicTitle.trim();
+        if (topic.length() > 400) topic = topic.substring(0, 400);
+        String post = postText == null ? "" : postText.trim();
+        if (post.length() > 1200) post = post.substring(0, 1200);
+        String prompt = "Create a polished, professional LinkedIn editorial image that clearly visualizes this software/technology topic: "
+                + topic + ". The actual post's idea is: " + post + ". Use a strong focal point, thoughtful composition, clean lighting, "
+                + "and a modern visual style. Landscape 16:9 composition. No text, letters, logos, watermarks, or UI screenshots.";
 
-        String endpoint = "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions";
-
-        java.util.Map<String, Object> requestBody = java.util.Map.of(
-                "input", java.util.Map.of(
-                        "prompt", prompt,
-                        "aspect_ratio", "16:9",
-                        "output_format", "webp"
-                )
-        );
+        java.util.Map<String, Object> requestBody = new java.util.HashMap<>();
+        requestBody.put("model", model);
+        requestBody.put("prompt", prompt);
+        requestBody.put("n", 1);
+        requestBody.put("response_format", "b64_json");
+        if (model.contains("nano-banana")) {
+            String resolution = System.getenv("NANOGPT_IMAGE_RESOLUTION");
+            if (resolution == null || resolution.isBlank()) resolution = model.equals("nano-banana-2-fast") ? "2k" : "1k";
+            requestBody.put("resolution", resolution);
+            requestBody.put("aspect_ratio", "16:9");
+        } else {
+            requestBody.put("size", "1024x1024");
+        }
 
         try {
-            log.info("🎨 Generando imagen con IA Replicate (FLUX Schnell) para: '{}'...", topicTitle);
+            log.info("Generando imagen con NanoGPT (modelo {}) para el tema: '{}'", model, topic);
             @SuppressWarnings("unchecked")
             java.util.Map<String, Object> response = genericWebClient.post()
-                    .uri(endpoint)
+                    .uri("https://api.nano-gpt.com/v1/images/generations")
                     .header("Authorization", "Bearer " + apiKey)
-                    .header("Prefer", "wait=5")
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(java.util.Map.class)
-                    .timeout(java.time.Duration.ofSeconds(6))
+                    .timeout(java.time.Duration.ofSeconds(55))
                     .block();
 
-            if (response != null && response.containsKey("output")) {
-                Object outputObj = response.get("output");
-                String outputUrl = null;
-                if (outputObj instanceof List<?> list && !list.isEmpty()) {
-                    outputUrl = String.valueOf(list.get(0));
-                } else if (outputObj instanceof String str) {
-                    outputUrl = str;
-                }
-
-                if (outputUrl != null && !outputUrl.isBlank()) {
-                    byte[] downloaded = downloadImageBytes(outputUrl);
-                    if (downloaded != null && downloaded.length > 1000) {
-                        log.info("✅ Imagen de Replicate FLUX descargada exitosamente ({} bytes): {}", downloaded.length, outputUrl);
-                        return new ImageData(downloaded, outputUrl);
+            Object dataValue = response == null ? null : response.get("data");
+            if (dataValue instanceof List<?> data && !data.isEmpty() && data.get(0) instanceof java.util.Map<?, ?> item) {
+                Object encoded = item.get("b64_json");
+                if (encoded instanceof String base64 && !base64.isBlank()
+                        && base64.length() <= (long) com.deyvid.backend.service.SafeImageService.MAX_BYTES * 4 / 3 + 128) {
+                    byte[] png = normalizeGeneratedImage(java.util.Base64.getDecoder().decode(base64));
+                    if (png != null) {
+                        String dataUrl = "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(png);
+                        log.info("Imagen de NanoGPT lista ({} bytes, modelo {})", png.length, model);
+                        return new ImageData(png, dataUrl);
                     }
                 }
             }
         } catch (Exception e) {
-            log.warn("Fallo o timeout al generar imagen con Replicate FLUX ({}). Continuando con Pexels.", e.getMessage());
+            log.warn("No se pudo generar la imagen con NanoGPT ({}). Se intentará la imagen de respaldo.", e.getMessage());
         }
 
         return null;
+    }
+
+    public ImageData generateAiImageWithNanoGpt(String topicTitle, String requestedModel) {
+        return generateAiImageWithNanoGpt(topicTitle, "", requestedModel);
+    }
+
+    private byte[] normalizeGeneratedImage(byte[] imageBytes) {
+        try {
+            java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(imageBytes));
+            if (image == null) return null;
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            if (!javax.imageio.ImageIO.write(image, "png", output)) return null;
+            byte[] png = output.toByteArray();
+            new com.deyvid.backend.service.SafeImageService().validateBytes(png);
+            return png;
+        } catch (Exception e) {
+            log.warn("NanoGPT devolvió una imagen que AutoPost no pudo validar: {}", e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -203,18 +234,22 @@ public class ImageGeneratorService {
     }
 
     /**
-     * Obtiene una imagen generada con IA (Replicate FLUX Schnell), una foto relevante desde Pexels API,
+     * Obtiene una imagen generada con IA (NanoGPT), una foto relevante desde Pexels API,
      * un banner técnico moderno con Graphics2D o una foto curada de stock.
      */
     public ImageData generateOrFetchImage(ContentSource source, String postText) {
+        return generateOrFetchImage(source, postText, NanoGptImageModels.DEFAULT_MODEL);
+    }
+
+    public ImageData generateOrFetchImage(ContentSource source, String postText, String imageModel) {
         String topicTitle = (source != null && source.title() != null && !source.title().isBlank())
                 ? source.title()
                 : "Technology and Software Engineering";
 
-        // 1. Intentar generar ilustración con IA Replicate (FLUX Schnell)
-        ImageData replicateData = generateAiImageWithReplicate(topicTitle);
-        if (replicateData != null && replicateData.bytes() != null && replicateData.bytes().length > 1000) {
-            return replicateData;
+        // 1. Intentar generar una imagen editorial con el modelo NanoGPT elegido.
+        ImageData nanoGptData = generateAiImageWithNanoGpt(topicTitle, postText, imageModel);
+        if (nanoGptData != null && nanoGptData.bytes() != null && nanoGptData.bytes().length > 1000) {
+            return nanoGptData;
         }
 
         // 2. Buscar fotografía temática relevante en Pexels API
@@ -253,31 +288,21 @@ public class ImageGeneratorService {
 
     public byte[] fetchBytesFromUrl(String imageUrl) {
         if (imageUrl == null || imageUrl.isBlank()) return createFallbackPngBytes();
-
-        // Soporte para imágenes en formato base64 / Data URL
-        if (imageUrl.startsWith("data:image/") || imageUrl.startsWith("data:application/octet-stream;base64,") || imageUrl.contains(";base64,")) {
-            try {
-                int commaIndex = imageUrl.indexOf(",");
-                if (commaIndex != -1) {
-                    String base64Data = imageUrl.substring(commaIndex + 1).replaceAll("\\s+", "");
-                    return java.util.Base64.getMimeDecoder().decode(base64Data);
-                }
-            } catch (Exception e) {
-                log.warn("Error decodificando imagen base64: {}. Usando fallback.", e.getMessage());
-                return createFallbackPngBytes();
-            }
-        }
+        var safeImages = new com.deyvid.backend.service.SafeImageService();
+        safeImages.validate(imageUrl);
+        if (imageUrl.startsWith("data:")) return safeImages.decode(imageUrl);
 
         try {
             byte[] downloaded = genericWebClient.get()
                     .uri(imageUrl)
                     .retrieve()
                     .bodyToMono(byte[].class)
+                    .timeout(java.time.Duration.ofSeconds(15))
                     .block();
-            return (downloaded != null && downloaded.length > 100) ? downloaded : createFallbackPngBytes();
+              safeImages.validateBytes(downloaded);
+              return downloaded;
         } catch (Exception e) {
-            log.warn("Error descargando imagen desde URL {}: {}. Usando banner local.", imageUrl, e.getMessage());
-            return generateModernBannerBytes("Post Técnico", 1);
+              throw new IllegalArgumentException("No se pudo cargar la imagen aprobada. El post permanece en cola; revisa su archivo antes de reintentar.");
         }
     }
 
@@ -368,6 +393,7 @@ public class ImageGeneratorService {
 
     private byte[] downloadImageBytes(String imageUrl) {
         try {
+            new com.deyvid.backend.service.SafeImageService().validate(imageUrl);
             return genericWebClient.get()
                     .uri(imageUrl)
                     .retrieve()

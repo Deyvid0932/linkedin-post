@@ -86,7 +86,7 @@ public class PublicationController {
         @RequestParam(defaultValue = "10") int size) {
             User user = authHelper.getCurrentUser(auth);
             Page<PublicationLog> logs = publicationLogService.getLogsByTenant(
-                    user.getTenant().getId(), status, sourceMode, startDate, endDate, search, PageRequest.of(page, size));
+                    user.getTenant().getId(), status, sourceMode, startDate, endDate, search, PageRequest.of(Math.max(0, page), Math.max(1, Math.min(size, 100))));
 
             Page<PublicationLogResponse> response = logs.map(this::mapToResponse);
             return ResponseEntity.ok(response);
@@ -643,26 +643,31 @@ public class PublicationController {
         if (req.puntajeUsuario() != null && req.puntajeUsuario() == 1) {
             LinkedInCredential targetAccount = null;
             if (req.targetCredentialId() != null) {
-                targetAccount = linkedInCredentialRepository.findById(req.targetCredentialId()).orElse(null);
+                targetAccount = linkedInCredentialRepository.findById(req.targetCredentialId())
+                        .filter(a -> a.getTenant().getId().equals(user.getTenant().getId()) && Boolean.TRUE.equals(a.getIsEnabled()))
+                        .orElseThrow(() -> new IllegalArgumentException("Cuenta de destino no disponible"));
             }
             if (targetAccount == null) {
                 targetAccount = linkedInCredentialRepository.findByTenantId(user.getTenant().getId()).orElse(null);
             }
 
+            if (targetAccount == null || !Boolean.TRUE.equals(targetAccount.getIsEnabled())) throw new IllegalArgumentException("Conecta y habilita una cuenta de LinkedIn antes de aprobar");
+            new com.deyvid.backend.service.SafeImageService().validate(req.imageUrl());
             String authorUrn = targetAccount != null ? targetAccount.getEffectiveAuthorUrn() : null;
 
             com.deyvid.backend.entity.DraftPreview draft = com.deyvid.backend.entity.DraftPreview.builder()
                     .tenant(user.getTenant())
                     .sourceMode(parsedMode)
+                    .isQueued(true)
                     .generatedText(req.textoGenerado())
                     .imageUrl(req.imageUrl())
                     .authorUrn(authorUrn)
-                    .targetCredentialId(req.targetCredentialId())
+                    .targetCredentialId(targetAccount.getId())
                     .sourceReference(req.tema() != null ? req.tema() : "Post Aprobado en Estudio")
                     .build();
 
             draftPreviewRepository.save(draft);
-            long queuedCount = draftPreviewRepository.countByTenantId(user.getTenant().getId());
+            long queuedCount = draftPreviewRepository.countByTenantIdAndIsQueuedTrue(user.getTenant().getId());
 
             // Marcar el tema en el Banco de Ideas como investigado y registrar su fecha de uso (used_at)
             if (req.tema() != null && !req.tema().isBlank()) {
@@ -707,14 +712,14 @@ public class PublicationController {
     @GetMapping("/queue-count")
     public ResponseEntity<Map<String, Object>> getQueueCount(Authentication auth) {
         User user = authHelper.getCurrentUser(auth);
-        long count = draftPreviewRepository.countByTenantId(user.getTenant().getId());
+        long count = draftPreviewRepository.countByTenantIdAndIsQueuedTrue(user.getTenant().getId());
         return ResponseEntity.ok(Map.of("queueCount", count));
     }
 
     @GetMapping("/queue")
     public ResponseEntity<List<PublicationLogResponse>> getQueuedPosts(Authentication auth) {
         User user = authHelper.getCurrentUser(auth);
-        List<com.deyvid.backend.entity.DraftPreview> drafts = draftPreviewRepository.findAllByTenantIdOrderByCreatedAtAsc(user.getTenant().getId());
+        List<com.deyvid.backend.entity.DraftPreview> drafts = draftPreviewRepository.findAllByTenantIdAndIsQueuedTrueOrderByCreatedAtAsc(user.getTenant().getId());
         List<PublicationLogResponse> response = drafts.stream().map(d -> new PublicationLogResponse(
                 d.getId(),
                 d.getSourceMode() != null ? d.getSourceMode() : SourceMode.PROJECT,
@@ -738,7 +743,7 @@ public class PublicationController {
     @DeleteMapping("/queue/{id}")
     public ResponseEntity<Void> deleteQueuedPost(Authentication auth, @PathVariable UUID id) {
         User user = authHelper.getCurrentUser(auth);
-        var draft = draftPreviewRepository.findById(id)
+        var draft = draftPreviewRepository.findByIdAndTenantId(id, user.getTenant().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Post en cola no encontrado"));
         if (!draft.getTenant().getId().equals(user.getTenant().getId())) {
             throw new IllegalArgumentException("Permisos insuficientes");
@@ -748,359 +753,63 @@ public class PublicationController {
         return ResponseEntity.noContent().build();
     }
 
+    private final com.deyvid.backend.service.ApprovedPublicationService approvedPublicationService;
+
     @PostMapping("/queue/{id}/publish-now")
     public ResponseEntity<Map<String, Object>> publishQueuedPostNow(Authentication auth, @PathVariable UUID id) {
-        User user = authHelper.getCurrentUser(auth);
-        var draft = draftPreviewRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Post en cola no encontrado"));
-        if (!draft.getTenant().getId().equals(user.getTenant().getId())) {
-            throw new IllegalArgumentException("Permisos insuficientes");
-        }
-
-        List<LinkedInCredential> accounts = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(user.getTenant().getId());
-        if (accounts.isEmpty()) {
-            linkedInCredentialRepository.findByTenantId(user.getTenant().getId()).ifPresent(accounts::add);
-        }
-        if (accounts.isEmpty()) {
-            throw new IllegalArgumentException("No hay ninguna cuenta de LinkedIn conectada o habilitada para publicar");
-        }
-
-        LinkedInCredential targetAccount = accounts.stream()
-                .filter(a -> draft.getTargetCredentialId() != null && draft.getTargetCredentialId().equals(a.getId()))
-                .findFirst()
-                .orElseGet(() -> accounts.stream()
-                        .filter(a -> Boolean.TRUE.equals(a.getIsPrimary()))
-                        .findFirst()
-                        .orElse(accounts.get(0)));
-
-        byte[] imageBytes = null;
-        if (draft.getImageUrl() != null && !draft.getImageUrl().isBlank()) {
-            try {
-                imageBytes = imageGeneratorService.fetchBytesFromUrl(draft.getImageUrl());
-            } catch (Exception e) {
-                log.warn("No se pudieron descargar los bytes de la imagen del borrador: {}", e.getMessage());
-            }
-        }
-
-        long startTime = System.currentTimeMillis();
-        try {
-            String textToPublish = draft.getGeneratedText();
-            if (textToPublish == null || textToPublish.isBlank()) {
-                throw new IllegalArgumentException("El borrador no contiene texto para publicar");
-            }
-
-            String linkedinUrn = linkedInPublisherService.publishSingleAccount(
-                    user.getTenant(), targetAccount, textToPublish, imageBytes);
-
-            long duration = System.currentTimeMillis() - startTime;
-
-            publicationLogService.createLog(
-                    user.getTenant(),
-                    draft.getSourceMode() != null ? draft.getSourceMode() : SourceMode.PROJECT,
-                    PublicationStatus.SUCCESS,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    textToPublish,
-                    draft.getImageUrl(),
-                    linkedinUrn,
-                    draft.getSourceReference() != null ? draft.getSourceReference() : "Publicación Directa desde Cola",
-                    null,
-                    duration,
-                    "deepseek-chat",
-                    500
-            );
-
-            draftPreviewRepository.delete(draft);
-
-            auditLogService.recordAction(user.getTenant(), user.getEmail(), "PUBLISH_QUEUED_NOW",
-                    "Post de cola publicado inmediatamente en " + targetAccount.getDisplayName() + " (URN: " + linkedinUrn + ")");
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "¡Post publicado exitosamente en LinkedIn!",
-                    "linkedinUrn", linkedinUrn
-            ));
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.error("Error al publicar post desde cola: {}", e.getMessage());
-
-            publicationLogService.createLog(
-                    user.getTenant(),
-                    draft.getSourceMode() != null ? draft.getSourceMode() : SourceMode.PROJECT,
-                    PublicationStatus.FAILED,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    draft.getGeneratedText(),
-                    draft.getImageUrl(),
-                    null,
-                    draft.getSourceReference() != null ? draft.getSourceReference() : "Publicación Directa desde Cola",
-                    "Fallo al publicar en LinkedIn: " + e.getMessage(),
-                    duration,
-                    "deepseek-chat",
-                    0
-            );
-
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "No se pudo publicar en LinkedIn: " + e.getMessage()
-            ));
-        }
+        var result = approvedPublicationService.publish(authHelper.getCurrentTenantId(auth), id);
+        return ResponseEntity.ok(Map.of("success", "PUBLISHED".equals(result.outcome()), "message", result.message(), "outcome", result.outcome()));
     }
 
     @PostMapping("/{id}/retry")
     public ResponseEntity<Map<String, Object>> retryPublication(Authentication auth, @PathVariable UUID id) {
         User user = authHelper.getCurrentUser(auth);
-        PublicationLog plog = publicationLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Registro de publicación no encontrado con ID: " + id));
-
-        if (!plog.getTenant().getId().equals(user.getTenant().getId())) {
-            throw new IllegalArgumentException("Permisos insuficientes sobre este registro");
-        }
-
-        LinkedInCredential targetAccount = null;
-        if (plog.getAuthorUrn() != null && !plog.getAuthorUrn().isBlank()) {
-            targetAccount = linkedInCredentialRepository.findByTenantIdAndAuthorUrn(user.getTenant().getId(), plog.getAuthorUrn()).orElse(null);
-        }
-        if (targetAccount == null) {
-            targetAccount = linkedInCredentialRepository.findByTenantId(user.getTenant().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("No hay cuentas de LinkedIn activas para reintentar"));
-        }
-
-        try {
-            String textToPublish = plog.getGeneratedText();
-            if (textToPublish == null || textToPublish.isBlank()) {
-                throw new IllegalArgumentException("El registro no contiene texto para publicar");
-            }
-
-            byte[] imageBytes = (plog.getImageUrl() != null && !plog.getImageUrl().isBlank())
-                    ? imageGeneratorService.fetchBytesFromUrl(plog.getImageUrl())
-                    : null;
-
-            String linkedinUrn = linkedInPublisherService.publishSingleAccount(
-                    user.getTenant(), targetAccount, textToPublish, imageBytes);
-
-            plog.setStatus(PublicationStatus.SUCCESS);
-            plog.setLinkedinPostUrn(linkedinUrn);
-            plog.setErrorMessage(null);
-            plog.setPublishedAt(java.time.LocalDateTime.now());
-            plog.setAccountType(targetAccount.getAccountType());
-            plog.setAuthorUrn(targetAccount.getEffectiveAuthorUrn());
-            PublicationLog updated = publicationLogRepository.save(plog);
-
-            auditLogService.recordAction(user.getTenant(), user.getEmail(), "RETRY_PUBLICATION_SUCCESS",
-                    "Post reintentado y publicado exitosamente en " + targetAccount.getDisplayName() + " (URN: " + linkedinUrn + ")");
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "¡Post reintentado y publicado exitosamente en LinkedIn!",
-                    "linkedinUrn", linkedinUrn,
-                    "log", mapToResponse(updated)
-            ));
-        } catch (Exception e) {
-            log.error("Error al reintentar publicación ID {}: {}", id, e.getMessage());
-            plog.setErrorMessage("Fallo en reintento: " + e.getMessage());
-            publicationLogRepository.save(plog);
-
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "No se pudo completar el reintento: " + e.getMessage()
-            ));
-        }
+        var original = ownedLog(user, id);
+        if (original.getStatus() != PublicationStatus.FAILED) throw new IllegalArgumentException("Solo puedes reintentar publicaciones fallidas");
+        return queueAndPublish(user, original.getGeneratedText(), original.getImageUrl(), original.getAuthorUrn());
     }
 
     @PostMapping("/{id}/republish")
-    public ResponseEntity<Map<String, Object>> republishPublication(Authentication auth, @PathVariable UUID id) {
+    public ResponseEntity<Map<String, Object>> republishPost(Authentication auth, @PathVariable UUID id) {
         User user = authHelper.getCurrentUser(auth);
-        PublicationLog plog = publicationLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Registro de publicación no encontrado con ID: " + id));
-
-        if (!plog.getTenant().getId().equals(user.getTenant().getId())) {
-            throw new IllegalArgumentException("Permisos insuficientes sobre este registro");
-        }
-
-        LinkedInCredential targetAccount = null;
-        if (plog.getAuthorUrn() != null && !plog.getAuthorUrn().isBlank()) {
-            targetAccount = linkedInCredentialRepository.findByTenantIdAndAuthorUrn(user.getTenant().getId(), plog.getAuthorUrn()).orElse(null);
-        }
-        if (targetAccount == null) {
-            targetAccount = linkedInCredentialRepository.findByTenantId(user.getTenant().getId())
-                    .orElseThrow(() -> new IllegalArgumentException("No hay cuentas de LinkedIn activas para republicar"));
-        }
-
-        long startTime = System.currentTimeMillis();
-        try {
-            String textToPublish = plog.getGeneratedText();
-            if (textToPublish == null || textToPublish.isBlank()) {
-                throw new IllegalArgumentException("El registro no contiene texto para republicar");
-            }
-
-            byte[] imageBytes = (plog.getImageUrl() != null && !plog.getImageUrl().isBlank())
-                    ? imageGeneratorService.fetchBytesFromUrl(plog.getImageUrl())
-                    : null;
-
-            String linkedinUrn = linkedInPublisherService.publishSingleAccount(
-                    user.getTenant(), targetAccount, textToPublish, imageBytes);
-
-            long duration = System.currentTimeMillis() - startTime;
-
-            publicationLogService.createLog(
-                    user.getTenant(),
-                    plog.getSourceMode() != null ? plog.getSourceMode() : SourceMode.PROJECT,
-                    PublicationStatus.SUCCESS,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    textToPublish,
-                    plog.getImageUrl(),
-                    linkedinUrn,
-                    plog.getSourceReference() != null ? plog.getSourceReference() : "Republicación Manual",
-                    null,
-                    duration,
-                    "deepseek-chat",
-                    500
-            );
-
-            auditLogService.recordAction(user.getTenant(), user.getEmail(), "REPUBLISH_SUCCESS",
-                    "Post republicado exitosamente en " + targetAccount.getDisplayName() + " (URN: " + linkedinUrn + ")");
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "¡Post republicado exitosamente en LinkedIn!",
-                    "linkedinUrn", linkedinUrn
-            ));
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.error("Error al republicar post ID {}: {}", id, e.getMessage());
-
-            publicationLogService.createLog(
-                    user.getTenant(),
-                    plog.getSourceMode() != null ? plog.getSourceMode() : SourceMode.PROJECT,
-                    PublicationStatus.FAILED,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    plog.getGeneratedText(),
-                    plog.getImageUrl(),
-                    null,
-                    plog.getSourceReference() != null ? plog.getSourceReference() : "Republicación Manual",
-                    "Fallo al republicar: " + e.getMessage(),
-                    duration,
-                    "deepseek-chat",
-                    0
-            );
-
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "No se pudo republicar en LinkedIn: " + e.getMessage()
-            ));
-        }
+        var original = ownedLog(user, id);
+        return queueAndPublish(user, original.getGeneratedText(), original.getImageUrl(), original.getAuthorUrn());
     }
 
-    public record PublishPreviewRequest(
-            String text,
-            String imageUrl
-    ) {}
+    private PublicationLog ownedLog(User user, UUID id) {
+        return publicationLogRepository.findById(id).filter(l -> l.getTenant().getId().equals(user.getTenant().getId()))
+                .orElseThrow(() -> new IllegalArgumentException("Publicación no disponible"));
+    }
+
+    public record PublishPreviewRequest(String text, String imageUrl) {}
 
     @PostMapping("/preview/publish-now")
-    public ResponseEntity<Map<String, Object>> publishPreviewNow(Authentication auth, @RequestBody(required = false) PublishPreviewRequest request) {
+    public ResponseEntity<Map<String, Object>> publishPreviewNow(Authentication auth, @RequestBody(required = false) PublishPreviewRequest req) {
         User user = authHelper.getCurrentUser(auth);
-        Tenant tenant = user.getTenant();
+        var saved = draftPreviewService.getSaved(user.getTenant().getId());
+        return queueAndPublish(user, req != null && req.text() != null ? req.text() : saved.generatedText(),
+                req != null ? req.imageUrl() : saved.imageUrl(), null);
+    }
 
-        String textToPublish = (request != null && request.text() != null && !request.text().isBlank())
-                ? request.text()
-                : null;
-        String imageUrl = (request != null && request.imageUrl() != null && !request.imageUrl().isBlank())
-                ? request.imageUrl()
-                : null;
-
-        if (textToPublish == null) {
-            GeneratedPreviewResponse saved = draftPreviewService.getSaved(tenant.getId());
-            textToPublish = saved.generatedText();
-            if (imageUrl == null) imageUrl = saved.imageUrl();
-        }
-
-        if (textToPublish == null || textToPublish.isBlank()) {
-            throw new IllegalArgumentException("No hay contenido de previsualización para publicar");
-        }
-
-        List<LinkedInCredential> accounts = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(tenant.getId());
-        if (accounts.isEmpty()) {
-            linkedInCredentialRepository.findByTenantId(tenant.getId()).ifPresent(accounts::add);
-        }
-        if (accounts.isEmpty()) {
-            throw new IllegalArgumentException("No hay ninguna cuenta de LinkedIn conectada o habilitada para publicar");
-        }
-        LinkedInCredential targetAccount = accounts.stream()
-                .filter(a -> Boolean.TRUE.equals(a.getIsPrimary()))
-                .findFirst()
-                .orElse(accounts.get(0));
-
-        byte[] imageBytes = (imageUrl != null && !imageUrl.isBlank())
-                ? imageGeneratorService.fetchBytesFromUrl(imageUrl)
-                : null;
-
-        long startTime = System.currentTimeMillis();
-        try {
-            String linkedinUrn = linkedInPublisherService.publishSingleAccount(
-                    tenant, targetAccount, textToPublish, imageBytes);
-            long duration = Math.max(1L, System.currentTimeMillis() - startTime);
-
-            PublicationLog plog = publicationLogService.createLog(
-                    tenant,
-                    SourceMode.PROJECT,
-                    PublicationStatus.SUCCESS,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    textToPublish,
-                    imageUrl,
-                    linkedinUrn,
-                    "Publicación Directa desde Previsualización",
-                    null,
-                    duration,
-                    "deepseek-chat",
-                    500
-            );
-
-            auditLogService.recordAction(tenant, user.getEmail(), "PUBLISH_PREVIEW_SUCCESS",
-                    "Post de previsualización publicado exitosamente en " + targetAccount.getDisplayName() + " (URN: " + linkedinUrn + ")");
-
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "¡Post de previsualización publicado exitosamente en LinkedIn!",
-                    "linkedinUrn", linkedinUrn,
-                    "log", mapToResponse(plog)
-            ));
-        } catch (Exception e) {
-            long duration = Math.max(1L, System.currentTimeMillis() - startTime);
-            log.error("Error al publicar previsualización para tenant {}: {}", tenant.getId(), e.getMessage());
-
-            publicationLogService.createLog(
-                    tenant,
-                    SourceMode.PROJECT,
-                    PublicationStatus.FAILED,
-                    targetAccount.getAccountType(),
-                    targetAccount.getEffectiveAuthorUrn(),
-                    textToPublish,
-                    imageUrl,
-                    null,
-                    "Publicación Directa desde Previsualización",
-                    "Fallo al publicar en LinkedIn: " + e.getMessage(),
-                    duration,
-                    "deepseek-chat",
-                    0
-            );
-
-            return ResponseEntity.badRequest().body(Map.of(
-                    "success", false,
-                    "message", "No se pudo publicar en LinkedIn: " + e.getMessage()
-            ));
-        }
+    private ResponseEntity<Map<String, Object>> queueAndPublish(User user, String text, String image, String authorUrn) {
+        if (text == null || text.isBlank() || text.length() > 3000) throw new IllegalArgumentException("El texto debe tener entre 1 y 3000 caracteres");
+        new com.deyvid.backend.service.SafeImageService().validate(image);
+        var targets = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(user.getTenant().getId());
+        var target = targets.stream().filter(a -> authorUrn != null ? authorUrn.equals(a.getEffectiveAuthorUrn()) : Boolean.TRUE.equals(a.getIsPrimary()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("La cuenta de destino original o principal no está habilitada"));
+        var draft = draftPreviewRepository.save(com.deyvid.backend.entity.DraftPreview.builder().tenant(user.getTenant())
+                .sourceMode(SourceMode.BACKUP).generatedText(text).imageUrl(image).isQueued(true).targetCredentialId(target.getId())
+                .authorUrn(target.getEffectiveAuthorUrn()).sourceReference("Aprobación manual para publicación inmediata").build());
+        var result = approvedPublicationService.publish(user.getTenant().getId(), draft.getId());
+        return ResponseEntity.ok(Map.of("success", "PUBLISHED".equals(result.outcome()), "message", result.message(), "outcome", result.outcome()));
     }
 
     @PostMapping("/trigger")
     public ResponseEntity<Map<String, Object>> triggerPipeline(Authentication auth) {
         User user = authHelper.getCurrentUser(auth);
-        contentPipelineService.executePipelineForTenant(user.getTenant().getId());
+        var result = contentPipelineService.executePipelineForTenant(user.getTenant().getId());
         auditLogService.recordAction(user.getTenant(), user.getEmail(), "MANUAL_TRIGGER", "Pipeline de publicación disparado manualmente");
-        return ResponseEntity.ok(Map.of("message", "Pipeline de publicación ejecutado exitosamente"));
+        return ResponseEntity.ok(Map.of("message", result.message(), "outcome", result.outcome()));
     }
 
     @GetMapping("/preview")

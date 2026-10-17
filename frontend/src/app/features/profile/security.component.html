@@ -1,0 +1,86 @@
+<main class="ui-page ui-page--form">
+  <header>
+    <p class="ui-meta">CUENTA</p>
+    <h1 class="ui-title">Seguridad y acceso</h1>
+    <p class="ui-muted mt-2">
+      Administra el acceso a AutoPost y revisa tus conexiones de publicación.
+    </p>
+    <nav
+      class="mt-5 flex gap-2 border-b border-slate-200 pb-2 dark:border-neutral-800"
+      aria-label="Secciones de cuenta"
+    >
+      <a
+        routerLink="/profile"
+        class="rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+        >Perfil</a
+      >
+      <a
+        routerLink="/profile/security"
+        aria-current="page"
+        class="rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+        >Seguridad y acceso</a
+      >
+    </nav>
+  </header>
+
+  <section class="ui-card">
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h2 class="ui-section-title">Sesión actual</h2>
+        <p class="ui-muted mt-1">Esta sesión está autenticada en AutoPost.</p>
+      </div>
+      <span class="ui-status ui-status--success">Activa</span>
+    </div>
+    <div class="mt-5 rounded-lg border border-slate-200 p-4 dark:border-neutral-800">
+      <strong class="block text-sm">{{ user()?.email }}</strong
+      ><span class="ui-meta">Inicio de sesión con correo y contraseña</span>
+      <p class="ui-meta mt-3">
+        La aplicación no consulta una lista de dispositivos ni ofrece revocación remota de otras
+        sesiones.
+      </p>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <a routerLink="/profile" fragment="password" class="ui-button">Cambiar contraseña</a
+      ><button type="button" class="ui-button" (click)="logout()">Cerrar esta sesión</button>
+    </div>
+  </section>
+
+  <section class="ui-card">
+    <h2 class="ui-section-title">Passkeys</h2>
+    <p class="ui-muted mt-1">
+      Inicia sesión con una llave de acceso del dispositivo, sin contraseña.
+    </p>
+    <div class="mt-4 rounded-lg border border-dashed border-slate-300 p-4 dark:border-neutral-700">
+      <strong class="block text-sm">No disponible todavía</strong>
+      <p class="ui-meta mt-1">AutoPost aún no permite registrar passkeys.</p>
+    </div>
+  </section>
+
+  <section class="ui-card">
+    <h2 class="ui-section-title">Conexiones de publicación</h2>
+    <p class="ui-muted mt-1">Gestiona los servicios que AutoPost usa para preparar contenido.</p>
+    <div class="mt-4 divide-y divide-slate-100 dark:divide-neutral-800">
+      <a
+        routerLink="/settings/linkedin"
+        class="flex min-h-16 items-center justify-between gap-4 py-3"
+        ><span
+          ><strong class="block text-sm">LinkedIn</strong
+          ><span class="ui-meta">Cuentas y permisos de publicación</span></span
+        ><span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >Ver conexión →</span
+        ></a
+      >
+      <a routerLink="/settings/github" class="flex min-h-16 items-center justify-between gap-4 py-3"
+        ><span
+          ><strong class="block text-sm">GitHub</strong
+          ><span class="ui-meta">Token y repositorios supervisados</span></span
+        ><span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >Ver conexión →</span
+        ></a
+      >
+    </div>
+    <p class="ui-meta mt-3">
+      Estas conexiones no son una lista de aplicaciones OAuth autorizadas para entrar en tu cuenta.
+    </p>
+  </section>
+</main>

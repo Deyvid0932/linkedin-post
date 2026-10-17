@@ -11,15 +11,12 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     authServiceSpy = {
-      login: vi.fn()
+      login: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AuthService, useValue: authServiceSpy }
-      ]
+      providers: [provideRouter([]), { provide: AuthService, useValue: authServiceSpy }],
     }).compileComponents();
 
     router = TestBed.inject(Router);
@@ -50,14 +47,14 @@ describe('LoginComponent', () => {
 
     component.form.setValue({
       email: 'user@example.com',
-      password: 'Password123!'
+      password: 'Password123!',
     });
 
     component.onSubmit();
 
     expect(authServiceSpy.login).toHaveBeenCalledWith({
       email: 'user@example.com',
-      password: 'Password123!'
+      password: 'Password123!',
     });
     expect(component.loading()).toBe(false);
     expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
@@ -65,12 +62,12 @@ describe('LoginComponent', () => {
 
   it('should set errorMessage when login fails', () => {
     authServiceSpy.login.mockReturnValue(
-      throwError(() => ({ error: { message: 'Invalid credentials' } }))
+      throwError(() => ({ error: { message: 'Invalid credentials' } })),
     );
 
     component.form.setValue({
       email: 'user@example.com',
-      password: 'WrongPassword'
+      password: 'WrongPassword',
     });
 
     component.onSubmit();

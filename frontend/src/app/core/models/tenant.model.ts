@@ -6,12 +6,17 @@ export interface TenantResponse {
   isEmergencyPaused?: boolean;
   isDryRun?: boolean;
   createdAt: string;
+  appApprovalMode?: 'REQUIRE_APPROVAL' | 'AUTOMATIC';
+  appTargetCharacters?: number;
+  appImageModel?: string;
 }
-
 
 export interface TenantProfileRequest {
   systemPrompt?: string;
   timezone?: string;
+  appApprovalMode?: 'REQUIRE_APPROVAL' | 'AUTOMATIC';
+  appTargetCharacters?: number;
+  appImageModel?: string;
 }
 
 export interface DashboardStats {

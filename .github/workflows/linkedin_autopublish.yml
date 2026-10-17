@@ -1,46 +1,25 @@
-name: LinkedIn Autonomous Publisher Agent
-
+name: Publish approved LinkedIn queue
 on:
   schedule:
-    - cron: '0 13 * * 1-5'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
-    inputs:
-      custom_prompt:
-        description: 'Prompt de nicho o tema personalizado (dejar vacio para auto-detectar)'
-        required: false
-        type: string
-        default: ''
-      force_text_only:
-        description: 'Forzar publicacion de solo texto (sin imagen)'
-        required: false
-        type: boolean
-        default: false
-
+permissions:
+  contents: read
+concurrency:
+  group: linkedin-approved-publisher
+  cancel-in-progress: false
 jobs:
-  run-autonomous-agent:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
+  publish:
+    if: vars.PUBLICATION_MODE == 'backend'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: production
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          python-version: '3.11'
-
-      - name: Instalar dependencias
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
-      - name: Ejecutar Agente Autónomo
+          persist-credentials: false
+      - name: Ask the backend to process due schedules
         env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          NANOGPT_KEY: ${{ secrets.NANOGPT_KEY }}
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          LINKEDIN_PERSON_URN: ${{ secrets.LINKEDIN_PERSON_URN }}
-          USER_NICHE_PROMPT: ${{ inputs.custom_prompt != '' && inputs.custom_prompt || secrets.USER_NICHE_PROMPT }}
-          FORCE_TEXT_ONLY: ${{ inputs.force_text_only }}
-        run: python scripts/auto_linkedin_agent.py
+          AUTOMATION_API_URL: ${{ vars.AUTOMATION_API_URL }}
+          AUTOMATION_TOKEN: ${{ secrets.AUTOMATION_TOKEN }}
+        run: python3 scripts/run_due_publications.py

@@ -43,13 +43,14 @@ public class QuartzConfig {
     }
 
     @Bean
-    public SchedulerFactoryBean schedulerFactoryBean(DataSource dataSource, JobFactory jobFactory) {
+    public SchedulerFactoryBean schedulerFactoryBean(DataSource dataSource, JobFactory jobFactory,
+            @org.springframework.beans.factory.annotation.Value("${app.scheduler.mode:quartz}") String mode) {
         SchedulerFactoryBean factory = new SchedulerFactoryBean();
         factory.setDataSource(dataSource);
         factory.setJobFactory(jobFactory);
         factory.setOverwriteExistingJobs(true);
         factory.setWaitForJobsToCompleteOnShutdown(true);
-        factory.setAutoStartup(true);
+        factory.setAutoStartup("quartz".equals(mode));
 
         // Configuración explícita del delegado para PostgreSQL
         Properties quartzProperties = new Properties();

@@ -15,6 +15,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
+    public static class Principal extends org.springframework.security.core.userdetails.User {
+        private final long tokenVersion;
+        public Principal(User user, List<SimpleGrantedAuthority> authorities) {
+            super(user.getEmail(), user.getPasswordHash() != null ? user.getPasswordHash() : "", user.getIsActive(), true, true, true, authorities);
+            this.tokenVersion = user.getTokenVersion();
+        }
+        public long getTokenVersion() { return tokenVersion; }
+    }
 
     private final UserRepository userRepository;
 
@@ -33,14 +41,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
                 .toList();
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPasswordHash() != null ? user.getPasswordHash() : "",
-                user.getIsActive(),
-                true,
-                true,
-                true,
-                authorities
-        );
+        return new Principal(user, authorities);
     }
 }

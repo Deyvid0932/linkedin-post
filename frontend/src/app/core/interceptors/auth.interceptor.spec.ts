@@ -3,23 +3,26 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { authInterceptor } from './auth.interceptor';
 import { AuthService } from '../services/auth.service';
+import { Router } from '@angular/router';
 
 describe('authInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
-  let authServiceMock: { getToken: ReturnType<typeof vi.fn> };
+  let authServiceMock: { getToken: ReturnType<typeof vi.fn>; logout: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     authServiceMock = {
-      getToken: vi.fn()
+      getToken: vi.fn(),
+      logout: vi.fn(),
     };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: authServiceMock },
+        { provide: Router, useValue: { navigate: vi.fn() } },
         provideHttpClient(withInterceptors([authInterceptor])),
-        provideHttpClientTesting()
-      ]
+        provideHttpClientTesting(),
+      ],
     });
 
     http = TestBed.inject(HttpClient);
@@ -49,5 +52,30 @@ describe('authInterceptor', () => {
     const req = httpMock.expectOne('/api/v1/publications');
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush([]);
+  });
+
+  it('never leaks the session to an external or protocol-relative URL', () => {
+    authServiceMock.getToken.mockReturnValue('secret-token');
+    for (const url of [
+      'https://other.test/api/v1/publications',
+      '//other.test/api/v1/publications',
+    ]) {
+      http.get(url).subscribe();
+      const req = httpMock.expectOne(url);
+      expect(req.request.headers.has('Authorization')).toBe(false);
+      req.flush({});
+    }
+  });
+  it('preserves the session when access is forbidden', () => {
+    http.get('/api/v1/publications').subscribe({ error: () => {} });
+    httpMock.expectOne('/api/v1/publications').flush({}, { status: 403, statusText: 'Forbidden' });
+    expect(authServiceMock.logout).not.toHaveBeenCalled();
+  });
+  it('expires session only on an authentication failure from our API', () => {
+    http.get('/api/v1/publications').subscribe({ error: () => {} });
+    httpMock
+      .expectOne('/api/v1/publications')
+      .flush({}, { status: 401, statusText: 'Unauthorized' });
+    expect(authServiceMock.logout).toHaveBeenCalled();
   });
 });

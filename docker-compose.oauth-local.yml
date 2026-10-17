@@ -1,0 +1,17 @@
+services:
+  linkedin-oauth-https:
+    image: caddy:2.10.2-alpine
+    container_name: autopost-linkedin-oauth-https
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8443:8443"
+    volumes:
+      - ./docker/oauth-local/Caddyfile:/etc/caddy/Caddyfile:ro
+      - oauth_caddy_data:/data
+      - oauth_caddy_config:/config
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  oauth_caddy_data:
+  oauth_caddy_config:

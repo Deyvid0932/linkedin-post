@@ -1,0 +1,112 @@
+<a
+  href="#main-content"
+  class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-white focus:text-indigo-700 focus:p-3"
+  >Ir al contenido</a
+>
+<div class="app-frame relative flex min-h-dvh font-sans antialiased">
+  <!-- DESKTOP SIDEBAR (lg:flex) & MOBILE OVERLAY DRAWER -->
+  <div
+    [class.hidden]="!mobileMenuOpen()"
+    [attr.role]="mobileMenuOpen() ? 'dialog' : null"
+    [attr.aria-modal]="mobileMenuOpen() ? 'true' : null"
+    [attr.aria-label]="mobileMenuOpen() ? 'Navegación principal' : null"
+    class="lg:block fixed lg:sticky top-0 z-50 lg:z-40 h-dvh"
+  >
+    <!-- BACKDROP PARA MÃ“VIL -->
+    @if (mobileMenuOpen()) {
+      <button
+        type="button"
+        aria-label="Cerrar menu"
+        (click)="closeMobileMenu()"
+        class="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 animate-fadeIn"
+      ></button>
+    }
+
+    <app-sidebar (closeMobile)="closeMobileMenu()" class="relative z-50"></app-sidebar>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL Y HEADER -->
+  <div class="app-workspace flex min-w-0 flex-1 flex-col">
+    <app-header></app-header>
+
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="app-main min-h-0 flex-1 overflow-y-auto px-4 pb-24 pt-7 sm:px-7 sm:pb-24 lg:px-9 lg:py-8"
+    >
+      <router-outlet></router-outlet>
+    </main>
+    <nav
+      aria-label="Navegación móvil"
+      class="app-mobile-nav fixed inset-x-0 bottom-0 z-30 grid h-16 grid-cols-4 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+    >
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="text-indigo-700 dark:text-indigo-300"
+        [routerLinkActiveOptions]="{ exact: true }"
+        aria-label="Panel general"
+        class="flex flex-col items-center justify-center gap-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        ><svg
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z" /></svg
+        ><span class="text-[11px]">Panel</span></a
+      >
+      <a
+        routerLink="/compose"
+        routerLinkActive="text-indigo-700 dark:text-indigo-300"
+        aria-label="Crear publicación"
+        class="flex flex-col items-center justify-center gap-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        ><svg
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path d="m16 4 4 4M4 20l4-.8L19 8a2.1 2.1 0 0 0-3-3L5 16z" /></svg
+        ><span class="text-[11px]">Crear</span></a
+      >
+      <a
+        routerLink="/topics"
+        routerLinkActive="text-indigo-700 dark:text-indigo-300"
+        aria-label="Banco de ideas"
+        class="flex flex-col items-center justify-center gap-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        ><svg
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          aria-hidden="true"
+        >
+          <path
+            d="M9 18h6M10 22h4M8.5 14.5a7 7 0 1 1 7 0c-.8.6-1.2 1.2-1.3 2.5h-4.4c-.1-1.3-.5-1.9-1.3-2.5z"
+          /></svg
+        ><span class="text-[11px]">Ideas</span></a
+      >
+      <button
+        #moreMenu
+        type="button"
+        (click)="toggleMobileMenu()"
+        [attr.aria-expanded]="mobileMenuOpen()"
+        aria-controls="primary-navigation"
+        aria-label="Abrir más opciones"
+        class="flex flex-col items-center justify-center gap-1 text-slate-500 focus-visible:outline-2 focus-visible:outline-indigo-600"
+        [class.mobile-nav-active]="mobileMenuOpen()"
+      >
+        <svg class="size-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="19" cy="12" r="1.8" /></svg
+        ><span class="text-[11px]">Más</span>
+      </button>
+    </nav>
+  </div>
+</div>

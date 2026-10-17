@@ -33,7 +33,7 @@ public class DraftPreviewService {
     @Transactional(readOnly = true)
     public GeneratedPreviewResponse getSaved(UUID tenantId) {
         try {
-            return draftPreviewRepository.findFirstByTenantIdOrderByUpdatedAtDesc(tenantId)
+            return draftPreviewRepository.findFirstByTenantIdAndIsPreviewTrueAndIsQueuedFalseOrderByUpdatedAtDesc(tenantId)
                     .map(this::toResponse)
                     .orElseGet(() -> new GeneratedPreviewResponse(
                             SourceMode.PROJECT,
@@ -61,8 +61,8 @@ public class DraftPreviewService {
         String postText = contentGeneratorService.generatePostContent(tenant, source);
         ImageGeneratorService.ImageData imageData = imageGeneratorService.generateOrFetchImage(source, postText);
 
-        DraftPreview preview = draftPreviewRepository.findFirstByTenantIdOrderByUpdatedAtDesc(tenantId)
-                .orElseGet(() -> DraftPreview.builder().tenant(tenant).sourceMode(SourceMode.PROJECT).build());
+        DraftPreview preview = draftPreviewRepository.findFirstByTenantIdAndIsPreviewTrueAndIsQueuedFalseOrderByUpdatedAtDesc(tenantId)
+                .orElseGet(() -> DraftPreview.builder().tenant(tenant).isPreview(true).sourceMode(SourceMode.PROJECT).build());
 
         preview.setSourceMode(source.mode() != null ? source.mode() : SourceMode.PROJECT);
         preview.setGeneratedText(postText);
@@ -75,13 +75,13 @@ public class DraftPreviewService {
 
     @Transactional
     public GeneratedPreviewResponse updateDraft(UUID tenantId, String text, String imageUrl) {
+        new SafeImageService().validate(imageUrl);
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new PipelineExecutionException("Tenant no encontrado con ID: " + tenantId));
 
-        try {
-            DraftPreview preview = draftPreviewRepository.findFirstByTenantIdOrderByUpdatedAtDesc(tenantId)
+            DraftPreview preview = draftPreviewRepository.findFirstByTenantIdAndIsPreviewTrueAndIsQueuedFalseOrderByUpdatedAtDesc(tenantId)
                     .orElseGet(() -> DraftPreview.builder()
-                            .tenant(tenant)
+                            .tenant(tenant).isPreview(true)
                             .sourceMode(SourceMode.PROJECT)
                             .build());
 
@@ -92,22 +92,13 @@ public class DraftPreviewService {
             if (text != null && !text.isBlank()) {
                 preview.setGeneratedText(text.trim());
             }
-            if (imageUrl != null && !imageUrl.isBlank()) {
+            if (imageUrl != null) {
                 preview.setImageUrl(imageUrl.trim());
             }
 
             DraftPreview saved = draftPreviewRepository.save(preview);
             log.info("Borrador previsualizado actualizado exitosamente para tenant {}", tenantId);
             return toResponse(saved);
-        } catch (Exception e) {
-            log.error("Error al actualizar borrador para tenant {}: {}", tenantId, e.getMessage(), e);
-            return new GeneratedPreviewResponse(
-                    SourceMode.PROJECT,
-                    text != null ? text : "",
-                    imageUrl != null ? imageUrl : "",
-                    ""
-            );
-        }
     }
 
     private GeneratedPreviewResponse toResponse(DraftPreview preview) {

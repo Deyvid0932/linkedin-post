@@ -1,0 +1,260 @@
+<main class="ui-page space-y-10 animate-fadeIn">
+  <header
+    class="flex flex-col gap-6 border-b border-slate-200 pb-7 dark:border-neutral-800 sm:flex-row sm:items-end sm:justify-between"
+  >
+    <div class="max-w-3xl">
+      <p class="mb-3 text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        Guía de AutoPost
+      </p>
+      <h1 class="ui-title">De una idea a una publicación revisada</h1>
+      <p class="mt-3 max-w-2xl text-base text-slate-600 dark:text-neutral-300">
+        AutoPost prepara contenido a partir de tus repositorios o ideas. Tú revisas y apruebas antes
+        de programar.
+      </p>
+    </div>
+    <a
+      routerLink="/studio"
+      class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-indigo-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 active:scale-[.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+    >
+      Abrir el estudio <span aria-hidden="true"></span>
+    </a>
+  </header>
+
+  <section aria-labelledby="flow-title">
+    <div class="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+      <h2 id="flow-title" class="text-xl font-semibold">Cómo funciona el flujo</h2>
+      <span class="text-sm text-slate-500 dark:text-neutral-400"
+        >Cuatro pasos, con revisión antes de publicar</span
+      >
+    </div>
+    <ol
+      class="divide-y divide-slate-200 border-y border-slate-200 dark:divide-neutral-800 dark:border-neutral-800"
+    >
+      <li
+        class="grid gap-3 py-5 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(12rem,.65fr)] sm:items-start sm:gap-6"
+      >
+        <span class="font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >01 / Origen</span
+        >
+        <div>
+          <h3 class="text-lg font-semibold">Primero, tus proyectos</h3>
+          <p class="mt-1 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
+            AutoPost revisa los commits recientes de los repositorios conectados. Si no hay
+            novedades, puede tomar una idea de tu banco.
+          </p>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-neutral-400">
+          GitHub tiene prioridad; el banco mantiene el flujo de temas activo.
+        </p>
+      </li>
+      <li
+        class="grid gap-3 py-5 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(12rem,.65fr)] sm:items-start sm:gap-6"
+      >
+        <span class="font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >02 / Borrador</span
+        >
+        <div>
+          <h3 class="text-lg font-semibold">La IA prepara el texto</h3>
+          <p class="mt-1 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
+            Genera propuestas con el contexto de tu voz y el enfoque que selecciones. Puedes editar
+            el texto antes de seguir.
+          </p>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-neutral-400">
+          La propuesta es editable; no se publica por sí sola.
+        </p>
+      </li>
+      <li
+        class="grid gap-3 py-5 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(12rem,.65fr)] sm:items-start sm:gap-6"
+      >
+        <span class="font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >03 / Revisión</span
+        >
+        <div>
+          <h3 class="text-lg font-semibold">Ajustas y apruebas</h3>
+          <p class="mt-1 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
+            Revisa el texto, adjunta imágenes y elige el perfil o página de LinkedIn que recibirá la
+            publicación.
+          </p>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-neutral-400">
+          Solo los posts que apruebes pasan a la cola.
+        </p>
+      </li>
+      <li
+        class="grid gap-3 py-5 sm:grid-cols-[5rem_minmax(0,1fr)_minmax(12rem,.65fr)] sm:items-start sm:gap-6"
+      >
+        <span class="font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300"
+          >04 / Publicación</span
+        >
+        <div>
+          <h3 class="text-lg font-semibold">La cola se publica según la programación</h3>
+          <p class="mt-1 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
+            Configura la zona horaria y los horarios. Puedes revisar estados y resultados en el
+            historial.
+          </p>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-neutral-400">
+          El backend requiere un servidor activo. La cola enviada a GitHub Actions puede ejecutarse
+          con tu PC apagada.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <section
+    class="grid gap-8 border-b border-slate-200 pb-8 dark:border-neutral-800 md:grid-cols-2"
+    aria-label="Fuentes de contenido"
+  >
+    <article>
+      <p class="mb-2 font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        Prioridad 1
+      </p>
+      <h2 class="ui-section-title">Repositorios de GitHub</h2>
+      <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-neutral-300">
+        Los cambios recientes sirven como punto de partida para contar decisiones técnicas y
+        aprendizajes del trabajo real.
+      </p>
+      <a
+        routerLink="/settings/github"
+        class="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-4 hover:text-indigo-900 dark:text-indigo-300"
+        >Configurar GitHub</a
+      >
+    </article>
+    <article class="md:border-l md:border-slate-200 md:pl-8 dark:md:border-slate-800">
+      <p class="mb-2 font-mono text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+        Prioridad 2
+      </p>
+      <h2 class="ui-section-title">Banco de ideas</h2>
+      <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-neutral-300">
+        Agrega temas que quieras desarrollar. Cuando no haya actividad reciente en GitHub, AutoPost
+        puede usarlos como fuente.
+      </p>
+      <a
+        routerLink="/topics"
+        class="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-4 hover:text-indigo-900 dark:text-indigo-300"
+        >Abrir banco de ideas</a
+      >
+    </article>
+  </section>
+
+  <section class="grid gap-8 lg:grid-cols-[.65fr_1.35fr]" aria-labelledby="post-structure-title">
+    <div>
+      <p class="mb-2 text-sm font-semibold text-indigo-700 dark:text-indigo-300">Redacción</p>
+      <h2 id="post-structure-title" class="text-2xl font-semibold">
+        Una estructura que puedes adaptar
+      </h2>
+      <p class="mt-3 text-sm leading-6 text-slate-600 dark:text-neutral-300">
+        Usa estas partes como guía. No hace falta incluirlas todas en cada publicación.
+      </p>
+    </div>
+    <ol class="grid gap-x-6 sm:grid-cols-2">
+      <li class="border-t border-slate-200 py-4 dark:border-neutral-800">
+        <h3 class="font-semibold">Gancho</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          Una observación concreta que invite a seguir leyendo.
+        </p>
+      </li>
+      <li class="border-t border-slate-200 py-4 dark:border-neutral-800">
+        <h3 class="font-semibold">Contexto</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          El problema, decisión o situación que viviste.
+        </p>
+      </li>
+      <li class="border-t border-slate-200 py-4 dark:border-neutral-800">
+        <h3 class="font-semibold">Solución</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          Qué cambiaste y por qué elegiste ese camino.
+        </p>
+      </li>
+      <li class="border-t border-slate-200 py-4 dark:border-neutral-800">
+        <h3 class="font-semibold">Aprendizaje</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          Una conclusión útil para alguien con un reto similar.
+        </p>
+      </li>
+      <li class="border-t border-slate-200 py-4 dark:border-neutral-800 sm:col-span-2">
+        <h3 class="font-semibold">Conversación</h3>
+        <p class="mt-1 text-sm text-slate-600 dark:text-neutral-300">
+          Una pregunta sincera para abrir el intercambio.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <section aria-labelledby="faq-title">
+    <h2 id="faq-title" class="mb-4 text-xl font-semibold">Preguntas frecuentes</h2>
+    <div
+      class="divide-y divide-slate-200 border-y border-slate-200 dark:divide-neutral-800 dark:border-neutral-800"
+    >
+      <details class="group py-4">
+        <summary
+          class="cursor-pointer list-none pr-8 font-semibold marker:hidden focus-visible:outline-2 focus-visible:outline-indigo-600"
+        >
+          <span class="flex items-center justify-between gap-4"
+            >¿Puedo añadir imágenes a un post?<span
+              aria-hidden="true"
+              class="text-xl text-indigo-700 transition-transform group-open:rotate-45 dark:text-indigo-300"
+              >+</span
+            ></span
+          >
+        </summary>
+        <p class="mt-3 max-w-3xl text-sm text-slate-600 dark:text-neutral-300">
+          Sí. Adjunta imágenes desde el editor y revisa la vista previa antes de aprobar.
+        </p>
+      </details>
+      <details class="group py-4">
+        <summary
+          class="cursor-pointer list-none pr-8 font-semibold marker:hidden focus-visible:outline-2 focus-visible:outline-indigo-600"
+        >
+          <span class="flex items-center justify-between gap-4"
+            >¿Qué publicaciones llegan a LinkedIn?<span
+              aria-hidden="true"
+              class="text-xl text-indigo-700 transition-transform group-open:rotate-45 dark:text-indigo-300"
+              >+</span
+            ></span
+          >
+        </summary>
+        <p class="mt-3 max-w-3xl text-sm text-slate-600 dark:text-neutral-300">
+          Las que apruebes y envíes a la cola, siempre que la cuenta esté conectada y el servicio de
+          publicación esté activo.
+        </p>
+      </details>
+      <details class="group py-4">
+        <summary
+          class="cursor-pointer list-none pr-8 font-semibold marker:hidden focus-visible:outline-2 focus-visible:outline-indigo-600"
+        >
+          <span class="flex items-center justify-between gap-4"
+            >¿Puedo elegir entre perfil y página?<span
+              aria-hidden="true"
+              class="text-xl text-indigo-700 transition-transform group-open:rotate-45 dark:text-indigo-300"
+              >+</span
+            ></span
+          >
+        </summary>
+        <p class="mt-3 max-w-3xl text-sm text-slate-600 dark:text-neutral-300">
+          Sí. Conecta las cuentas que necesites y selecciona el destino antes de aprobar la
+          publicación.
+        </p>
+      </details>
+      <details class="group py-4">
+        <summary
+          class="cursor-pointer list-none pr-8 font-semibold marker:hidden focus-visible:outline-2 focus-visible:outline-indigo-600"
+        >
+          <span class="flex items-center justify-between gap-4"
+            >¿Cómo detengo las publicaciones automáticas?<span
+              aria-hidden="true"
+              class="text-xl text-indigo-700 transition-transform group-open:rotate-45 dark:text-indigo-300"
+              >+</span
+            ></span
+          >
+        </summary>
+        <p class="mt-3 max-w-3xl text-sm text-slate-600 dark:text-neutral-300">
+          El control del header pausa únicamente la publicación del backend. Para detener la cola de
+          GitHub Actions, cambia PUBLISH_ENABLED a false en GitHub. Ambos mecanismos son
+          independientes; guardar una cola no confirma que se haya publicado.
+        </p>
+      </details>
+    </div>
+  </section>
+</main>

@@ -41,6 +41,7 @@ public class PasswordResetService {
         }
 
         User user = userOpt.get();
+        passwordResetTokenRepository.invalidateForUser(user.getId());
 
         // 1. Generar código numérico de 6 dígitos criptográficamente seguro
         String otpCode = String.format("%06d", secureRandom.nextInt(1000000));
@@ -48,7 +49,7 @@ public class PasswordResetService {
         // 2. Persistir token con expiración a 15 minutos
         PasswordResetToken token = PasswordResetToken.builder()
                 .user(user)
-                .otpCode(otpCode)
+                .otpCode(passwordEncoder.encode(otpCode))
                 .expiresAt(LocalDateTime.now().plusMinutes(15))
                 .isUsed(false)
                 .build();
@@ -59,7 +60,7 @@ public class PasswordResetService {
         emailService.sendPasswordResetOtp(user.getEmail(), user.getName(), otpCode);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public boolean verifyResetCode(String email, String code) {
         if (email == null || code == null) {
             throw new IllegalArgumentException("El correo y el código son obligatorios");
@@ -76,14 +77,17 @@ public class PasswordResetService {
             throw new IllegalArgumentException("El código de verificación ha expirado. Solicita uno nuevo");
         }
 
-        if (!token.getOtpCode().equals(cleanCode)) {
+        if (token.getFailedAttempts() >= 5) throw new IllegalArgumentException("Solicita un nuevo código de verificación");
+        if (!passwordEncoder.matches(cleanCode, token.getOtpCode())) {
+            token.setFailedAttempts(token.getFailedAttempts() + 1);
+            passwordResetTokenRepository.save(token);
             throw new IllegalArgumentException("El código de verificación es incorrecto");
         }
 
         return true;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public void resetPasswordWithCode(String email, String code, String newPassword) {
         if (newPassword == null || newPassword.trim().length() < 6) {
             throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres");
@@ -100,13 +104,17 @@ public class PasswordResetService {
             throw new IllegalArgumentException("El código de verificación ha expirado");
         }
 
-        if (!token.getOtpCode().equals(cleanCode)) {
+        if (token.getFailedAttempts() >= 5) throw new IllegalArgumentException("Solicita un nuevo código de verificación");
+        if (!passwordEncoder.matches(cleanCode, token.getOtpCode())) {
+            token.setFailedAttempts(token.getFailedAttempts() + 1);
+            passwordResetTokenRepository.save(token);
             throw new IllegalArgumentException("El código de verificación es incorrecto");
         }
 
         // 1. Actualizar contraseña del usuario con BCrypt
         User user = token.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword.trim()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
 
         // 2. Quemar el token OTP (One-Time Password)

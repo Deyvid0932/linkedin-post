@@ -1,0 +1,21 @@
+<dialog
+  #dialog
+  class="ui-dialog"
+  [class.ui-drawer]="side()"
+  aria-labelledby="dialog-title"
+  (cancel)="cancel($event)"
+>
+  <header class="ui-dialog-heading">
+    <h2 id="dialog-title">{{ title() }}</h2>
+    <button
+      type="button"
+      class="ui-button"
+      autofocus
+      aria-label="Cerrar panel"
+      (click)="closed.emit()"
+    >
+      Cerrar
+    </button>
+  </header>
+  <div class="ui-dialog-body"><ng-content /></div>
+</dialog>

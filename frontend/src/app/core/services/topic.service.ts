@@ -20,7 +20,7 @@ export interface BulkTopicRequestPayload {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TopicService {
   private readonly API_URL = `${environment.apiUrl}/topics`;
@@ -31,12 +31,23 @@ export class TopicService {
     return this.http.get<BackupTopic[]>(this.API_URL);
   }
 
-  addTopic(data: { title: string; description?: string; category?: string; priority?: number; isAiResearch?: boolean }): Observable<BackupTopic> {
+  addTopic(data: {
+    title: string;
+    description?: string;
+    category?: string;
+    priority?: number;
+    isAiResearch?: boolean;
+  }): Observable<BackupTopic> {
     return this.http.post<BackupTopic>(this.API_URL, data);
   }
 
-  addBulkTopics(payload: BulkTopicRequestPayload): Observable<{ message: string; importedCount: number }> {
-    return this.http.post<{ message: string; importedCount: number }>(`${this.API_URL}/bulk`, payload);
+  addBulkTopics(
+    payload: BulkTopicRequestPayload,
+  ): Observable<{ message: string; importedCount: number }> {
+    return this.http.post<{ message: string; importedCount: number }>(
+      `${this.API_URL}/bulk`,
+      payload,
+    );
   }
 
   toggleTopicType(id: string): Observable<BackupTopic> {
@@ -55,7 +66,9 @@ export class TopicService {
     return this.http.patch<BackupTopic>(`${this.API_URL}/${id}/toggle-used`, {});
   }
 
-  reorderTopics(items: Array<{ id: string; priority: number }>): Observable<{ message: string; count: number }> {
+  reorderTopics(
+    items: Array<{ id: string; priority: number }>,
+  ): Observable<{ message: string; count: number }> {
     return this.http.put<{ message: string; count: number }>(`${this.API_URL}/reorder`, items);
   }
 

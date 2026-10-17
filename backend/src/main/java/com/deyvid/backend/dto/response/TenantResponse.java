@@ -10,5 +10,8 @@ public record TenantResponse(
     Boolean isActive,
     Boolean isEmergencyPaused,
     Boolean isDryRun,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String appApprovalMode,
+    Integer appTargetCharacters,
+    String appImageModel
 ) {}

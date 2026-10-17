@@ -45,6 +45,29 @@ public class DraftPreview {
     @Column(name = "source_reference", columnDefinition = "TEXT")
     private String sourceReference;
 
+    @Builder.Default
+    @Column(name = "is_queued", nullable = false)
+    private boolean isQueued = false;
+
+    @Builder.Default
+    @Column(name = "is_preview", nullable = false)
+    private boolean isPreview = false;
+
+    @Column(name = "title", length = 200)
+    private String title;
+
+    @Column(name = "tone", length = 40)
+    private String tone;
+
+    @Column(name = "audience", length = 200)
+    private String audience;
+
+    @Column(name = "goal", length = 40)
+    private String goal;
+
+    @Column(name = "instructions", length = 1500)
+    private String instructions;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

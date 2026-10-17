@@ -1,0 +1,426 @@
+<div class="ui-page">
+  <header>
+    <p
+      class="mb-2 text-xs font-bold uppercase tracking-[.14em] text-indigo-600 dark:text-indigo-300"
+    >
+      Automatización
+    </p>
+    <h1 class="ui-title">Programación</h1>
+    <p class="mt-2 text-sm text-slate-600 dark:text-neutral-300">
+      Configura por separado AutoPost y GitHub Actions desde esta sección.
+    </p>
+  </header>
+
+  @if (successMessage()) {
+    <div
+      role="status"
+      class="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+    >
+      {{ successMessage() }}
+    </div>
+  }
+  @if (errorMessage()) {
+    <div
+      role="alert"
+      class="rounded-lg border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+    >
+      {{ errorMessage() }}
+    </div>
+  }
+
+  <section class="ui-card">
+    <div class="max-w-sm">
+      <label for="schedule-timezone" class="mb-1.5 block text-sm font-semibold">Zona horaria</label
+      ><select
+        id="schedule-timezone"
+        [value]="timezone()"
+        (change)="changeTimezone($any($event.target).value)"
+        [disabled]="loadingTenant() || savingTimezone()"
+        class="ui-input"
+      >
+        <option value="America/Lima">Lima (UTC−5)</option>
+        <option value="America/Bogota">Bogotá (UTC−5)</option>
+        <option value="America/Mexico_City">Ciudad de México</option>
+        <option value="America/Santiago">Santiago</option>
+        <option value="America/Buenos_Aires">Buenos Aires</option>
+        <option value="Europe/Madrid">Madrid</option>
+      </select>
+      <p class="mt-1.5 text-xs text-slate-500">Los horarios se interpretan con esta zona.</p>
+    </div>
+  </section>
+
+  <section class="ui-card grid gap-5" aria-labelledby="app-publishing-title">
+    <header>
+      <p class="ui-meta">VÍA 1 · BACKEND AUTOPOST</p>
+      <h2 id="app-publishing-title" class="ui-section-title">Publicación desde AutoPost</h2>
+      <p class="ui-muted">
+        Depende de que el backend esté en ejecución. Los horarios se aplican usando la zona horaria
+        de arriba.
+      </p>
+    </header>
+    <form
+      [formGroup]="appForm"
+      (ngSubmit)="saveAppConfig()"
+      class="publishing-config-form grid gap-4 sm:grid-cols-2"
+    >
+      <div class="ui-field">
+        <label for="app-approval">Modo de publicación</label
+        ><select id="app-approval" class="ui-input" formControlName="appApprovalMode">
+          <option value="REQUIRE_APPROVAL">Necesita aprobación</option>
+          <option value="AUTOMATIC">Automática</option>
+        </select>
+      </div>
+      <div class="ui-field">
+        <label for="app-target">Caracteres (100-1500)</label
+        ><input
+          id="app-target"
+          class="ui-input"
+          type="number"
+          min="100"
+          max="1500"
+          formControlName="appTargetCharacters"
+        />
+
+      </div>
+      <div class="ui-field sm:col-span-2">
+        <label for="app-image-model">Modelo de imagen · NanoGPT</label
+        ><select id="app-image-model" class="ui-input" formControlName="appImageModel">
+          @for (model of imageModels; track model.id) {
+            <option [value]="model.id">{{ model.name }} · {{ model.price }}/imagen</option>
+          }</select
+        ><span class="ui-meta"
+          >Ordenados del menor al mayor costo. Precios aproximados en USD; pueden variar por
+          resolución y parámetros. Requiere NANOGPT_API_KEY en el entorno del backend.</span
+        >
+      </div>
+      <div class="sm:col-span-2 flex justify-end">
+        <button
+          class="ui-button ui-button--primary"
+          [disabled]="appForm.invalid || savingAppConfig()"
+        >
+          {{ savingAppConfig() ? 'Guardando…' : 'Guardar configuración de AutoPost' }}
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <section class="ui-card grid gap-5" aria-labelledby="actions-publishing-title">
+    <header>
+      <p class="ui-meta">VÍA 2 · RUNNER DE GITHUB</p>
+      <h2 id="actions-publishing-title" class="ui-section-title">Publicación con GitHub Actions</h2>
+      <p class="ui-muted">
+        Se ejecuta en GitHub aunque tu PC esté apagada. Su configuración se guarda en el repositorio
+        seleccionado.
+      </p>
+    </header>
+    @if (!actionRepos().length) {
+      <p class="ui-empty">
+        Conecta GitHub y agrega un repositorio en Conexiones para configurar esta vía.
+      </p>
+    } @else {
+      <form
+        [formGroup]="actionsForm"
+        (ngSubmit)="saveActionsConfig()"
+        class="publishing-config-form grid gap-4 sm:grid-cols-2"
+      >
+        <div class="ui-field sm:col-span-2">
+          <label for="actions-repo">Repositorio conectado</label
+          ><select
+            id="actions-repo"
+            class="ui-input"
+            [value]="actionsRepositoryId()"
+            (change)="selectActionsRepository($any($event.target).value)"
+          >
+            <option value="">Selecciona un repositorio</option>
+            @for (repo of actionRepos(); track repo.id) {
+              <option [value]="repo.id">{{ repo.repoOwner }}/{{ repo.repoName }}</option>
+            }
+          </select>
+        </div>
+        <div class="ui-field">
+          <label for="actions-time">Hora objetivo</label
+          ><input id="actions-time" class="ui-input" type="time" formControlName="publishTime" />
+        </div>
+        <div class="ui-field">
+          <label for="actions-timezone">Zona horaria de Actions</label
+          ><select id="actions-timezone" class="ui-input" formControlName="timezone">
+            <option value="America/Lima">Perú · Lima</option>
+            <option value="America/Bogota">Colombia · Bogotá</option>
+            <option value="America/Mexico_City">México · Ciudad de México</option>
+            <option value="America/Santiago">Chile · Santiago</option>
+            <option value="Europe/Madrid">España · Madrid</option>
+          </select>
+        </div>
+        <div class="ui-field">
+          <label for="actions-approval">Modo de publicación</label
+          ><select id="actions-approval" class="ui-input" formControlName="approvalMode">
+            <option value="REQUIRE_APPROVAL">Necesita aprobación</option>
+            <option value="AUTOMATIC">Automática</option>
+          </select>
+        </div>
+        <div class="ui-field">
+          <label for="actions-target">Máximo de caracteres</label
+          ><input
+            id="actions-target"
+            class="ui-input"
+            type="number"
+            min="100"
+            max="3000"
+            formControlName="targetCharacters"
+          />
+        </div>
+        <div class="ui-field sm:col-span-2">
+          <label for="actions-model">Modelo de imagen · NanoGPT</label
+          ><select id="actions-model" class="ui-input" formControlName="imageModel">
+            @for (model of imageModels; track model.id) {
+              <option [value]="model.id">{{ model.name }} · {{ model.price }}/imagen</option>
+            }</select
+          ><span class="ui-meta"
+            >Ordenados del menor al mayor costo. Precios aproximados en USD por imagen; NanoGPT
+            puede modificarlos según resolución y parámetros.</span
+          >
+        </div>
+        <div class="ui-field sm:col-span-2">
+          <label for="actions-prompt">Prompt de GitHub Actions</label
+          ><textarea
+            id="actions-prompt"
+            class="ui-input min-h-32"
+            maxlength="5000"
+            formControlName="prompt"
+            placeholder="Describe tu especialidad, temas, estilo y lo que debe evitar la IA"
+          ></textarea
+          ><span class="ui-meta"
+            >{{ actionsForm.controls.prompt.value.length }} / 5000 caracteres. Se mantiene separado
+            de la Voz de IA de AutoPost.</span
+          >
+        </div>
+        <label class="sm:col-span-2 flex items-center gap-3 text-sm"
+          ><input type="checkbox" formControlName="enabled" /> Activar esta automatización de GitHub
+          Actions</label
+        >
+        <div
+          class="sm:col-span-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100"
+        >
+          La hora es objetivo, no garantía; el workflow revisa cada 30 minutos y GitHub puede
+          retrasarlo. Para generar imágenes, confirma NANOGPT_KEY en Actions Secrets. Para envío
+          real, confirma los demás Secrets y configura PUBLISH_ENABLED=true en Settings → Secrets
+          and variables → Actions. La opción de aprobación publica borradores aprobados desde esta
+          app.
+        </div>
+        <div class="sm:col-span-2 flex justify-end">
+          <button
+            class="ui-button ui-button--primary"
+            [disabled]="
+              actionsForm.invalid ||
+              !actionsRepositoryId() ||
+              savingActionsConfig() ||
+              loadingActionsConfig()
+            "
+          >
+            {{
+              loadingActionsConfig()
+                ? 'Cargando…'
+                : savingActionsConfig()
+                  ? 'Guardando en GitHub…'
+                  : 'Guardar configuración de Actions'
+            }}
+          </button>
+        </div>
+      </form>
+      <section
+        class="grid gap-3 border-t border-slate-200 pt-5 dark:border-neutral-800"
+        aria-labelledby="actions-review-title"
+      >
+        <div>
+          <h3 id="actions-review-title" class="ui-section-title">Verificar antes de aprobar</h3>
+          <p class="ui-meta">Borradores generados por Actions en el repositorio seleccionado.</p>
+        </div>
+        @if (actionsReviewLoading()) {
+          <p role="status" class="ui-meta">Cargando borradores…</p>
+        } @else if (!actionsReview().length) {
+          <p class="ui-empty">No hay borradores de GitHub Actions pendientes.</p>
+        } @else {
+          @for (post of actionsReview(); track post['id']) {
+            <article
+              class="grid gap-3 rounded-lg border border-slate-200 p-4 dark:border-neutral-800"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <strong>{{ post['title'] || 'Post generado por Actions' }}</strong
+                ><span class="ui-meta"
+                  >{{ post['targetCharacters'] || '—' }} caracteres objetivo ·
+                  {{ post['imageModel'] || '—' }}</span
+                >
+              </div>
+              @if (post['imageDataUrl']) {
+                <img
+                  [src]="$any(post['imageDataUrl'])"
+                  alt="Imagen generada para el borrador"
+                  class="max-h-64 rounded-lg object-contain"
+                />
+              }
+              <p class="whitespace-pre-wrap text-sm leading-6">{{ post['text'] }}</p>
+              <p class="ui-meta">{{ post['publishAt'] }} · {{ post['prompt'] }}</p>
+              <div class="flex justify-end">
+                <button
+                  type="button"
+                  class="ui-button ui-button--primary"
+                  [disabled]="reviewingId() === post['id']"
+                  (click)="approveActionsPost($any(post['id']))"
+                >
+                  {{ reviewingId() === post['id'] ? 'Aprobando…' : 'Aprobar para GitHub Actions' }}
+                </button>
+              </div>
+            </article>
+          }
+        }
+      </section>
+    }
+  </section>
+
+  <section class="ui-card">
+    <div class="mb-5">
+      <h2 class="ui-section-title">Añadir un horario</h2>
+      <p class="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+        Puedes editar o quitar cualquier horario después.
+      </p>
+    </div>
+    <form
+      [formGroup]="scheduleForm"
+      (ngSubmit)="addOrUpdateSchedule()"
+      class="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+    >
+      <div>
+        <label for="schedule-time" class="mb-1.5 block text-sm font-medium">Hora</label
+        ><input id="schedule-time" formControlName="time" type="time" class="ui-input" />
+      </div>
+      <div>
+        <label for="schedule-frequency" class="mb-1.5 block text-sm font-medium">Frecuencia</label
+        ><select id="schedule-frequency" formControlName="frequency" class="ui-input">
+          <option value="DAILY">Todos los días</option>
+          <option value="WEEKDAYS">Días laborables</option>
+          <option value="MON_WED_FRI">Lunes, miércoles y viernes</option>
+        </select>
+      </div>
+      <button
+        type="submit"
+        [disabled]="scheduleForm.invalid || addingSchedule()"
+        class="min-h-11 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+      >
+        {{
+          addingSchedule() ? 'Guardando…' : editingScheduleId() ? 'Actualizar' : 'Añadir horario'
+        }}
+      </button>
+    </form>
+    @if (editingScheduleId()) {
+      <button
+        type="button"
+        (click)="cancelScheduleEdit()"
+        class="mt-3 text-sm text-slate-600 underline dark:text-neutral-300"
+      >
+        Cancelar edición
+      </button>
+    }
+  </section>
+
+  <section class="ui-card grid gap-4">
+    <h2 class="ui-section-title">Agenda semanal recurrente</h2>
+    <p class="ui-meta">
+      Horas en {{ timezone() }}. No representa fechas de envío individuales ni confirma ejecuciones.
+    </p>
+    <div class="ui-week">
+      @for (day of week; track day; let index = $index) {
+        <div class="ui-day">
+          <strong>{{ day }}</strong>
+          @for (slot of agenda()[index]; track slot.id) {
+            <p class="ui-slot">{{ slot.time }}</p>
+          } @empty {
+            <p class="ui-meta mt-3">Sin horario</p>
+          }
+        </div>
+      }
+    </div>
+    @if (custom().length) {
+      <p class="ui-meta">Horarios personalizados (fuera de esta vista):</p>
+      @for (schedule of custom(); track schedule.id) {
+        <p>
+          {{ schedule.description }} · <code>{{ schedule.cronExpression }}</code>
+        </p>
+      }
+    }
+  </section>
+  <section class="ui-card" aria-labelledby="schedule-list-title">
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <div>
+        <h2 id="schedule-list-title" class="text-lg font-semibold">Tus horarios</h2>
+        <p class="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+          Se aplican a publicaciones aprobadas.
+        </p>
+      </div>
+      <button
+        type="button"
+        (click)="loadSchedules()"
+        [disabled]="loadingSchedules()"
+        class="text-sm text-indigo-600 underline dark:text-indigo-300"
+      >
+        Actualizar
+      </button>
+    </div>
+    @if (loadingSchedules()) {
+      <p role="status" class="py-6 text-center text-sm text-slate-500">Cargando horarios…</p>
+    } @else {
+      <ul class="divide-y divide-slate-100 dark:divide-neutral-800">
+        @for (schedule of schedules(); track schedule.id) {
+          <li class="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0">
+            <div>
+              <p class="font-semibold">{{ schedule.description }}</p>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ schedule.cronExpression }} · {{ schedule.createdAt | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                [disabled]="!parsePattern(schedule.cronExpression)"
+                [title]="
+                  parsePattern(schedule.cronExpression)
+                    ? 'Editar horario'
+                    : 'Cron personalizado: no se convierte automáticamente'
+                "
+                (click)="startEditSchedule(schedule)"
+                class="rounded-md px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+              >
+                Editar</button
+              ><button
+                type="button"
+                (click)="deleteSchedule(schedule.id)"
+                class="rounded-md px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/50"
+              >
+                Eliminar
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="rounded-lg bg-slate-50 p-6 text-center dark:bg-neutral-800/60">
+            <p class="font-medium">Aún no tienes horarios.</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+              Añade uno para programar las publicaciones aprobadas.
+            </p>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+  @if (pendingDelete()) {
+    <app-dialog title="Eliminar horario" (closed)="pendingDelete.set(null)"
+      ><p>
+        Se eliminará este horario del backend. La programación de GitHub Actions es independiente.
+      </p>
+      <div class="ui-actions justify-end">
+        <button class="ui-button" (click)="pendingDelete.set(null)">Cancelar</button
+        ><button class="ui-button" [disabled]="deleting()" (click)="confirmDeleteSchedule()">
+          {{ deleting() ? 'Eliminando…' : 'Eliminar horario' }}
+        </button>
+      </div></app-dialog
+    >
+  }
+</div>

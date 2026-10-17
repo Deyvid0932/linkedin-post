@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { AuthResponse, LoginRequest, RegisterRequest, UserProfile } from '../models/auth.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private readonly API_URL = environment.apiUrl;
@@ -18,18 +18,21 @@ export class AuthService {
   readonly currentUserSignal = signal<UserProfile | null>(this.getStoredUser());
   readonly isAuthenticated = computed(() => !!this.tokenSignal());
 
-  constructor(private http: HttpClient, private router: Router) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+  ) {}
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/login`, credentials).pipe(
-      tap(response => this.saveSession(response))
-    );
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/login`, credentials)
+      .pipe(tap((response) => this.saveSession(response)));
   }
 
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/register`, data).pipe(
-      tap(response => this.saveSession(response))
-    );
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/register`, data)
+      .pipe(tap((response) => this.saveSession(response)));
   }
 
   requestPasswordReset(email: string): Observable<{ message: string }> {
@@ -37,17 +40,29 @@ export class AuthService {
   }
 
   verifyResetCode(email: string, code: string): Observable<{ valid: boolean; message?: string }> {
-    return this.http.post<{ valid: boolean; message?: string }>(`${this.API_URL}/auth/verify-code`, { email, code });
+    return this.http.post<{ valid: boolean; message?: string }>(
+      `${this.API_URL}/auth/verify-code`,
+      { email, code },
+    );
   }
 
-  resetPasswordWithCode(email: string, code: string, newPassword: string): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.API_URL}/auth/reset-password`, { email, code, newPassword });
+  resetPasswordWithCode(
+    email: string,
+    code: string,
+    newPassword: string,
+  ): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API_URL}/auth/reset-password`, {
+      email,
+      code,
+      newPassword,
+    });
   }
 
   updateProfile(name?: string, currentPassword?: string, newPassword?: string): Observable<any> {
     const payload: Record<string, string> = {};
     if (name && name.trim()) payload['name'] = name.trim();
-    if (currentPassword && currentPassword.trim()) payload['currentPassword'] = currentPassword.trim();
+    if (currentPassword && currentPassword.trim())
+      payload['currentPassword'] = currentPassword.trim();
     if (newPassword && newPassword.trim()) payload['newPassword'] = newPassword.trim();
 
     return this.http.put(`${this.API_URL}/users/me`, payload).pipe(
@@ -56,27 +71,26 @@ export class AuthService {
         if (current) {
           const updated: UserProfile = {
             ...current,
-            name: updatedUser.name || current.name
+            name: updatedUser.name || current.name,
           };
           localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
           this.currentUserSignal.set(updated);
         }
-      })
+      }),
     );
   }
 
   deleteAccount(): Observable<any> {
-    return this.http.delete(`${this.API_URL}/users/me`).pipe(
-      tap(() => this.logout())
-    );
+    return this.http.delete(`${this.API_URL}/users/me`).pipe(tap(() => this.logout()));
   }
 
-  logout(): void {
+  logout(queryParams?: Record<string, string>): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     this.tokenSignal.set(null);
     this.currentUserSignal.set(null);
-    this.router.navigate(['/auth/login']);
+    if (queryParams) this.router.navigate(['/auth/login'], { queryParams });
+    else this.router.navigate(['/auth/login']);
   }
 
   getToken(): string | null {
@@ -90,7 +104,7 @@ export class AuthService {
       tenantId: response.tenantId,
       name: response.name,
       email: response.email,
-      roles: response.roles
+      roles: response.roles,
     };
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
 
@@ -104,6 +118,12 @@ export class AuthService {
 
   private getStoredUser(): UserProfile | null {
     const data = localStorage.getItem(this.USER_KEY);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    try {
+      return JSON.parse(data);
+    } catch {
+      localStorage.removeItem(this.USER_KEY);
+      return null;
+    }
   }
 }

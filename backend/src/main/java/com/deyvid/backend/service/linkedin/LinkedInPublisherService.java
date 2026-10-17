@@ -52,135 +52,49 @@ public class LinkedInPublisherService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String publishSingleAccount(Tenant tenant, LinkedInCredential cred, String postText, byte[] imageBytes) {
-        String accountLabel = (cred.getDisplayName() != null ? cred.getDisplayName() : cred.getEffectiveAuthorUrn()) +
-                " [" + cred.getAccountType() + "]";
-        log.info("Iniciando publicación en LinkedIn para cuenta: {} (Tenant ID: {})", accountLabel, tenant.getId());
-
+        if (!tenant.getId().equals(cred.getTenant().getId()) || !Boolean.TRUE.equals(cred.getIsEnabled())) {
+            throw new PipelineExecutionException("Cuenta de destino no disponible");
+        }
+        if (Boolean.TRUE.equals(tenant.getIsEmergencyPaused()) || Boolean.TRUE.equals(tenant.getIsDryRun())) {
+            throw new PipelineExecutionException("La cuenta esta pausada o en simulacion");
+        }
         String accessToken = tokenManagementService.getValidAccessToken(cred);
         String authorUrn = cred.getEffectiveAuthorUrn();
-        String safePostText = sanitizeAndCapPostText(postText);
-
-        // 1. Intentar subir imagen si está disponible
+        String safeText = postText == null ? "" : postText.trim();
+        if (safeText.length() > 3000) throw new PipelineExecutionException("El texto supera 3000 caracteres. Edítalo antes de aprobarlo.");
+        if (safeText.isBlank()) throw new PipelineExecutionException("El post no contiene texto");
+        Map<String, Object> payload = new java.util.HashMap<>(Map.of(
+                "author", authorUrn, "commentary", safeText, "visibility", "PUBLIC",
+                "distribution", Map.of("feedDistribution", "MAIN_FEED", "targetEntities", List.of(), "thirdPartyDistributionChannels", List.of()),
+                "lifecycleState", "PUBLISHED", "isReshareDisabledByAuthor", false));
         if (imageBytes != null && imageBytes.length > 0) {
             try {
-                log.info("Paso 1: Inicializando carga de imagen en LinkedIn API para author: {}", authorUrn);
-                Map<String, Object> initRequest = Map.of(
-                        "initializeUploadRequest", Map.of(
-                                "owner", authorUrn
-                        )
-                );
-
-                @SuppressWarnings("unchecked")
-                Map<String, Object> initResponse = linkedInWebClient.post()
-                        .uri("/rest/images?action=initializeUpload")
+                Map<?, ?> init = linkedInWebClient.post().uri("/rest/images?action=initializeUpload")
                         .header("Authorization", "Bearer " + accessToken)
-                        .bodyValue(initRequest)
-                        .retrieve()
-                        .bodyToMono(Map.class)
-                        .block();
-
-                if (initResponse != null && initResponse.containsKey("value")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> valueMap = (Map<String, Object>) initResponse.get("value");
-                    String uploadUrl = (String) valueMap.get("uploadUrl");
-                    String imageUrn = (String) valueMap.get("image");
-
-                    log.info("Carga de imagen inicializada. Image URN: {}", imageUrn);
-
-                    log.info("Paso 2: Subiendo binario de imagen a LinkedIn uploadUrl...");
-                    genericWebClient.put()
-                            .uri(uploadUrl)
-                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                            .bodyValue(imageBytes)
-                            .retrieve()
-                            .toBodilessEntity()
-                            .block();
-
-                    log.info("Imagen binaria subida con éxito. Creando post con imagen...");
-
-                    Map<String, Object> postPayload = Map.of(
-                            "author", authorUrn,
-                            "commentary", safePostText,
-                            "visibility", "PUBLIC",
-                            "distribution", Map.of(
-                                    "feedDistribution", "MAIN_FEED",
-                                    "targetEntities", List.of(),
-                                    "thirdPartyDistributionChannels", List.of()
-                            ),
-                            "content", Map.of(
-                                    "media", Map.of(
-                                            "title", "Post de Contenido Técnico",
-                                            "id", imageUrn
-                                    )
-                            ),
-                            "lifecycleState", "PUBLISHED",
-                            "isReshareDisabledByAuthor", false
-                    );
-
-                    org.springframework.http.ResponseEntity<Void> postResponse = linkedInWebClient.post()
-                            .uri("/rest/posts")
-                            .header("Authorization", "Bearer " + accessToken)
-                            .bodyValue(postPayload)
-                            .retrieve()
-                            .toBodilessEntity()
-                            .block();
-
-                    String postUrn = extractLinkedInPostUrn(postResponse);
-
-                    log.info("Post con imagen publicado exitosamente en LinkedIn para {}. URN: {}", accountLabel, postUrn);
-                    return postUrn;
+                        .bodyValue(Map.of("initializeUploadRequest", Map.of("owner", authorUrn)))
+                        .retrieve().bodyToMono(Map.class).block();
+                Map<?, ?> value = (Map<?, ?>) init.get("value");
+                java.net.URI upload = java.net.URI.create((String) value.get("uploadUrl"));
+                String host = upload.getHost();
+                if (!"https".equals(upload.getScheme()) || host == null || upload.getUserInfo() != null
+                        || (upload.getPort() != -1 && upload.getPort() != 443)
+                        || !(host.equals("linkedin.com") || host.endsWith(".linkedin.com") || host.endsWith(".licdn.com"))) {
+                    throw new IllegalArgumentException("Destino de carga no permitido");
                 }
-            } catch (WebClientResponseException e) {
-                String errorBody = e.getResponseBodyAsString();
-                log.warn("Fallo en la subida de imagen para {} [HTTP {}]: {}. Procediendo con fallback a Post de Solo Texto...", 
-                        accountLabel, e.getStatusCode(), errorBody);
+                genericWebClient.put().uri(upload).header("Authorization", "Bearer " + accessToken).contentType(MediaType.APPLICATION_OCTET_STREAM).bodyValue(imageBytes)
+                        .retrieve().toBodilessEntity().block();
+                payload.put("content", Map.of("media", Map.of("title", "Imagen del autor", "id", value.get("image"))));
             } catch (Exception e) {
-                String detail = extractWebClientError(e);
-                log.warn("Fallo en la subida de imagen para {}: {}. Procediendo con fallback a Post de Solo Texto...", accountLabel, detail);
+                throw new PipelineExecutionException("No se pudo adjuntar la imagen. El post se conserva para revision.");
             }
         }
-
-        // 2. Fallback a post de solo texto
-        return publishTextPost(authorUrn, safePostText, accessToken, accountLabel);
-    }
-
-    private String publishTextPost(String authorUrn, String postText, String accessToken, String accountLabel) {
-        log.info("Publicando post de texto en LinkedIn API (/rest/posts) para author: {}...", authorUrn);
+        // Only one post creation request. Never retry a timed-out image post as a text post.
         try {
-            Map<String, Object> textPayload = Map.of(
-                    "author", authorUrn,
-                    "commentary", postText,
-                    "visibility", "PUBLIC",
-                    "distribution", Map.of(
-                            "feedDistribution", "MAIN_FEED",
-                            "targetEntities", List.of(),
-                            "thirdPartyDistributionChannels", List.of()
-                    ),
-                    "lifecycleState", "PUBLISHED",
-                    "isReshareDisabledByAuthor", false
-            );
-
-            org.springframework.http.ResponseEntity<Void> postResponse = linkedInWebClient.post()
-                    .uri("/rest/posts")
-                    .header("Authorization", "Bearer " + accessToken)
-                    .bodyValue(textPayload)
-                    .retrieve()
-                    .toBodilessEntity()
-                    .block();
-
-            String postUrn = extractLinkedInPostUrn(postResponse);
-
-            log.info("Post de texto publicado exitosamente en LinkedIn para {}. URN: {}", accountLabel, postUrn);
-            return postUrn;
-        } catch (WebClientResponseException e) {
-            String errorBody = e.getResponseBodyAsString();
-            int statusCode = e.getStatusCode().value();
-            log.error("Error definitivo al publicar post en LinkedIn API para {} [HTTP {}]: Body={}", accountLabel, statusCode, errorBody, e);
-            throw new PipelineExecutionException("Fallo en LinkedIn API para " + accountLabel + " [HTTP " + statusCode + "]: " + errorBody, e);
+            var response = linkedInWebClient.post().uri("/rest/posts").header("Authorization", "Bearer " + accessToken)
+                    .bodyValue(payload).retrieve().toBodilessEntity().block();
+            return extractLinkedInPostUrn(response);
         } catch (Exception e) {
-            String errorDetail = extractWebClientError(e);
-            log.error("Error definitivo al publicar post en LinkedIn API para {}: {}", accountLabel, errorDetail, e);
-            throw new PipelineExecutionException("Fallo en LinkedIn API para " + accountLabel + ": " + errorDetail, e);
+            throw new PipelineExecutionException("No se pudo confirmar el envio a LinkedIn. Revisa la cuenta antes de reintentar.");
         }
     }
 
@@ -315,9 +229,7 @@ public class LinkedInPublisherService {
                 return urn;
             }
         }
-        String fallbackUrn = "urn:li:share:" + System.currentTimeMillis();
-        log.warn("No se encontró cabecera x-restli-id en respuesta de LinkedIn. Usando URN provisional: {}", fallbackUrn);
-        return fallbackUrn;
+        throw new PipelineExecutionException("LinkedIn no devolvio el identificador del post. Revisa la cuenta antes de reintentar.");
     }
 
     public String sanitizeAndCapPostText(String rawText) {

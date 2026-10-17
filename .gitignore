@@ -11,6 +11,7 @@ backend/.mvn/wrapper/maven-wrapper.jar
 frontend/node_modules/
 frontend/dist/
 frontend/.angular/
+frontend/.vitest-tmp/
 
 # IDEs & OS
 .idea/
@@ -32,5 +33,11 @@ ENV/
 # Sub-archivos de entorno (en backend o frontend si existieran)
 **/.env
 **/.env.*
+!/.env.example
 
 postman_collection.json
+
+# Local database and secret backups
+backups/
+output/
+tmp_cv_template.png

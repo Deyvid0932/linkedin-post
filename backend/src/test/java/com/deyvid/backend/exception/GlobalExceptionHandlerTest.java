@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -57,5 +58,15 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.BAD_GATEWAY, response.getStatusCode());
         assertEquals(502, response.getStatusCode().value());
         assertEquals("AI_GENERATION_FAILED", response.getBody().errorCode());
+    }
+
+    @Test
+    void testLinkedInOAuthConfigurationErrorReturnsActionable424() {
+        String message = "OAuth de LinkedIn no está configurado en el servidor. Define LINKEDIN_CLIENT_ID y LINKEDIN_CLIENT_SECRET y reinicia el backend.";
+        ResponseEntity<java.util.Map<String, Object>> response = handler.handleStatusException(
+                new ResponseStatusException(HttpStatus.FAILED_DEPENDENCY, message));
+
+        assertEquals(HttpStatus.FAILED_DEPENDENCY, response.getStatusCode());
+        assertEquals(message, response.getBody().get("message"));
     }
 }

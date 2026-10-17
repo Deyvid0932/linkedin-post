@@ -43,220 +43,50 @@ public class ContentPipelineService {
     private final com.deyvid.backend.repository.PublicationLogRepository publicationLogRepository;
     private final NotificationService notificationService;
 
-    @Transactional
-    public void executePipelineForTenant(UUID tenantId) {
-        long startTime = System.currentTimeMillis();
-        log.info("Iniciando Pipeline de Publicación para Tenant ID: {}", tenantId);
+    private final com.deyvid.backend.service.ApprovedPublicationService approvedPublicationService;
 
+    public com.deyvid.backend.service.ApprovedPublicationService.Result executePipelineForTenant(UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new PipelineExecutionException("Tenant not found with ID: " + tenantId));
-
-        if (!tenant.getIsActive()) {
-            log.warn("Tenant {} está inactivo. Pipeline abortado.", tenantId);
-            return;
+                .orElseThrow(() -> new PipelineExecutionException("Tenant no encontrado con ID: " + tenantId));
+        if (!Boolean.TRUE.equals(tenant.getIsActive()) || Boolean.TRUE.equals(tenant.getIsEmergencyPaused())) {
+            return new com.deyvid.backend.service.ApprovedPublicationService.Result("PAUSED", 0, "La automatización está pausada");
         }
 
-        if (Boolean.TRUE.equals(tenant.getIsEmergencyPaused())) {
-            log.warn("Tenant {} está en PAUSA DE EMERGENCIA. Pipeline abortado para evitar publicaciones.", tenantId);
-            return;
-        }
+        ContentSource source = previewPipelineSource(tenantId);
+        if (source == null) source = deriveAutonomousSource(tenant);
+        int targetLength = tenant.getAppTargetCharacters() == null ? 1200 : tenant.getAppTargetCharacters();
+        String generated = contentGeneratorService.generateVersionWithApproach(
+                tenant, source, "COMPARATIVE_B2B", "CUSTOM_" + targetLength);
+        ImageGeneratorService.ImageData image = imageGeneratorService.generateOrFetchImage(source, generated,
+                tenant.getAppImageModel());
 
-        ContentSource source = null;
-        String postText = null;
-        ImageGeneratorService.ImageData imageData = null;
+        List<LinkedInCredential> targets = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(tenantId);
+        LinkedInCredential target = targets.stream().filter(a -> Boolean.TRUE.equals(a.getIsPrimary())).findFirst()
+                .orElse(targets.isEmpty() ? null : targets.get(0));
+        boolean automatic = "AUTOMATIC".equals(tenant.getAppApprovalMode());
+        boolean canAutoPublish = automatic && target != null;
+        var draft = com.deyvid.backend.entity.DraftPreview.builder()
+                .tenant(tenant)
+                .sourceMode(source.mode() != null ? source.mode() : SourceMode.RESEARCH)
+                .generatedText(generated)
+                .imageUrl(image != null ? image.imageUrl() : null)
+                .sourceReference(source.referenceUrl())
+                .title(source.title() != null && source.title().length() > 200 ? source.title().substring(0, 200) : source.title())
+                .tone("PROFESSIONAL")
+                .audience("Mi comunidad profesional")
+                .goal("SHARE_LEARNING")
+                .targetCredentialId(target != null ? target.getId() : null)
+                .authorUrn(target != null ? target.getEffectiveAuthorUrn() : null)
+                .isPreview(false)
+                .isQueued(canAutoPublish)
+                .build();
+        var saved = draftPreviewRepository.save(draft);
 
-        // ========================================================
-        // PRIORIDAD 0: COLA DE POSTS APROBADOS (FIFO)
-        // ========================================================
-        var draftOpt = draftPreviewRepository.findFirstByTenantIdOrderByCreatedAtAsc(tenantId);
-        com.deyvid.backend.entity.DraftPreview draftToConsume = null;
-        if (draftOpt.isPresent() && draftOpt.get().getGeneratedText() != null && !draftOpt.get().getGeneratedText().isBlank()) {
-            draftToConsume = draftOpt.get();
-            postText = draftToConsume.getGeneratedText();
-            String imgUrl = draftToConsume.getImageUrl();
-            byte[] bytes = (imgUrl != null && !imgUrl.isBlank()) ? imageGeneratorService.fetchBytesFromUrl(imgUrl) : null;
-            imageData = new ImageGeneratorService.ImageData(bytes, imgUrl);
-            source = new ContentSource(
-                    draftToConsume.getSourceMode() != null ? draftToConsume.getSourceMode() : SourceMode.PROJECT,
-                    "Post Aprobado por el Usuario en Estudio",
-                    postText,
-                    null,
-                    draftToConsume.getSourceReference()
-            );
-            log.info("Pipeline seleccionó Prioridad 0 (Post de la cola FIFO, ID: {})", draftToConsume.getId());
-        }
-
-        // ==========================================
-        // PRIORIDAD 1: MODO PROYECTO (GitHub Commits)
-        // ==========================================
-        if (source == null) {
-            Optional<ContentSource> ghSource = gitHubSourceService.findRecentActivity(tenant);
-            if (ghSource.isPresent()) {
-                source = ghSource.get();
-                log.info("Pipeline seleccionó Prioridad 1 (MODO PROYECTO vía GitHub)");
-            }
-        }
-
-        // ========================================================
-        // PRIORIDAD 2: BANCO DE IDEAS & TENDENCIAS (Unificado)
-        // ========================================================
-        if (source == null) {
-            Optional<ContentSource> bankSource = backupTopicService.getNextTopic(tenant);
-            if (bankSource.isPresent()) {
-                source = bankSource.get();
-                log.info("Pipeline seleccionó Prioridad 2 (BANCO UNIFICADO: {})", source.mode());
-            }
-        }
-
-        // Fallback de rescate si el banco está vacío pero hay keywords de investigación anteriores
-        if (source == null) {
-            Optional<ContentSource> researchSource = researchSourceService.findTrendingTopic(tenant);
-            if (researchSource.isPresent()) {
-                source = researchSource.get();
-                log.info("Pipeline recurrió a fallback de palabras clave");
-            }
-        }
-
-        // ========================================================
-        // PRIORIDAD 3: GENERACIÓN AUTÓNOMA BASADA EN SYSTEM PROMPT
-        // ========================================================
-        if (source == null) {
-            source = deriveAutonomousSource(tenant);
-            log.info("Pipeline activó Prioridad 3 (GENERACIÓN AUTÓNOMA adaptada al System Prompt): '{}'", source.title());
-        }
-
-        // Generar texto e imagen si no provenía de Prioridad 0
-        if (postText == null) {
-            postText = contentGeneratorService.generatePostContent(tenant, source);
-            imageData = imageGeneratorService.generateOrFetchImage(source, postText);
-        }
-
-        // Obtener todas las cuentas habilitadas del tenant
-        List<LinkedInCredential> targetAccounts = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(tenantId);
-        if (targetAccounts.isEmpty()) {
-            linkedInCredentialRepository.findByTenantId(tenantId).ifPresent(targetAccounts::add);
-        }
-
-        if (targetAccounts.isEmpty()) {
-            String err = "No hay ninguna cuenta de LinkedIn conectada o habilitada (isEnabled=true) para publicar en el Tenant " + tenantId;
-            log.error("❌ [PIPELINE ALERTA] Falló publicación para tenant {}: {}", tenantId, err);
-            publicationLogService.createLog(
-                    tenant,
-                    source.mode(),
-                    PublicationStatus.FAILED,
-                    postText,
-                    imageData != null ? imageData.imageUrl() : null,
-                    null,
-                    source.referenceUrl(),
-                    err,
-                    System.currentTimeMillis() - startTime,
-                    "deepseek-chat", 0
-            );
-            notificationService.createNotification(tenant, "ERROR", "Fallo de Publicación en LinkedIn", err);
-            return;
-        }
-
-        log.info("📋 [PIPELINE CUENTAS] Se encontraron {} cuenta(s) objetivo para el Tenant: {}", targetAccounts.size(), tenantId);
-
-        boolean isDryRun = Boolean.TRUE.equals(tenant.getIsDryRun());
-        java.time.LocalDateTime startOfDay = java.time.LocalDate.now().atStartOfDay();
-        String textHash = com.deyvid.backend.service.PublicationLogService.computeTextHash(postText);
-        java.time.LocalDateTime fiveMinutesAgo = java.time.LocalDateTime.now().minusMinutes(5);
-
-        boolean atLeastOneSuccess = false;
-
-        // Publicar en cada cuenta habilitada de forma aislada
-        for (LinkedInCredential accountRef : targetAccounts) {
-
-            // 1. Bloqueo pesimista sobre la credencial para serializar ejecuciones simultáneas
-            LinkedInCredential account = linkedInCredentialRepository.findByIdForUpdate(accountRef.getId())
-                    .orElse(accountRef);
-
-            String accountLabel = (account.getDisplayName() != null ? account.getDisplayName() : account.getEffectiveAuthorUrn()) +
-                    " (" + account.getAccountType() + ")";
-
-            // 2. Control de límite diario independiente por cuenta
-            int maxDaily = account.getMaxPostsPerDay() != null ? account.getMaxPostsPerDay() : 1;
-            long todayCount = publicationLogRepository.countByTenantIdAndStatusAndAuthorUrnAndCreatedAtGreaterThanEqual(
-                    tenantId, PublicationStatus.SUCCESS, account.getEffectiveAuthorUrn(), startOfDay);
-
-            log.info("🔍 [PIPELINE LÍMITE] Verificando cuenta: {} | Publicaciones hoy: {} / Límite diario: {} | Modo: {}",
-                    accountLabel, todayCount, maxDaily, isDryRun ? "DRY-RUN" : "EN VIVO");
-
-            if (todayCount >= maxDaily) {
-                log.warn("⚠️ [PIPELINE LÍMITE ALCANZADO] Cuenta {} ya alcanzó su límite diario ({}/{} hoy). Omitiendo publicación.",
-                        accountLabel, todayCount, maxDaily);
-                continue;
-            }
-
-            // 3. Verificación de idempotencia (dedup en ventana de 5 min para evitar dobles envíos accidentales)
-            boolean alreadyPublished = publicationLogRepository.existsByTenantIdAndStatusAndTextHashAndCreatedAtAfter(
-                    tenantId, PublicationStatus.SUCCESS, textHash, fiveMinutesAgo);
-            if (alreadyPublished) {
-                log.info("ℹ️ [PIPELINE DEDUP] Post duplicado detectado para cuenta {} (ya publicado en los últimos 5 min). Omitiendo.", accountLabel);
-                continue;
-            }
-
-            try {
-                String linkedinUrn;
-                byte[] imageBytes = imageData != null ? imageData.bytes() : null;
-                String finalImageUrl = imageData != null ? imageData.imageUrl() : null;
-
-                if (isDryRun) {
-                    log.info("🧪 [PIPELINE DRY-RUN] Modo Simulación activo para cuenta {}. Generando URN de prueba.", accountLabel);
-                    linkedinUrn = "urn:li:share:dryrun-" + System.currentTimeMillis();
-                } else {
-                    linkedinUrn = linkedInPublisherService.publishSingleAccount(tenant, account, postText, imageBytes);
-                }
-
-                long duration = Math.max(1L, System.currentTimeMillis() - startTime);
-                log.info("✅ [PIPELINE ÉXITO] Post publicado en {} (URN: {}) en {} ms | Zero-Touch OK", accountLabel, linkedinUrn, duration);
-                atLeastOneSuccess = true;
-
-                publicationLogService.createLog(
-                        tenant,
-                        source.mode(),
-                        PublicationStatus.SUCCESS,
-                        account.getAccountType(),
-                        account.getEffectiveAuthorUrn(),
-                        isDryRun ? "[SIMULACIÓN / DRY-RUN]\n" + postText : postText,
-                        finalImageUrl,
-                        linkedinUrn,
-                        source.referenceUrl(),
-                        null,
-                        duration,
-                        "deepseek-chat",
-                        500
-                );
-            } catch (Exception e) {
-                long duration = Math.max(1L, System.currentTimeMillis() - startTime);
-                log.error("❌ [PIPELINE ERROR] Error publicando en cuenta {} para tenant {}: {}", accountLabel, tenantId, e.getMessage(), e);
-
-                publicationLogService.createLog(
-                        tenant,
-                        source.mode(),
-                        PublicationStatus.FAILED,
-                        account.getAccountType(),
-                        account.getEffectiveAuthorUrn(),
-                        postText,
-                        imageData != null ? imageData.imageUrl() : null,
-                        null,
-                        source.referenceUrl(),
-                        "Fallo en cuenta " + accountLabel + ": " + e.getMessage(),
-                        duration,
-                        "deepseek-chat", 0
-                );
-
-                notificationService.createNotification(tenant, "ERROR", "Fallo al publicar en " + accountLabel,
-                        "No se pudo completar la publicación en " + accountLabel + ": " + e.getMessage());
-            }
-        }
-
-        // Si el post provino de la cola programada (Prioridad 0) y se publicó exitosamente, lo removemos de la cola
-        if (draftToConsume != null && atLeastOneSuccess) {
-            draftPreviewRepository.delete(draftToConsume);
-            log.info("Post programado ID {} retirado de la cola tras publicación exitosa.", draftToConsume.getId());
-        }
+        if (!automatic) return new com.deyvid.backend.service.ApprovedPublicationService.Result(
+                "REVIEW_REQUIRED", 0, "El contenido quedó guardado para revisión y aprobación.");
+        if (target == null) return new com.deyvid.backend.service.ApprovedPublicationService.Result(
+                "NO_ACCOUNT", 0, "El contenido quedó guardado; conecta una cuenta de LinkedIn antes de publicar automáticamente.");
+        return approvedPublicationService.publish(tenantId, saved.getId());
     }
 
     private static final List<String> PIPELINE_CIVIL_TOPICS = List.of(

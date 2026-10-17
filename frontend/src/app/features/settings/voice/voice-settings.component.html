@@ -1,0 +1,75 @@
+<main class="ui-page ui-page--form">
+  <header>
+    <p class="ui-meta">AUTOMATIZACIÓN</p>
+    <h1 class="ui-title">Voz de IA</h1>
+    <p class="ui-muted">
+      Define cómo escribes. Cada publicación conserva su propio tono y objetivo.
+    </p>
+  </header>
+  @if (error()) {
+    <div class="ui-alert" role="alert">
+      {{ error() }}
+      @if (!loaded()) {
+        <button class="ui-button" (click)="load()">Reintentar</button>
+      }
+    </div>
+  }
+  @if (message()) {
+    <p role="status" class="ui-status ui-status--success">{{ message() }}</p>
+  }
+  <form [formGroup]="form" (ngSubmit)="save()" class="ui-card grid gap-5">
+    <h2 class="ui-section-title">Tu contexto editorial</h2>
+    <p class="ui-meta">
+      Todos los campos son opcionales. Los prompts anteriores se conservan íntegros en instrucciones
+      adicionales.
+    </p>
+    @for (field of fields; track field.key) {
+      <div class="ui-field">
+        <label [for]="'voice-' + field.key">{{ field.label }}</label
+        ><textarea
+          class="ui-input"
+          [id]="'voice-' + field.key"
+          [formControlName]="field.key"
+          [rows]="field.key === 'additional' ? 5 : 2"
+          [placeholder]="field.placeholder"
+        ></textarea>
+      </div>
+    }
+    <div class="ui-actions justify-end">
+      <button class="ui-button ui-button--primary" [disabled]="loading() || saving() || !loaded()">
+        {{ saving() ? 'Guardando…' : 'Guardar voz' }}
+      </button>
+    </div>
+  </form>
+  <section class="ui-card grid gap-4">
+    <div>
+      <h2 class="ui-section-title">Prueba tu voz</h2>
+      <p class="ui-muted">Genera un ejemplo con estos ajustes. No se guarda ni se publica.</p>
+    </div>
+    <div class="ui-field">
+      <label for="sample-topic">Tema de prueba</label
+      ><input
+        id="sample-topic"
+        class="ui-input"
+        [value]="sampleTopic()"
+        (input)="sampleTopic.set($any($event.target).value)"
+      />
+    </div>
+    <button
+      class="ui-button"
+      (click)="test()"
+      [disabled]="testing() || !sampleTopic().trim() || !loaded()"
+    >
+      {{ testing() ? 'Generando ejemplo…' : 'Generar ejemplo' }}
+    </button>
+    @if (sampleError()) {
+      <p class="ui-alert" role="alert">
+        {{ sampleError() }} Puedes volver a pulsar Generar ejemplo.
+      </p>
+    }
+    @if (sample()) {
+      <p class="ui-meta">Ejemplo generado · revisa los hechos antes de usarlo</p>
+      <p class="ui-fulltext">{{ sample() }}</p>
+    }
+  </section>
+</main>

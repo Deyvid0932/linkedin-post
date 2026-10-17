@@ -7,6 +7,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -41,15 +42,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(TokenExpiredException.class)
     public ResponseEntity<Map<String, Object>> handleTokenExpiredException(TokenExpiredException ex) {
         log.warn("Token expired exception: {}", ex.getMessage());
-        Map<String, Object> body = createErrorBody(HttpStatus.UNAUTHORIZED, "Tu sesión o token de acceso ha expirado. Por favor inicia sesión nuevamente.");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+        Map<String, Object> body = createErrorBody(HttpStatus.FAILED_DEPENDENCY, "El token de LinkedIn ha expirado. Reconecta la cuenta en Conexiones.");
+        return ResponseEntity.status(HttpStatus.FAILED_DEPENDENCY).body(body);
     }
 
     @ExceptionHandler(PipelineExecutionException.class)
     public ResponseEntity<Map<String, Object>> handlePipelineExecutionException(PipelineExecutionException ex) {
         log.error("Pipeline execution exception: ", ex);
-        Map<String, Object> body = createErrorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Error durante la ejecución del pipeline de publicación: " + ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+        Map<String, Object> body = createErrorBody(HttpStatus.BAD_GATEWAY, "No se pudo completar la publicación. Revisa el historial y la conexión con LinkedIn antes de reintentar.");
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -82,6 +83,15 @@ public class GlobalExceptionHandler {
         }
         body.put("errors", errors);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleStatusException(ResponseStatusException ex) {
+        int status = ex.getStatusCode().value();
+        HttpStatus resolved = HttpStatus.resolve(status);
+        if (resolved == null || status < 400 || status >= 500) resolved = HttpStatus.INTERNAL_SERVER_ERROR;
+        String message = ex.getReason() == null ? "No se pudo completar la solicitud." : ex.getReason();
+        return ResponseEntity.status(resolved).body(createErrorBody(resolved, message));
     }
 
     @ExceptionHandler(Exception.class)

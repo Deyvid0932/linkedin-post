@@ -8,94 +8,7 @@ import { ThemeToggleComponent } from '../../../shared/components/theme-toggle/th
   selector: 'app-register',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink, ThemeToggleComponent],
-  template: `
-    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 relative transition-colors">
-      
-      <!-- BOTÓN FLOTANTE MODO CLARO / OSCURO REUTILIZABLE -->
-      <div class="fixed top-5 right-5 z-50">
-        <app-theme-toggle variant="floating"></app-theme-toggle>
-      </div>
-
-      <!-- TARJETA REGISTER -->
-      <div class="w-full max-w-md bg-white dark:bg-slate-900/90 backdrop-blur-2xl p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl shadow-blue-500/5 animate-fadeIn transition-colors">
-        
-        <div class="text-center mb-8">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-black text-2xl mx-auto mb-4 shadow-lg shadow-blue-500/30">
-            in
-          </div>
-          <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Crea tu cuenta SaaS</h2>
-          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-            Automatiza tu presencia profesional en LinkedIn
-          </p>
-        </div>
-
-        @if (errorMessage()) {
-          <div class="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs sm:text-sm font-medium flex items-center gap-2 animate-fadeIn">
-            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>{{ errorMessage() }}</span>
-          </div>
-        }
-
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Nombre Completo</label>
-            <input formControlName="name" type="text" placeholder="Ej. Deyvid González"
-                   class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm font-medium" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
-            <input formControlName="email" type="email" placeholder="tu@email.com"
-                   class="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm font-medium" />
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Contraseña</label>
-            <div class="relative">
-              <input
-                formControlName="password"
-                [type]="showPassword() ? 'text' : 'password'"
-                placeholder="Mínimo 6 caracteres"
-                class="w-full pl-4 pr-11 py-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm font-medium"
-              />
-              <button
-                type="button"
-                (click)="showPassword.set(!showPassword())"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 focus:outline-none cursor-pointer"
-                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
-              >
-                @if (showPassword()) {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                  </svg>
-                } @else {
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                }
-              </button>
-            </div>
-          </div>
-
-          <button [disabled]="form.invalid || loading()" type="submit"
-                  class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold shadow-lg shadow-blue-500/25 hover:from-blue-500 hover:to-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer">
-            @if (loading()) {
-              <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-              <span>Creando cuenta...</span>
-            } @else {
-              <span>Crear Cuenta</span>
-            }
-          </button>
-        </form>
-
-        <div class="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          ¿Ya tienes una cuenta?
-          <a routerLink="/auth/login" class="text-blue-600 dark:text-blue-400 font-bold hover:underline ml-1">Inicia sesión</a>
-        </div>
-      </div>
-    </div>
-  `
+  templateUrl: './register.component.html',
 })
 export class RegisterComponent {
   private fb = inject(FormBuilder);
@@ -109,7 +22,7 @@ export class RegisterComponent {
   form = this.fb.group({
     name: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   onSubmit(): void {
@@ -126,8 +39,7 @@ export class RegisterComponent {
       error: (err) => {
         this.loading.set(false);
         this.errorMessage.set(err.error?.message || 'Error al crear la cuenta');
-      }
+      },
     });
   }
 }
-

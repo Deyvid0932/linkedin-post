@@ -39,7 +39,6 @@ public class EmailService {
 
     @Async
     public void sendPasswordResetOtp(String toEmail, String userName, String otpCode) {
-        log.info("🔑 [OTP RECUPERACIÓN] Código generado para {}: {} (Válido por 15 minutos)", toEmail, otpCode);
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -56,7 +55,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("✅ Correo con código OTP enviado exitosamente a: {}", toEmail);
         } catch (Exception e) {
-            log.warn("⚠️ No se pudo enviar el correo vía SMTP a {} ({}). Usa el código del log para pruebas: {}", toEmail, e.getMessage(), otpCode);
+            log.warn("No se pudo enviar el correo de recuperación. Revisa la configuración SMTP.");
         }
     }
 }

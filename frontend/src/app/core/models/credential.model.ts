@@ -35,7 +35,6 @@ export interface ConnectLinkedInAccountRequest {
   maxPostsPerDay?: number;
 }
 
-
 export interface GitHubStatus {
   connected: boolean;
   username: string;

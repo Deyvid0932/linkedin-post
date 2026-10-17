@@ -4,9 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record FeedbackRequest(
-    @NotNull String textoGenerado,
+    @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 3000) String textoGenerado,
     String tema,
-    @NotNull Integer puntajeUsuario,
+    @NotNull @jakarta.validation.constraints.Min(-1) @jakarta.validation.constraints.Max(1) Integer puntajeUsuario,
     String estructuraUsada,
     String sourceMode,
     Integer tokensUsed,

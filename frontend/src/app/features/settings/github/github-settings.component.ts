@@ -4,315 +4,32 @@ import { SlicePipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { CredentialService } from '../../../core/services/credential.service';
 import { GitHubRepo, GitHubStatus } from '../../../core/models/credential.model';
+import { LinkedInAccount } from '../../../core/models/credential.model';
+import {
+  GitHubLinkedInBinding,
+  GitHubLinkedInBindingService,
+} from '../../../core/services/github-linkedin-binding.service';
 
 @Component({
   selector: 'app-github-settings',
   standalone: true,
   imports: [ReactiveFormsModule, FormsModule, SlicePipe, DatePipe],
-  template: `
-    <div class="max-w-6xl mx-auto space-y-6 animate-fadeIn">
-
-      <!-- 1. HEADER DE LA SECCIÓN -->
-      <div>
-        <h1 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-          <svg class="w-7 h-7 text-slate-900 dark:text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>Conexión con GitHub</span>
-        </h1>
-        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Conecta tu Personal Access Token (PAT) y repositorios para automatizar posts a partir de tus commits reales.
-        </p>
-      </div>
-
-      @if (testMessage()) {
-        <div [class]="testSuccess() ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'"
-             class="p-4 rounded-xl border text-sm font-semibold flex items-center justify-between gap-2 animate-fadeIn">
-          <div class="flex items-center gap-2">
-            @if (testSuccess()) {
-              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            } @else {
-              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            }
-            <span>{{ testMessage() }}</span>
-          </div>
-          <button (click)="testMessage.set(null)" class="hover:opacity-75 text-lg font-bold px-2 cursor-pointer">✕</button>
-        </div>
-      }
-
-      <!-- GRID DE SUB-CARDS (UNIFICADOS Y ALINEADOS) -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-
-        <!-- SUB-CARD 1: CREDENCIALES PAT DE GITHUB -->
-        <div class="connection-card space-y-4 mb-0 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between gap-2 flex-wrap mb-3">
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">1. Token de Acceso Personal (PAT)</h2>
-              @if (status()?.connected) {
-                <button (click)="disconnectGitHub()" [disabled]="disconnecting()"
-                        class="px-2.5 py-1 text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors disabled:opacity-50 cursor-pointer whitespace-nowrap flex-shrink-0"
-                        title="Revocar token de GitHub">
-                  {{ disconnecting() ? 'Desconectando...' : 'Revocar Token' }}
-                </button>
-              }
-            </div>
-
-            <!-- INDICADOR DE ESTADO PROMINENTE -->
-            @if (status()?.connected) {
-              <div class="w-full p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border-l-4 border-emerald-500 flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-semibold shadow-xs mb-3">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>Conectado como <strong>@{{ status()?.username }}</strong></span>
-                </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold uppercase">Activo</span>
-              </div>
-            } @else {
-              <div class="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 border-l-4 border-slate-400 text-slate-600 dark:text-slate-400 text-xs font-medium mb-3">
-                <span>Token PAT no configurado. Permite acceder a tus repositorios.</span>
-              </div>
-            }
-
-            <!-- ESTADO CONECTADO COMPACTO O FORMULARIO ACTIVO -->
-            @if (status()?.connected && isLocked()) {
-              <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-3">
-                <div class="space-y-0.5">
-                  <div class="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">Credencial Cifrada</div>
-                  <div class="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    <span>github.com/{{ status()?.username }}</span>
-                    <span class="text-slate-400 font-normal">• PAT Seguro</span>
-                  </div>
-                </div>
-
-                <button type="button"
-                        (click)="requestEditToken()"
-                        class="px-3.5 py-2 rounded-xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                  <span>Editar Credenciales</span>
-                </button>
-              </div>
-            } @else {
-              <!-- FORMULARIO DE EDICIÓN O PRIMERA CONEXIÓN -->
-              <form [formGroup]="tokenForm" (ngSubmit)="saveToken()" class="space-y-3">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Usuario de GitHub</label>
-                  <input formControlName="githubUsername" type="text" placeholder="Ej. Deyvid0932"
-                         class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors" />
-                </div>
-
-                <div>
-                  <div class="flex items-center justify-between mb-1">
-                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Personal Access Token (PAT)</label>
-                  </div>
-
-                  <div class="relative">
-                    <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                    </div>
-
-                    <input formControlName="personalAccessToken"
-                           [type]="showPat() ? 'text' : 'password'"
-                           placeholder="ghp_xxxxxxxxxxxx"
-                           class="w-full pl-10 pr-11 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white text-sm font-mono focus:outline-none focus:border-indigo-500 transition-colors" />
-
-                    <button type="button"
-                            (click)="showPat.set(!showPat())"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 focus:outline-none cursor-pointer"
-                            [attr.aria-label]="showPat() ? 'Ocultar PAT' : 'Ver PAT'">
-                      @if (showPat()) {
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
-                      } @else {
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                <div class="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
-                  <button type="button"
-                          (click)="testGitHubConnection()"
-                          [disabled]="tokenForm.invalid || testing()"
-                          class="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold text-xs transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer">
-                    @if (testing()) {
-                      <span class="w-3.5 h-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Verificando...</span>
-                    } @else {
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                      <span>Probar Token</span>
-                    }
-                  </button>
-
-                  <button type="submit"
-                          [disabled]="tokenForm.invalid || saving()"
-                          class="w-full sm:w-auto px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all disabled:opacity-50 cursor-pointer">
-                    {{ saving() ? 'Guardando...' : 'Guardar y Cifrar' }}
-                  </button>
-
-                  @if (status()?.connected) {
-                    <button type="button" (click)="cancelTokenEdit()" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                      Cancelar
-                    </button>
-                  }
-                </div>
-              </form>
-            }
-          </div>
-        </div>
-
-        <!-- SUB-CARD 2: REPOSITORIOS MONITOREADOS & DROPZONE -->
-        <div class="connection-card space-y-4 mb-0 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <h2 class="text-base font-bold text-slate-900 dark:text-white">2. Repositorios Monitoreados</h2>
-            </div>
-
-            <!-- ZONA DE ARRASTRE Y SOLTADO COMPACTA -->
-            <div (dragover)="onDragOver($event)"
-                 (dragleave)="onDragLeave($event)"
-                 (drop)="onDrop($event)"
-                 [class]="isDragging()
-                  ? 'border-2 border-solid border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/15 scale-[1.01]'
-                  : 'border-2 border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/30'"
-                 class="min-h-[90px] p-4 sm:p-5 rounded-2xl text-center cursor-pointer transition-all duration-200 hover:border-indigo-500/60 group flex flex-col items-center justify-center mb-3">
-
-              <div class="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-              </div>
-
-              <div class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
-                {{ isDragging() ? '¡Suelta aquí tu carpeta o URL de GitHub!' : 'Pega la URL de un repositorio o arrastra su carpeta' }}
-              </div>
-              <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-                Detectamos automáticamente usuario y nombre (ej. https://github.com/usuario/repo)
-              </p>
-            </div>
-
-            <!-- FORMULARIO DE AGREGAR REPOSITORIO -->
-            <form [formGroup]="repoForm" (ngSubmit)="addRepo()" class="space-y-3">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Propietario / Org</label>
-                  <input formControlName="repoOwner" type="text" placeholder="Ej. Deyvid0932"
-                         (input)="onOwnerInput($event)"
-                         class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white text-xs focus:border-indigo-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1">Nombre del Repo</label>
-                  <input formControlName="repoName" type="text" placeholder="Ej. linkedin-post"
-                         class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white text-xs focus:border-indigo-500 focus:outline-none" />
-                </div>
-              </div>
-
-              <button type="submit" [disabled]="repoForm.invalid || adding()"
-                      class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition-all disabled:opacity-50 shadow-md shadow-indigo-500/20 cursor-pointer active:scale-98">
-                {{ adding() ? 'Agregando...' : '+ Monitorear Nuevo Repositorio' }}
-              </button>
-            </form>
-          </div>
-
-        </div>
-
-      </div>
-
-      <!-- 4. TABLA Y LISTA DE REPOSITORIOS MONITOREADOS (.connection-card) -->
-      <div class="connection-card space-y-4 mb-0">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h2 class="text-base font-bold text-slate-900 dark:text-white">Estado de Repositorios Monitoreados</h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Últimos commits detectados y sincronización automática</p>
-          </div>
-          <span class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">{{ repos().length }} repo(s) activo(s)</span>
-        </div>
-
-        <div class="divide-y divide-slate-100 dark:divide-slate-800/80">
-          @for (r of repos(); track r.id) {
-            <div class="py-3.5 first:pt-1 last:pb-1">
-              @if (editingRepoId() === r.id) {
-                <!-- MODO EDICIÓN EN LÍNEA -->
-                <div class="w-full space-y-3 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50">
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <input [(ngModel)]="editOwner" placeholder="Propietario"
-                           class="px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white" />
-                    <input [(ngModel)]="editName" placeholder="Nombre Repositorio"
-                           class="px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white" />
-                  </div>
-                  <div class="flex justify-end gap-2">
-                    <button (click)="cancelEdit()" class="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 cursor-pointer">Cancelar</button>
-                    <button (click)="saveEditRepo(r.id)" class="px-4 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 cursor-pointer">Guardar Cambios</button>
-                  </div>
-                </div>
-              } @else {
-                <!-- FILA RESPONSIVA FLUIDA CON FLEXBOX -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5 p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors duration-200">
-                  
-                  <!-- LADO IZQUIERDO: REPO INFO & COMMIT -->
-                  <div class="flex items-center gap-3 min-w-0 flex-1">
-                    <span class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200 flex-shrink-0 shadow-xs">
-                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                    </span>
-                    <div class="min-w-0 flex-1">
-                      <a [href]="'https://github.com/' + r.repoOwner + '/' + r.repoName" target="_blank"
-                         class="font-bold text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1.5 truncate max-w-full"
-                         [title]="r.repoOwner + '/' + r.repoName">
-                        <span class="truncate">{{ r.repoOwner }}/{{ r.repoName }}</span>
-                        <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                      </a>
-                      <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
-                        <span>Último commit:</span>
-                        <code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono font-bold text-blue-600 dark:text-blue-400">
-                          {{ r.lastCommitSha ? (r.lastCommitSha | slice:0:7) : 'HEAD' }}
-                        </code>
-                        @if (r.lastCheckedAt) {
-                          <span class="text-slate-400">• {{ r.lastCheckedAt | date:'dd/MM/yyyy HH:mm' }}</span>
-                        }
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- LADO DERECHO: SINCRONIZADO + PREVISUALIZAR + ACCIONES -->
-                  <div class="flex items-center justify-between md:justify-end gap-2.5 flex-shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800/80">
-                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 whitespace-nowrap flex-shrink-0">
-                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span>Sincronizado</span>
-                    </span>
-
-                    <button (click)="generatePostFromRepo(r)"
-                            class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap flex-shrink-0 active:scale-95">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                      <span>Previsualizar Post</span>
-                    </button>
-
-                    <div class="flex items-center gap-0.5 flex-shrink-0">
-                      <button (click)="startEditRepo(r)" title="Editar repositorio" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                      </button>
-                      <button (click)="deleteRepo(r.id)" title="Desconectar repositorio" class="p-1.5 text-rose-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              }
-            </div>
-          } @empty {
-            <div class="py-8 text-center space-y-2">
-              <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-              </div>
-              <p class="text-xs text-slate-500">No hay repositorios configurados. Agrega uno arriba para generar posts técnicos basados en código.</p>
-            </div>
-          }
-        </div>
-      </div>
-    </div>
-  `
+  templateUrl: './github-settings.component.html',
 })
 export class GithubSettingsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private credentialService = inject(CredentialService);
+  private bindingService = inject(GitHubLinkedInBindingService);
   private router = inject(Router);
 
   status = signal<GitHubStatus | null>(null);
   repos = signal<GitHubRepo[]>([]);
+  personalAccounts = signal<LinkedInAccount[]>([]);
+  private bindings = signal<Record<string, GitHubLinkedInBinding>>({});
+  private accountChoices = signal<Record<string, string>>({});
+  bindingBusy = signal<string | null>(null);
   isDragging = signal(false);
+  repoUrl = signal('');
   adding = signal(false);
   saving = signal(false);
   testing = signal(false);
@@ -331,12 +48,12 @@ export class GithubSettingsComponent implements OnInit {
 
   tokenForm = this.fb.group({
     githubUsername: ['', Validators.required],
-    personalAccessToken: ['', Validators.required]
+    personalAccessToken: ['', Validators.required],
   });
 
   repoForm = this.fb.group({
     repoOwner: ['', Validators.required],
-    repoName: ['', Validators.required]
+    repoName: ['', Validators.required],
   });
 
   ngOnInit(): void {
@@ -355,7 +72,7 @@ export class GithubSettingsComponent implements OnInit {
           if (!this.isEditingToken()) {
             this.tokenForm.patchValue({
               githubUsername: s.username,
-              personalAccessToken: 'ghp_••••••••••••••••••••••••'
+              personalAccessToken: 'ghp_••••••••••••••••••••••••',
             });
           }
           if (!this.repoForm.value.repoOwner) {
@@ -363,17 +80,137 @@ export class GithubSettingsComponent implements OnInit {
           }
         }
       },
-      error: (err) => console.warn('Error cargando estado GitHub:', err)
+      error: (err) => console.warn('Error cargando estado GitHub:', err),
     });
     this.credentialService.getMonitoredRepos().subscribe({
-      next: (r) => this.repos.set(r || []),
-      error: (err) => console.warn('Error cargando repos:', err)
+      next: (r) => {
+        this.repos.set(r || []);
+        this.loadBindings(r || []);
+      },
+      error: (err) => console.warn('Error cargando repos:', err),
+    });
+    this.credentialService.getLinkedInAccounts().subscribe({
+      next: (accounts) => {
+        const personal = accounts.filter(
+          (account) => account.accountType === 'PERSON' && account.isEnabled && account.isValid,
+        );
+        this.personalAccounts.set(personal);
+        this.accountChoices.update((current) => {
+          const next = { ...current };
+          for (const repo of this.repos())
+            if (!next[repo.id])
+              next[repo.id] =
+                personal.find((account) => account.isPrimary)?.id || personal[0]?.id || '';
+          return next;
+        });
+      },
+      error: () =>
+        this.testMessage.set(
+          'No se pudo cargar la cuenta LinkedIn. Conéctala y vuelve a actualizar.',
+        ),
+    });
+  }
+
+  binding(repoId: string): GitHubLinkedInBinding | null {
+    return this.bindings()[repoId] || null;
+  }
+  accountChoice(repoId: string): string {
+    return this.accountChoices()[repoId] || '';
+  }
+  setAccountChoice(repoId: string, accountId: string): void {
+    this.accountChoices.update((value) => ({ ...value, [repoId]: accountId }));
+  }
+  bindingErrorText(code: string | null): string {
+    return code === 'GITHUB_NOT_CONNECTED'
+      ? 'Conecta GitHub primero.'
+      : code?.startsWith('GITHUB_HTTP_')
+        ? 'GitHub rechazó el acceso; revisa los permisos del PAT y el entorno production.'
+        : 'No se pudo sincronizar. Revisa el repositorio y vuelve a intentar.';
+  }
+
+  private loadBindings(repos: GitHubRepo[]): void {
+    for (const repo of repos)
+      this.bindingService.get(repo.id).subscribe({
+        next: (binding) => this.bindings.update((current) => ({ ...current, [repo.id]: binding })),
+        error: (response) => {
+          if (response?.status !== 404)
+            this.testMessage.set('No se pudo consultar una vinculación de Actions.');
+        },
+      });
+  }
+
+  saveBinding(repoId: string): void {
+    const accountId = this.accountChoice(repoId);
+    if (!accountId || this.bindingBusy()) return;
+    this.bindingBusy.set(repoId);
+    this.bindingService.save(repoId, accountId).subscribe({
+      next: (result) => {
+        this.bindings.update((current) => ({ ...current, [repoId]: result }));
+        this.bindingBusy.set(null);
+        this.testSuccess.set(result.status === 'SYNCED');
+        this.testMessage.set(
+          result.status === 'SYNCED'
+            ? 'Cuenta vinculada. Actions permanece pausado hasta que actives la publicación.'
+            : `Vinculación guardada, sincronización pendiente: ${this.bindingErrorText(result.errorCode)}.`,
+        );
+      },
+      error: () => {
+        this.bindingBusy.set(null);
+        this.testSuccess.set(false);
+        this.testMessage.set(
+          'No se pudo vincular esta cuenta. Revisa que el repositorio y la cuenta pertenezcan a tu espacio.',
+        );
+      },
+    });
+  }
+
+  retryBinding(repoId: string): void {
+    if (this.bindingBusy()) return;
+    this.bindingBusy.set(repoId);
+    this.bindingService.retry(repoId).subscribe({
+      next: (result) => {
+        this.bindings.update((current) => ({ ...current, [repoId]: result }));
+        this.bindingBusy.set(null);
+      },
+      error: () => {
+        this.bindingBusy.set(null);
+        this.testMessage.set(
+          'No se pudo reintentar la sincronización. Revisa los permisos GitHub del entorno.',
+        );
+      },
+    });
+  }
+
+  disconnectBinding(repoId: string): void {
+    if (
+      !confirm(
+        'Se pausará la publicación de este repositorio y AutoPost intentará retirar la credencial de production. Una ejecución ya iniciada puede continuar. ¿Desvincular?',
+      )
+    )
+      return;
+    if (this.bindingBusy()) return;
+    this.bindingBusy.set(repoId);
+    this.bindingService.disconnect(repoId).subscribe({
+      next: () => {
+        this.bindings.update((current) => {
+          const next = { ...current };
+          delete next[repoId];
+          return next;
+        });
+        this.bindingBusy.set(null);
+      },
+      error: () => {
+        this.bindingBusy.set(null);
+        this.testMessage.set(
+          'La limpieza remota falló; la vinculación se conserva. Reintenta antes de desconectar GitHub.',
+        );
+      },
     });
   }
 
   requestEditToken(): void {
     const ok = confirm(
-      'Advertencia:\n\nModificar las credenciales activas de GitHub puede interrumpir la sincronización automática de repositorios y publicaciones en curso.\n\n¿Deseas desbloquear y editar el token?'
+      'Advertencia:\n\nModificar las credenciales activas de GitHub puede interrumpir la sincronización automática de repositorios y publicaciones en curso.\n\n¿Deseas desbloquear y editar el token?',
     );
     if (ok) {
       this.isEditingToken.set(true);
@@ -424,7 +261,7 @@ export class GithubSettingsComponent implements OnInit {
         this.saving.set(false);
         this.testSuccess.set(false);
         this.testMessage.set(err?.error?.message || 'Error guardando token');
-      }
+      },
     });
   }
 
@@ -441,7 +278,7 @@ export class GithubSettingsComponent implements OnInit {
       error: (err) => {
         this.disconnecting.set(false);
         console.error('Error desconectando GitHub:', err);
-      }
+      },
     });
   }
 
@@ -457,13 +294,15 @@ export class GithubSettingsComponent implements OnInit {
 
   saveEditRepo(id: string): void {
     if (!this.editOwner.trim() || !this.editName.trim()) return;
-    this.credentialService.updateMonitoredRepo(id, this.editOwner.trim(), this.editName.trim()).subscribe({
-      next: () => {
-        this.editingRepoId.set(null);
-        this.loadData();
-      },
-      error: (err) => console.error('Error actualizando repo:', err)
-    });
+    this.credentialService
+      .updateMonitoredRepo(id, this.editOwner.trim(), this.editName.trim())
+      .subscribe({
+        next: () => {
+          this.editingRepoId.set(null);
+          this.loadData();
+        },
+        error: (err) => console.error('Error actualizando repo:', err),
+      });
   }
 
   onDragOver(event: DragEvent): void {
@@ -485,21 +324,20 @@ export class GithubSettingsComponent implements OnInit {
 
     if (!event.dataTransfer) return;
 
-    const textData = event.dataTransfer.getData('text/plain') || event.dataTransfer.getData('text/uri-list');
+    const textData =
+      event.dataTransfer.getData('text/plain') || event.dataTransfer.getData('text/uri-list');
     if (textData) {
+      this.repoUrl.set(textData.trim());
       this.parseAndSetGitHubUrl(textData);
       return;
     }
 
-    if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      const name = file.name;
-      const owner = this.status()?.username || 'user';
-      this.repoForm.patchValue({
-        repoOwner: owner,
-        repoName: name.replace(/\.git$/i, '')
-      });
-    }
+    this.testMessage.set('Arrastra un enlace de GitHub. Las carpetas locales no se importan.');
+  }
+
+  useRepositoryUrl(value: string): void {
+    this.repoUrl.set(value);
+    this.parseAndSetGitHubUrl(value);
   }
 
   onOwnerInput(event: Event): void {
@@ -509,20 +347,44 @@ export class GithubSettingsComponent implements OnInit {
     }
   }
 
-  private parseAndSetGitHubUrl(url: string): void {
-    const match = url.match(/github\.com[/:]([^/]+)\/([^/#\s?]+)/) || url.match(/^([^/]+)\/([^/#\s?]+)$/);
-    if (match) {
-      const owner = match[1];
-      const repo = match[2].replace(/\.git$/i, '');
-      this.repoForm.patchValue({
-        repoOwner: owner,
-        repoName: repo
-      });
+  private parseAndSetGitHubUrl(rawUrl: string): void {
+    const value = rawUrl.trim();
+    let owner = '';
+    let repo = '';
+    const shorthand = value.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)(?:\.git)?$/);
+    if (shorthand) {
+      owner = shorthand[1];
+      repo = shorthand[2].replace(/\.git$/i, '');
+    } else {
+      try {
+        const parsed = new URL(value);
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        if (
+          parsed.protocol !== 'https:' ||
+          parsed.hostname.toLowerCase() !== 'github.com' ||
+          parsed.username ||
+          parsed.password ||
+          parts.length !== 2 ||
+          !parts.every((part) => /^[A-Za-z0-9_.-]+$/.test(part))
+        )
+          throw new Error('invalid');
+        owner = parts[0];
+        repo = parts[1].replace(/\.git$/i, '');
+      } catch {
+        this.testMessage.set(
+          'Usa una URL https://github.com/propietario/repositorio o el formato propietario/repositorio.',
+        );
+        return;
+      }
     }
+    this.repoForm.patchValue({ repoOwner: owner, repoName: repo });
+    this.testMessage.set(null);
   }
 
   generatePostFromRepo(repo: GitHubRepo): void {
-    this.router.navigate(['/studio'], { queryParams: { repoId: repo.id, repo: `${repo.repoOwner}/${repo.repoName}` } });
+    this.router.navigate(['/studio'], {
+      queryParams: { repoId: repo.id, repo: `${repo.repoOwner}/${repo.repoName}` },
+    });
   }
 
   addRepo(): void {
@@ -538,7 +400,7 @@ export class GithubSettingsComponent implements OnInit {
       error: (err) => {
         this.adding.set(false);
         console.error('Error agregando repo:', err);
-      }
+      },
     });
   }
 

@@ -19,7 +19,13 @@ public class WebClientConfig {
 
     @Bean
     public WebClient.Builder webClientBuilder() {
-        return WebClient.builder();
+        var client = reactor.netty.http.client.HttpClient.create()
+                .option(io.netty.channel.ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+                .responseTimeout(java.time.Duration.ofSeconds(60))
+                .followRedirect(false);
+        return WebClient.builder()
+                .clientConnector(new org.springframework.http.client.reactive.ReactorClientHttpConnector(client))
+                .codecs(config -> config.defaultCodecs().maxInMemorySize(8 * 1024 * 1024));
     }
 
     @Bean(name = "gitHubWebClient")
@@ -28,6 +34,8 @@ public class WebClientConfig {
                 .baseUrl("https://api.github.com")
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader("User-Agent", "SaaS-LinkedIn-Automation-Engine")
+                // GitHub's contents API base64-encodes reviewed queues that can be up to 50 MB.
+                .codecs(config -> config.defaultCodecs().maxInMemorySize(75 * 1024 * 1024))
                 .build();
     }
 

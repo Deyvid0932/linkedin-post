@@ -20,7 +20,7 @@ public class JwtTokenProvider {
     private final long jwtExpirationMs;
 
     public JwtTokenProvider(
-            @Value("${app.jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250655368566D5971}") String secret,
+            @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms:86400000}") long jwtExpirationMs) {
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpirationMs = jwtExpirationMs;
@@ -39,6 +39,7 @@ public class JwtTokenProvider {
                 .subject(username)
                 .claim("tenantId", tenantId != null ? tenantId.toString() : "")
                 .claim("roles", roles)
+                .claim("tokenVersion", authentication.getPrincipal() instanceof UserDetailsServiceImpl.Principal principal ? principal.getTokenVersion() : 0L)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)
@@ -73,5 +74,10 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public boolean matchesVersion(String token, long version) {
+        Number claim = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().get("tokenVersion", Number.class);
+        return (claim == null ? 0L : claim.longValue()) == version;
     }
 }

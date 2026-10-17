@@ -10,11 +10,7 @@ describe('PublicationService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        PublicationService,
-        provideHttpClient(),
-        provideHttpClientTesting()
-      ]
+      providers: [PublicationService, provideHttpClient(), provideHttpClientTesting()],
     });
     service = TestBed.inject(PublicationService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -36,13 +32,13 @@ describe('PublicationService', () => {
           linkedinPostUrn: 'urn:li:share:123',
           sourceReference: 'repo/commit-1',
           createdAt: '2026-08-14T12:00:00Z',
-          publishedAt: '2026-08-14T12:01:00Z'
-        }
+          publishedAt: '2026-08-14T12:01:00Z',
+        },
       ],
       totalElements: 1,
       totalPages: 1,
       size: 10,
-      number: 0
+      number: 0,
     };
 
     service.getHistory(0, 10).subscribe((res) => {
@@ -54,6 +50,19 @@ describe('PublicationService', () => {
     const req = httpMock.expectOne('http://localhost:8080/api/v1/publications?page=0&size=10');
     expect(req.request.method).toBe('GET');
     req.flush(mockPage);
+  });
+
+  it('sends supported history filters and server pagination', () => {
+    service
+      .getHistory(2, 20, { search: 'Angular', status: 'FAILED', sourceMode: 'RESEARCH' })
+      .subscribe();
+    const req = httpMock.expectOne((r) => r.url === 'http://localhost:8080/api/v1/publications');
+    expect(req.request.params.get('page')).toBe('2');
+    expect(req.request.params.get('size')).toBe('20');
+    expect(req.request.params.get('search')).toBe('Angular');
+    expect(req.request.params.get('status')).toBe('FAILED');
+    expect(req.request.params.get('sourceMode')).toBe('RESEARCH');
+    req.flush({ content: [], totalElements: 0, totalPages: 0, size: 20, number: 2 });
   });
 
   it('should trigger pipeline execution', () => {
@@ -79,7 +88,7 @@ describe('PublicationService', () => {
       sourceMode: 'PROJECT',
       generatedText: 'Preview generated content',
       imageUrl: 'https://example.com/preview.png',
-      sourceReference: 'Signals in Angular'
+      sourceReference: 'Signals in Angular',
     };
 
     service.getPreview().subscribe((res) => {

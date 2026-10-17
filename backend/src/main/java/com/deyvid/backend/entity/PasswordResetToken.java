@@ -24,8 +24,12 @@ public class PasswordResetToken {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "otp_code", nullable = false, length = 6)
+    @Column(name = "otp_code", nullable = false, length = 255)
     private String otpCode;
+
+    @Column(name = "failed_attempts", nullable = false)
+    @Builder.Default
+    private int failedAttempts = 0;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

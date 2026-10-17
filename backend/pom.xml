@@ -44,6 +44,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>com.goterl</groupId>
+			<artifactId>lazysodium-java</artifactId>
+			<version>5.2.0</version>
+		</dependency>
 		<!-- OAuth2 Client (descomentar cuando se configuren credenciales reales de LinkedIn/Google)
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -79,8 +84,8 @@
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-core</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>
@@ -109,8 +114,7 @@
 		<!-- Spring AI & Vector Store -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-pgvector-store-spring-boot-starter</artifactId>
-			<version>1.0.0-M6</version>
+            <artifactId>spring-ai-vector-store</artifactId>
 		</dependency>
 
 		<!-- Testing -->

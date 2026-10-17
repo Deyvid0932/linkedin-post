@@ -1,0 +1,292 @@
+<main class="ui-page">
+  <header class="ui-heading">
+    <div>
+      <p class="ui-meta">CONTENIDO · RESPALDO EDITORIAL</p>
+      <h1 class="ui-title">
+        Banco de ideas
+        <span class="ui-meta align-middle font-normal">{{ topics().length }} ideas</span>
+      </h1>
+      <p class="ui-muted mt-2">
+        Elige qué tema investigar cuando no haya commits recientes en GitHub y organiza su
+        prioridad.
+      </p>
+    </div>
+    <div class="ui-actions">
+      @if (topics().length) {
+        <button
+          type="button"
+          class="ui-button"
+          (click)="showClearAllModal.set(true)"
+          [disabled]="clearingAll()"
+        >
+          Vaciar banco
+        </button>
+      }
+      <button
+        type="button"
+        class="ui-button ui-button--primary"
+        (click)="isInputExpanded.set(!isInputExpanded())"
+      >
+        {{ isInputExpanded() ? 'Cerrar formulario' : 'Agregar ideas' }}
+      </button>
+    </div>
+  </header>
+
+  @if (feedbackNotice()) {
+    <div
+      class="ui-alert"
+      [class.ui-alert--success]="!feedbackNotice()!.startsWith('No ')"
+      [attr.role]="
+        feedbackNotice()!.startsWith('No ') || feedbackNotice()!.startsWith('No se ')
+          ? 'alert'
+          : 'status'
+      "
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span>{{ feedbackNotice() }}</span>
+        @if (feedbackNotice()!.includes('No pudimos cargar las ideas')) {
+          <button type="button" class="ui-button" (click)="loadTopics()">Reintentar</button>
+        }
+        <button
+          type="button"
+          class="rounded-md px-2 py-1"
+          aria-label="Cerrar aviso"
+          (click)="feedbackNotice.set(null)"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (showClearAllModal()) {
+    <app-dialog title="Vaciar banco de ideas" (closed)="showClearAllModal.set(false)"
+      ><p>
+        Se eliminarán las {{ topics().length }} ideas del banco. Esta acción no se puede deshacer.
+      </p>
+      <div class="ui-actions justify-end">
+        <button class="ui-button" (click)="showClearAllModal.set(false)">Cancelar</button
+        ><button class="ui-button" (click)="confirmClearAll()" [disabled]="clearingAll()">
+          {{ clearingAll() ? 'Eliminando…' : 'Vaciar banco' }}
+        </button>
+      </div></app-dialog
+    >
+  }
+  @if (topicToDelete(); as topic) {
+    <app-dialog title="Eliminar idea" (closed)="topicToDelete.set(null)"
+      ><p>¿Eliminar esta idea? Esta acción no se puede deshacer.</p>
+      <article class="ui-card">
+        <strong>{{ topic.title }}</strong>
+        <p class="ui-meta">{{ topic.category }}</p>
+      </article>
+      <div class="ui-actions justify-end">
+        <button class="ui-button" (click)="topicToDelete.set(null)">Cancelar</button
+        ><button class="ui-button" (click)="confirmDelete()">Eliminar idea</button>
+      </div></app-dialog
+    >
+  }
+
+  @if (isInputExpanded()) {
+    <section class="ui-card grid gap-4" aria-labelledby="ideas-import-title">
+      <div>
+        <h2 id="ideas-import-title" class="ui-section-title">Agregar temas</h2>
+        <p class="ui-muted mt-1">
+          Pega varias ideas, una por línea. AutoPost clasifica el rubro y omite duplicados.
+        </p>
+      </div>
+      <label class="sr-only" for="ideas-input">Ideas técnicas, una por línea</label>
+      <textarea
+        id="ideas-input"
+        [(ngModel)]="rawInputText"
+        rows="4"
+        placeholder="Ejemplo:&#10;Virtual Threads en Java para alta concurrencia&#10;Optimización de estado con Signals en Angular&#10;Índices B-Tree en PostgreSQL"
+        class="ui-input min-h-32 resize-y font-mono text-sm"
+      ></textarea>
+      <div class="ui-toolbar justify-between">
+        <p class="ui-meta">Cada línea se guarda como una idea independiente.</p>
+        <div class="ui-actions">
+          <button type="button" class="ui-button" (click)="isInputExpanded.set(false)">
+            Cancelar</button
+          ><button
+            type="button"
+            class="ui-button ui-button--primary"
+            (click)="submitSmartIdeas()"
+            [disabled]="!rawInputText.trim() || saving()"
+          >
+            {{ saving() ? 'Guardando…' : 'Guardar ideas' }}
+          </button>
+        </div>
+      </div>
+    </section>
+  }
+
+  <section class="ui-card grid gap-4" aria-label="Ideas y filtros">
+    <div class="ui-toolbar">
+      <label class="sr-only" for="ideas-search">Buscar ideas</label
+      ><input
+        id="ideas-search"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        class="ui-input min-w-48 flex-1"
+        placeholder="Buscar por tema o categoría…"
+      />
+      <div
+        class="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 dark:bg-neutral-900"
+        aria-label="Filtrar ideas"
+      >
+        <button
+          type="button"
+          class="rounded-md px-3 py-2 text-sm"
+          [class.account-filter-selected]="filterMode() === 'ALL'"
+          [class.font-semibold]="filterMode() === 'ALL'"
+          [attr.aria-pressed]="filterMode() === 'ALL'"
+          (click)="filterMode.set('ALL')"
+        >
+          Todas <span class="ui-meta">{{ topics().length }}</span>
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-2 text-sm"
+          [class.account-filter-selected]="filterMode() === 'AVAILABLE'"
+          [class.font-semibold]="filterMode() === 'AVAILABLE'"
+          [attr.aria-pressed]="filterMode() === 'AVAILABLE'"
+          (click)="filterMode.set('AVAILABLE')"
+        >
+          Disponibles <span class="ui-meta">{{ countAvailable() }}</span>
+        </button>
+        <button
+          type="button"
+          class="rounded-md px-3 py-2 text-sm"
+          [class.account-filter-selected]="filterMode() === 'INVESTIGATED'"
+          [class.font-semibold]="filterMode() === 'INVESTIGATED'"
+          [attr.aria-pressed]="filterMode() === 'INVESTIGATED'"
+          (click)="filterMode.set('INVESTIGATED')"
+        >
+          Investigadas <span class="ui-meta">{{ countInvestigated() }}</span>
+        </button>
+      </div>
+    </div>
+    <div class="ui-toolbar justify-between border-b border-slate-200 pb-3 dark:border-neutral-800">
+      <p class="ui-meta">
+        Mostrando {{ filteredTopics().length }} de {{ topics().length }} · prioridad de arriba hacia
+        abajo
+      </p>
+      @if (!reorderEnabled()) {
+        <p class="ui-meta">Quita la búsqueda y el filtro para reordenar.</p>
+      } @else {
+        <p class="ui-meta">Orden manual</p>
+      }
+    </div>
+    @if (topicsLoading()) {
+      <p class="ui-empty" role="status">Cargando ideas…</p>
+    } @else {
+      <div
+        class="hidden items-center border-b border-slate-200 px-2 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:flex dark:border-neutral-800"
+      >
+        <span class="w-12">Orden</span><span class="flex-1">Tema</span
+        ><span class="w-36">Estado</span><span class="w-12 text-right"> </span>
+      </div>
+      @for (item of filteredTopics(); track item.id; let i = $index) {
+        <article
+          class="group flex min-w-0 items-center gap-3 border-b border-slate-100 px-2 py-3 last:border-0 hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900/60"
+        >
+          <span class="w-12 shrink-0 font-mono text-xs text-slate-400">#{{ i + 1 }}</span>
+          <div class="min-w-0 flex-1">
+            <strong class="block truncate text-sm font-semibold" [title]="item.title">{{
+              item.title
+            }}</strong>
+            <div class="mt-1 flex flex-wrap items-center gap-2">
+              <span class="ui-status">{{ item.category || 'General Tech' }}</span>
+              <span class="ui-status">{{
+                item.isAiResearch ? 'Investigación IA' : 'Tema fijo'
+              }}</span>
+              <span class="ui-meta">{{
+                item.isUsed && item.usedAt
+                  ? 'Investigada el ' + (item.usedAt | slice: 0 : 10)
+                  : 'Añadida el ' + (item.createdAt | slice: 0 : 10)
+              }}</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="hidden w-36 text-left sm:block"
+            [disabled]="togglingTopicId() === item.id"
+            [attr.aria-label]="
+              item.isUsed
+                ? 'Marcar ' + item.title + ' como disponible'
+                : 'Marcar ' + item.title + ' como investigada'
+            "
+            (click)="toggleUsed(item)"
+          >
+            <span class="ui-status" [class.ui-status--success]="!item.isUsed">{{
+              item.isUsed ? 'Investigada' : 'Disponible'
+            }}</span>
+          </button>
+          <a
+            routerLink="/studio"
+            [queryParams]="{ topic: item.title }"
+            class="ui-button hidden min-h-9 px-3 py-1 text-xs sm:inline-flex"
+            >Usar idea</a
+          >
+          <details class="relative w-10 shrink-0 text-right">
+            <summary
+              class="inline-grid size-9 cursor-pointer list-none place-items-center rounded-md text-lg text-slate-500 hover:bg-slate-200 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:bg-neutral-800"
+              [attr.aria-label]="'Acciones para ' + item.title"
+            >
+              ⋯
+            </summary>
+            <div
+              class="absolute right-0 top-10 z-20 grid w-48 gap-1 rounded-lg border border-slate-200 bg-white p-1.5 text-left shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <button
+                type="button"
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-800"
+                [disabled]="i === 0 || !reorderEnabled()"
+                (click)="dismissMenu($event); movePriority(item.id, -1)"
+              >
+                Subir prioridad
+              </button>
+              <button
+                type="button"
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-800"
+                [disabled]="i === filteredTopics().length - 1 || !reorderEnabled()"
+                (click)="dismissMenu($event); movePriority(item.id, 1)"
+              >
+                Bajar prioridad
+              </button>
+              <button
+                type="button"
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-800 sm:hidden"
+                [disabled]="togglingTopicId() === item.id"
+                (click)="dismissMenu($event); toggleUsed(item)"
+              >
+                {{ item.isUsed ? 'Marcar disponible' : 'Marcar investigada' }}
+              </button>
+              <button
+                type="button"
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-800"
+                [disabled]="openingTopicId() === item.id"
+                (click)="dismissMenu($event); openInStudio(item)"
+              >
+                Usar idea en el estudio
+              </button>
+              <button
+                type="button"
+                class="rounded px-3 py-2 text-left text-sm text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                (click)="dismissMenu($event); topicToDelete.set(item)"
+              >
+                Eliminar idea
+              </button>
+            </div>
+          </details>
+        </article>
+      } @empty {
+        <div class="ui-empty">
+          <strong class="block text-slate-900 dark:text-neutral-100"
+            >No hay ideas para mostrar</strong
+          ><span class="ui-meta">Cambia los filtros o agrega un tema nuevo.</span>
+        </div>
+      }
+    }
+  </section>
+</main>

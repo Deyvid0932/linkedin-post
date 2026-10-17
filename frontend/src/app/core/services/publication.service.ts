@@ -1,8 +1,16 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { GeneratedPreview, PublicationLog } from '../models/publication.model';
+
+export interface HistoryFilters {
+  search?: string;
+  status?: PublicationLog['status'];
+  sourceMode?: PublicationLog['sourceMode'];
+  startDate?: string;
+  endDate?: string;
+}
 
 export interface PageResponse<T> {
   content: T[];
@@ -13,15 +21,23 @@ export interface PageResponse<T> {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PublicationService {
   private readonly API_URL = `${environment.apiUrl}/publications`;
 
   constructor(private http: HttpClient) {}
 
-  getHistory(page: number = 0, size: number = 50): Observable<PageResponse<PublicationLog>> {
-    return this.http.get<PageResponse<PublicationLog>>(`${this.API_URL}?page=${page}&size=${size}`);
+  getHistory(
+    page: number = 0,
+    size: number = 20,
+    filters: HistoryFilters = {},
+  ): Observable<PageResponse<PublicationLog>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params = params.set(key, value);
+    }
+    return this.http.get<PageResponse<PublicationLog>>(this.API_URL, { params });
   }
 
   getQueue(): Observable<PublicationLog[]> {
@@ -32,20 +48,37 @@ export class PublicationService {
     return this.http.delete<void>(`${this.API_URL}/queue/${id}`);
   }
 
-  publishQueuedNow(id: string): Observable<{ success: boolean; message: string; linkedinUrn?: string }> {
-    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string }>(`${this.API_URL}/queue/${id}/publish-now`, {});
+  publishQueuedNow(
+    id: string,
+  ): Observable<{ success: boolean; message: string; linkedinUrn?: string }> {
+    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string }>(
+      `${this.API_URL}/queue/${id}/publish-now`,
+      {},
+    );
   }
 
   deletePublication(id: string): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
 
-  retryPublication(id: string): Observable<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }> {
-    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }>(`${this.API_URL}/${id}/retry`, {});
+  retryPublication(
+    id: string,
+  ): Observable<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }> {
+    return this.http.post<{
+      success: boolean;
+      message: string;
+      linkedinUrn?: string;
+      log?: PublicationLog;
+    }>(`${this.API_URL}/${id}/retry`, {});
   }
 
-  republishPost(id: string): Observable<{ success: boolean; message: string; linkedinUrn?: string }> {
-    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string }>(`${this.API_URL}/${id}/republish`, {});
+  republishPost(
+    id: string,
+  ): Observable<{ success: boolean; message: string; linkedinUrn?: string }> {
+    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string }>(
+      `${this.API_URL}/${id}/republish`,
+      {},
+    );
   }
 
   clearHistory(): Observable<{ message: string }> {
@@ -64,10 +97,15 @@ export class PublicationService {
     return this.http.post<GeneratedPreview>(`${this.API_URL}/preview/generate`, {});
   }
 
-  publishPreviewNow(text?: string, imageUrl?: string): Observable<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }> {
-    return this.http.post<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }>(
-      `${this.API_URL}/preview/publish-now`,
-      { text, imageUrl }
-    );
+  publishPreviewNow(
+    text?: string,
+    imageUrl?: string,
+  ): Observable<{ success: boolean; message: string; linkedinUrn?: string; log?: PublicationLog }> {
+    return this.http.post<{
+      success: boolean;
+      message: string;
+      linkedinUrn?: string;
+      log?: PublicationLog;
+    }>(`${this.API_URL}/preview/publish-now`, { text, imageUrl });
   }
 }

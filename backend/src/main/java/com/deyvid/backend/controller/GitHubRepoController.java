@@ -10,11 +10,13 @@ import com.deyvid.backend.repository.GitHubRepositoryRepo;
 import com.deyvid.backend.security.AuthHelper;
 import com.deyvid.backend.service.AuditLogService;
 import com.deyvid.backend.service.EncryptionService;
+import com.deyvid.backend.service.GitHubLinkedInBindingService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -34,6 +36,7 @@ public class GitHubRepoController {
     private final EncryptionService encryptionService;
     private final AuditLogService auditLogService;
     private final WebClient gitHubWebClient;
+    private final GitHubLinkedInBindingService githubBindings;
 
     public GitHubRepoController(
             AuthHelper authHelper,
@@ -41,12 +44,14 @@ public class GitHubRepoController {
             GitHubCredentialRepository gitHubCredentialRepository,
             EncryptionService encryptionService,
             AuditLogService auditLogService,
+            GitHubLinkedInBindingService githubBindings,
             @Qualifier("gitHubWebClient") WebClient gitHubWebClient) {
         this.authHelper = authHelper;
         this.gitHubRepositoryRepo = gitHubRepositoryRepo;
         this.gitHubCredentialRepository = gitHubCredentialRepository;
         this.encryptionService = encryptionService;
         this.auditLogService = auditLogService;
+        this.githubBindings = githubBindings;
         this.gitHubWebClient = gitHubWebClient;
     }
 
@@ -138,6 +143,7 @@ public class GitHubRepoController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<GitHubRepoResponse> updateRepo(Authentication auth, @PathVariable UUID id, @Valid @RequestBody GitHubRepoRequest request) {
         User user = authHelper.getCurrentUser(auth);
         GitHubRepository repo = gitHubRepositoryRepo.findById(id)
@@ -147,6 +153,7 @@ public class GitHubRepoController {
             throw new IllegalArgumentException("Permisos insuficientes");
         }
 
+        githubBindings.disconnectIfBound(user.getTenant().getId(), id);
         repo.setRepoOwner(request.repoOwner());
         repo.setRepoName(request.repoName());
         GitHubRepository saved = gitHubRepositoryRepo.save(repo);
@@ -157,6 +164,7 @@ public class GitHubRepoController {
     }
 
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<Void> deleteRepo(Authentication auth, @PathVariable UUID id) {
         User user = authHelper.getCurrentUser(auth);
         GitHubRepository repo = gitHubRepositoryRepo.findById(id)
@@ -166,6 +174,7 @@ public class GitHubRepoController {
             throw new IllegalArgumentException("Permisos insuficientes");
         }
 
+        githubBindings.disconnectIfBound(user.getTenant().getId(), id);
         gitHubRepositoryRepo.delete(repo);
         auditLogService.recordAction(user.getTenant(), user.getEmail(), "DELETE_GITHUB_REPO", "Repositorio desconectado: " + repo.getRepoOwner() + "/" + repo.getRepoName());
 

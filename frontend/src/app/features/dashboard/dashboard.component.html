@@ -1,0 +1,194 @@
+<div class="dashboard-home">
+  <header class="dashboard-heading">
+    <div>
+      <p class="dashboard-eyebrow">Tu espacio de publicación</p>
+      <h1>Hola, {{ firstName() }}</h1>
+      <p class="dashboard-subtitle">Prepara tus ideas y mantén tus publicaciones en marcha.</p>
+    </div>
+    <a routerLink="/compose" class="dashboard-create"
+      ><svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path
+          d="M10 4v12M4 10h12"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        /></svg
+      >Nueva publicación</a
+    >
+  </header>
+
+  @if (error()) {
+    <div role="alert" class="dashboard-alert">
+      {{ error() }} <button type="button" (click)="load()">Reintentar</button>
+    </div>
+  }
+  @if (loading()) {
+    <p role="status" class="dashboard-loading">Cargando tus publicaciones…</p>
+  }
+
+  @if (stats() && (!stats()!.linkedInConnected || !hasContent() || !hasSchedule())) {
+    <section class="dashboard-setup" aria-labelledby="setup-heading">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-eyebrow">Primeros pasos</p>
+          <h2 id="setup-heading">Deja listo tu espacio</h2>
+        </div>
+      </div>
+      <div class="dashboard-setup-grid">
+        <a
+          routerLink="/settings/linkedin"
+          class="dashboard-step"
+          [class.dashboard-step--done]="stats()?.linkedInConnected"
+        >
+          <span class="dashboard-step-mark">{{ stats()?.linkedInConnected ? '✓' : '1' }}</span>
+          <span
+            ><strong>{{
+              stats()?.linkedInConnected ? 'LinkedIn conectado' : 'Conecta LinkedIn'
+            }}</strong
+            ><small>{{
+              stats()?.linkedInConnected
+                ? 'La cuenta está lista para publicar.'
+                : 'Autoriza tu cuenta para preparar publicaciones.'
+            }}</small></span
+          >
+          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a routerLink="/compose" class="dashboard-step" [class.dashboard-step--done]="hasContent()">
+          <span class="dashboard-step-mark">{{ hasContent() ? '✓' : '2' }}</span>
+          <span
+            ><strong>{{
+              hasContent() ? 'Tu contenido ya está en marcha' : 'Crea tu primera publicación'
+            }}</strong
+            ><small>{{
+              hasContent()
+                ? 'Puedes seguir escribiendo o revisar la cola.'
+                : 'Escribe desde cero o parte de una idea.'
+            }}</small></span
+          >
+          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a
+          routerLink="/settings/schedule"
+          class="dashboard-step"
+          [class.dashboard-step--done]="hasSchedule()"
+        >
+          <span class="dashboard-step-mark">{{ hasSchedule() ? '✓' : '3' }}</span>
+          <span
+            ><strong>{{ hasSchedule() ? 'Horario configurado' : 'Configura tu ritmo' }}</strong
+            ><small>{{
+              hasSchedule()
+                ? 'Revisa cuándo trabaja cada automatización.'
+                : 'Define los horarios de AutoPost y GitHub Actions.'
+            }}</small></span
+          >
+          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+  }
+
+  <div class="dashboard-columns">
+    <section class="dashboard-panel dashboard-up-next" aria-labelledby="next-publication-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-eyebrow">Publicación</p>
+          <h2 id="next-publication-title">En cola</h2>
+        </div>
+        <a routerLink="/queue" class="dashboard-text-link"
+          >Ver cola <span aria-hidden="true">→</span></a
+        >
+      </div>
+      @if (queueError()) {
+        <div class="dashboard-empty">
+          <p>No pudimos consultar la cola</p>
+          <small>Comprueba el backend e inténtalo otra vez.</small
+          ><button type="button" class="dashboard-secondary-action" (click)="load()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (queue()[0]; as next) {
+        <article class="dashboard-queue-item">
+          <span class="dashboard-status-dot" aria-hidden="true"></span>
+          <div class="min-w-0">
+            <p>{{ next.generatedText || 'Publicación aprobada' }}</p>
+            <small>Lista para el proceso de publicación · Sin fecha asignada</small>
+          </div>
+        </article>
+        <a routerLink="/compose" class="dashboard-secondary-action">Preparar otra</a>
+      } @else if (loading()) {
+        <div class="dashboard-empty">
+          <span class="dashboard-empty-icon" aria-hidden="true">◷</span>
+          <p>Buscando contenido en cola…</p>
+        </div>
+      } @else {
+        <div class="dashboard-empty">
+          <span class="dashboard-empty-icon" aria-hidden="true">◷</span>
+          <p>No hay publicaciones pendientes</p>
+          <small>Cuando apruebes una publicación, aparecerá aquí.</small
+          ><a routerLink="/compose" class="dashboard-secondary-action">Crear publicación</a>
+        </div>
+      }
+    </section>
+
+    <section class="dashboard-panel" aria-labelledby="recent-activity-title">
+      <div class="dashboard-section-heading">
+        <div>
+          <p class="dashboard-eyebrow">Tu actividad</p>
+          <h2 id="recent-activity-title">Publicaciones recientes</h2>
+        </div>
+        <a routerLink="/publications" class="dashboard-text-link"
+          >Ver historial <span aria-hidden="true">→</span></a
+        >
+      </div>
+      @if (recentError()) {
+        <div class="dashboard-empty">
+          <p>No pudimos cargar la actividad</p>
+          <small>Vuelve a intentarlo en unos segundos.</small
+          ><button type="button" class="dashboard-secondary-action" (click)="load()">
+            Reintentar
+          </button>
+        </div>
+      } @else if (!recent().length && !loading()) {
+        <div class="dashboard-empty">
+          <span class="dashboard-empty-icon" aria-hidden="true">▤</span>
+          <p>Aún no tienes actividad</p>
+          <small>Los borradores y resultados aparecerán aquí.</small>
+        </div>
+      }
+      @for (post of recent(); track post.id) {
+        <article class="dashboard-activity-row">
+          <span class="dashboard-activity-icon" aria-hidden="true">▤</span>
+          <div class="min-w-0 flex-1">
+            <p>{{ post.generatedText || post.sourceReference || 'Publicación' }}</p>
+            @if (post.publishedAt) {
+              <small>Publicado {{ post.publishedAt | date: 'dd MMM yyyy' }}</small>
+            } @else {
+              <small>Creado {{ post.createdAt | date: 'dd MMM yyyy' }}</small>
+            }
+          </div>
+          <span
+            class="dashboard-status"
+            [class.dashboard-status--success]="post.status === 'SUCCESS'"
+            [class.dashboard-status--error]="post.status === 'FAILED'"
+            >{{ statusLabel(post.status) }}</span
+          >
+        </article>
+      }
+    </section>
+  </div>
+
+  <section class="dashboard-automation" aria-label="Estado de automatización">
+    <span
+      class="dashboard-automation-indicator"
+      [class.dashboard-automation-indicator--active]="automation.enabled() === true"
+      aria-hidden="true"
+    ></span>
+    <div>
+      <strong>{{ automation.label() }}</strong>
+      <p>{{ automation.explanation }}</p>
+    </div>
+    <a routerLink="/settings/schedule" class="dashboard-text-link"
+      >Administrar horarios <span aria-hidden="true">→</span></a
+    >
+  </section>
+</div>

@@ -2,12 +2,6 @@ spring:
   application:
     name: linkedin-automation-backend
 
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.autoconfigure.chat.observation.ChatObservationAutoConfiguration
-      - org.springframework.ai.autoconfigure.image.observation.ImageObservationAutoConfiguration
-      - org.springframework.ai.autoconfigure.vectorstore.observation.VectorStoreObservationAutoConfiguration
-
   threads:
     virtual:
       enabled: true
@@ -26,7 +20,7 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: false
     properties:
       hibernate:
@@ -34,13 +28,13 @@ spring:
 
   flyway:
     enabled: true
-    baseline-on-migrate: true
+    baseline-on-migrate: false
     locations: classpath:db/migration
 
   quartz:
     job-store-type: jdbc
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
     wait-for-jobs-to-complete-on-shutdown: true
     overwrite-existing-jobs: true
     properties:
@@ -69,20 +63,28 @@ spring:
       chat:
         options:
           model: ${LLM_MODEL:deepseek-chat}
-    vectorstore:
-      pgvector:
-        index-type: HNSW
-        distance-type: COSINE_DISTANCE
-        dimensions: 1536
-        initialize-schema: true
 
 app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200}
+  scheduler:
+    mode: ${SCHEDULER_MODE:manual}
   jwt:
-    secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250655368566D5971}
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000
 
   security:
-    encryption-key: ${ENCRYPTION_KEY:MySuperSecretEncryptionKey32Chars!}
+    encryption-key: ${ENCRYPTION_KEY}
+    allow-legacy-encryption-key: ${ALLOW_LEGACY_ENCRYPTION_KEY:false}
+
+  automation:
+    token: ${AUTOMATION_TOKEN:}
+    tenant-id: ${AUTOMATION_TENANT_ID:}
+
+  vision:
+    base-url: ${VISION_BASE_URL:}
+    api-key: ${VISION_API_KEY:}
+    model: ${VISION_MODEL:}
 
   email:
     from: ${MAIL_FROM:noreply@saas-linkedin.com}
@@ -93,6 +95,12 @@ app:
   linkedin:
     api-base-url: ${LINKEDIN_API_BASE_URL:https://api.linkedin.com}
     api-version: ${LINKEDIN_API_VERSION:202607}
+    oauth:
+      client-id: ${LINKEDIN_CLIENT_ID:}
+      client-secret: ${LINKEDIN_CLIENT_SECRET:}
+      redirect-uri: ${LINKEDIN_OAUTH_REDIRECT_URI:https://localhost:8443/api/v1/credentials/linkedin/oauth/callback}
+      frontend-url: ${FRONTEND_BASE_URL:http://localhost:4200}
+      secure-cookie: ${LINKEDIN_OAUTH_SECURE_COOKIE:true}
 
   llm:
     api-key: ${DEEPSEEK_API_KEY:${LLM_API_KEY:}}

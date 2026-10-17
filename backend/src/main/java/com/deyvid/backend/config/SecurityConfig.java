@@ -52,15 +52,19 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/auth/**",
+                                "/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/verify-code", "/api/v1/auth/reset-password",
+                                "/api/v1/automation/run-due", "/api/v1/health",
+                                "/api/v1/credentials/linkedin/oauth/callback",
                                 "/oauth2/**",
                                 "/login/oauth2/code/**",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, error) -> response.sendError(401))
+                        .accessDeniedHandler((request, response, error) -> response.sendError(403)))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

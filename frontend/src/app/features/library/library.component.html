@@ -1,0 +1,144 @@
+<main class="ui-page">
+  <header class="ui-heading">
+    <div>
+      <p class="ui-meta">CONTENIDO</p>
+      <h1 class="ui-title">Biblioteca</h1>
+      <p class="ui-muted">Tus publicaciones en preparación y aprobadas, ordenadas por actividad.</p>
+    </div>
+    <a routerLink="/compose" class="ui-button ui-button--primary">Nuevo borrador</a>
+  </header>
+  @if (error()) {
+    <div class="ui-alert" role="alert">
+      {{ error() }} <button class="ui-button" (click)="load()">Reintentar</button>
+    </div>
+  }
+  @if (message()) {
+    <p class="ui-alert ui-alert--success" role="status">{{ message() }}</p>
+  }
+  <section class="ui-card grid gap-4">
+    <div class="ui-toolbar">
+      <label class="sr-only" for="library-search">Buscar en biblioteca</label
+      ><input
+        id="library-search"
+        class="ui-input min-w-48 flex-1"
+        placeholder="Buscar publicaciones…"
+        [value]="search()"
+        (input)="search.set($any($event.target).value)"
+      />
+      <div
+        class="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 dark:bg-neutral-900"
+        aria-label="Filtrar biblioteca"
+      >
+        @for (option of filters; track option.value) {
+          <button
+            class="rounded-md px-3 py-2 text-sm"
+            [class.account-filter-selected]="filter() === option.value"
+            [class.font-semibold]="filter() === option.value"
+            [class.shadow-sm]="filter() === option.value"
+            [attr.aria-pressed]="filter() === option.value"
+            (click)="filter.set(option.value)"
+          >
+            {{ option.label }} <span class="ui-meta">{{ counts()[option.value] }}</span>
+          </button>
+        }
+      </div>
+    </div>
+    <div
+      class="hidden items-center border-b border-slate-200 px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 md:flex dark:border-neutral-800"
+    >
+      <span class="flex-1">Publicación</span><span class="w-36">Estado</span
+      ><span class="w-40">Última edición</span><span class="w-12 text-right"> </span>
+    </div>
+    @if (loading()) {
+      <p class="ui-empty" role="status">Cargando biblioteca…</p>
+    } @else {
+      @for (draft of filtered(); track draft.id) {
+        <article
+          class="group flex min-w-0 items-center gap-3 border-b border-slate-100 px-2 py-3 last:border-0 hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900/60"
+        >
+          <button
+            class="min-w-0 flex-1 text-left focus-visible:outline-2 focus-visible:outline-indigo-600"
+            (click)="openDraft(draft, $event)"
+          >
+            <strong class="block truncate text-sm font-semibold">{{
+              draft.title || 'Sin título'
+            }}</strong
+            ><span class="ui-excerpt mt-1 block">{{ draft.text || 'Sin texto todavía' }}</span
+            ><span class="ui-meta mt-1 block md:hidden">{{
+              draft.updatedAt | date: 'dd/MM/yyyy HH:mm'
+            }}</span>
+          </button>
+          <span class="hidden w-36 md:block"
+            ><span class="ui-status" [class.ui-status--success]="draft.queued">{{
+              draft.queued ? 'Aprobado' : 'Borrador'
+            }}</span></span
+          ><span class="ui-meta hidden w-40 md:block">{{
+            draft.updatedAt | date: 'dd MMM, HH:mm'
+          }}</span>
+          <details class="relative w-12 text-right">
+            <summary
+              class="inline-grid size-9 cursor-pointer list-none place-items-center rounded-md text-lg text-slate-500 hover:bg-slate-200 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:bg-neutral-800"
+              aria-label="Acciones de publicación"
+            >
+              ⋯
+            </summary>
+            <div
+              class="absolute right-0 top-10 z-20 grid w-48 gap-1 rounded-lg border border-slate-200 bg-white p-1.5 text-left shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              <button
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-800"
+                (click)="openDraft(draft, $event)"
+              >
+                Ver contenido</button
+              ><a
+                class="rounded px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-neutral-800"
+                routerLink="/compose"
+                [queryParams]="{ draft: draft.id }"
+                (click)="dismissMenu($event)"
+                >Abrir en el editor</a
+              ><button
+                class="rounded px-3 py-2 text-left text-sm hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-neutral-800"
+                [disabled]="busyId() === draft.id"
+                (click)="dismissMenu($event); toggleApproval(draft)"
+              >
+                {{
+                  busyId() === draft.id
+                    ? 'Guardando…'
+                    : draft.queued
+                      ? 'Retirar aprobación'
+                      : 'Aprobar publicación'
+                }}
+              </button>
+            </div>
+          </details>
+        </article>
+      } @empty {
+        <div class="ui-empty">
+          No hay contenido que coincida. Cambia los filtros o crea un borrador.
+        </div>
+      }
+    }
+  </section>
+  @if (selected(); as draft) {
+    <app-dialog [title]="draft.title || 'Borrador'" [side]="true" (closed)="selected.set(null)"
+      ><p class="ui-meta">
+        Actualizado {{ draft.updatedAt | date: 'dd/MM/yyyy HH:mm' }} ·
+        {{ draft.queued ? 'Aprobado' : 'Borrador' }}
+      </p>
+      @if (draft.imageUrl) {
+        <img
+          [src]="draft.imageUrl"
+          alt="Imagen del borrador"
+          class="rounded-lg max-h-72 object-contain"
+        />
+      }
+      <p class="ui-fulltext">{{ draft.text }}</p>
+      <a
+        class="ui-button ui-button--primary"
+        routerLink="/compose"
+        [queryParams]="{ draft: draft.id }"
+        >Abrir en el editor</a
+      ></app-dialog
+    >
+  }
+</main>

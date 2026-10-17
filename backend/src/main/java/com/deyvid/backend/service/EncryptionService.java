@@ -1,6 +1,7 @@
 package com.deyvid.backend.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -22,11 +23,21 @@ public class EncryptionService {
     private final SecretKey secretKey;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public EncryptionService(@Value("${app.security.encryption-key:MySuperSecretEncryptionKey32Chars!}") String secretKeyString) {
-        // Ensure 256-bit key (32 bytes)
-        byte[] keyBytes = new byte[32];
+    public EncryptionService(String secretKeyString) {
+        this(secretKeyString, false);
+    }
+
+    @Autowired
+    public EncryptionService(@Value("${app.security.encryption-key}") String secretKeyString,
+            @Value("${app.security.allow-legacy-encryption-key:false}") boolean allowLegacyKey) {
+        if (secretKeyString == null || secretKeyString.isBlank()) {
+            throw new IllegalArgumentException("ENCRYPTION_KEY es obligatorio");
+        }
         byte[] rawBytes = secretKeyString.getBytes(StandardCharsets.UTF_8);
-        System.arraycopy(rawBytes, 0, keyBytes, 0, Math.min(rawBytes.length, 32));
+        if (rawBytes.length != 32 && !allowLegacyKey) {
+            throw new IllegalArgumentException("ENCRYPTION_KEY debe contener exactamente 32 bytes UTF-8");
+        }
+        byte[] keyBytes = java.util.Arrays.copyOf(rawBytes, 32);
         this.secretKey = new SecretKeySpec(keyBytes, "AES");
     }
 

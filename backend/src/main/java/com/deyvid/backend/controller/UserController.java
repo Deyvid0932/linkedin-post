@@ -48,6 +48,7 @@ public class UserController {
                 throw new IllegalArgumentException("La contraseña actual es incorrecta");
             }
             user.setPasswordHash(passwordEncoder.encode(request.newPassword().trim()));
+            user.setTokenVersion(user.getTokenVersion() + 1);
         }
 
         User saved = userRepository.save(user);

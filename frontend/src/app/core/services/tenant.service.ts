@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { DashboardStats, TenantProfileRequest, TenantResponse } from '../models/tenant.model';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class TenantService {
   private readonly API_URL = `${environment.apiUrl}/tenant`;
@@ -28,20 +28,36 @@ export class TenantService {
     return this.updateProfile({ systemPrompt, timezone });
   }
 
+  testPrompt(testPrompt: string, sampleTopic: string) {
+    return this.http.post<{
+      success: boolean;
+      generatedSample: string;
+      topic: string;
+      approach: string;
+    }>(`${this.API_URL}/prompt/test`, { testPrompt, sampleTopic, approach: 'EXPERT' });
+  }
+
   getDashboardStats(): Observable<DashboardStats> {
     return this.http.get<DashboardStats>(`${this.API_URL}/dashboard`);
   }
 
   emergencyPause(): Observable<{ message: string; isEmergencyPaused: boolean }> {
-    return this.http.post<{ message: string; isEmergencyPaused: boolean }>(`${this.API_URL}/emergency-pause`, {});
+    return this.http.post<{ message: string; isEmergencyPaused: boolean }>(
+      `${this.API_URL}/emergency-pause`,
+      {},
+    );
   }
 
   emergencyResume(): Observable<{ message: string; isEmergencyPaused: boolean }> {
-    return this.http.post<{ message: string; isEmergencyPaused: boolean }>(`${this.API_URL}/emergency-resume`, {});
+    return this.http.post<{ message: string; isEmergencyPaused: boolean }>(
+      `${this.API_URL}/emergency-resume`,
+      {},
+    );
   }
 
   toggleDryRun(isDryRun: boolean): Observable<{ message: string; isDryRun: boolean }> {
-    return this.http.patch<{ message: string; isDryRun: boolean }>(`${this.API_URL}/dry-run`, { isDryRun });
+    return this.http.patch<{ message: string; isDryRun: boolean }>(`${this.API_URL}/dry-run`, {
+      isDryRun,
+    });
   }
 }
-

@@ -75,7 +75,8 @@ class PublicationControllerOnDemandTest {
                 mock(AuditLogService.class),
                 gitHubSourceService,
                 backupTopicService,
-                generationCacheService
+                generationCacheService,
+                mock(com.deyvid.backend.service.ApprovedPublicationService.class)
         );
 
         testTenant = new Tenant();

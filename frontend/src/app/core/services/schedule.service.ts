@@ -12,7 +12,7 @@ export interface Schedule {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ScheduleService {
   private http = inject(HttpClient);
@@ -24,6 +24,10 @@ export class ScheduleService {
 
   createSchedule(cronExpression: string, description: string): Observable<Schedule> {
     return this.http.post<Schedule>(this.apiUrl, { cronExpression, description });
+  }
+
+  updateSchedule(id: string, cronExpression: string, description: string): Observable<Schedule> {
+    return this.http.put<Schedule>(`${this.apiUrl}/${id}`, { cronExpression, description });
   }
 
   deleteSchedule(id: string): Observable<void> {

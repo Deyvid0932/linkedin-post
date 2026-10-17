@@ -9,17 +9,17 @@ describe('authGuard', () => {
 
   beforeEach(() => {
     authServiceMock = {
-      isAuthenticated: vi.fn()
+      isAuthenticated: vi.fn(),
     };
     routerMock = {
-      createUrlTree: vi.fn()
+      createUrlTree: vi.fn(),
     };
 
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: authServiceMock },
-        { provide: Router, useValue: routerMock }
-      ]
+        { provide: Router, useValue: routerMock },
+      ],
     });
   });
 
@@ -27,7 +27,7 @@ describe('authGuard', () => {
     authServiceMock.isAuthenticated.mockReturnValue(true);
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot)
+      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot),
     );
 
     expect(result).toBe(true);
@@ -39,11 +39,11 @@ describe('authGuard', () => {
     routerMock.createUrlTree.mockReturnValue(mockUrlTree);
 
     const result = TestBed.runInInjectionContext(() =>
-      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot)
+      authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot),
     );
 
     expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/auth/login'], {
-      queryParams: { returnUrl: '/dashboard' }
+      queryParams: { returnUrl: '/dashboard' },
     });
     expect(result).toBe(mockUrlTree);
   });

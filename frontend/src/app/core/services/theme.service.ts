@@ -3,7 +3,7 @@ import { Injectable, signal } from '@angular/core';
 export type ThemeMode = 'dark' | 'light';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ThemeService {
   theme = signal<ThemeMode>((localStorage.getItem('theme') as ThemeMode) || 'dark');

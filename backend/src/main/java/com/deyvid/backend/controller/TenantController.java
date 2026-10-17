@@ -17,7 +17,7 @@ import com.deyvid.backend.repository.PublishingScheduleRepository;
 import com.deyvid.backend.repository.TenantRepository;
 import com.deyvid.backend.security.AuthHelper;
 import com.deyvid.backend.service.TenantService;
-import com.deyvid.backend.service.ai.ContentGeneratorService;
+import com.deyvid.backend.service.ComposeService;
 import com.deyvid.backend.service.linkedin.ContentSource;
 import com.deyvid.backend.entity.enums.SourceMode;
 import jakarta.validation.Valid;
@@ -44,7 +44,7 @@ public class TenantController {
     private final PublicationLogRepository publicationLogRepository;
     private final PublishingScheduleRepository scheduleRepository;
     private final LinkedInCredentialRepository linkedInCredentialRepository;
-    private final ContentGeneratorService contentGeneratorService;
+    private final ComposeService composeService;
 
     @GetMapping({"/profile", "/current"})
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -60,7 +60,8 @@ public class TenantController {
     public ResponseEntity<TenantResponse> updateProfile(Authentication auth, @Valid @RequestBody TenantProfileRequest request) {
         User user = authHelper.getCurrentUser(auth);
         Tenant updated = tenantService.updateTenantProfile(
-                user.getTenant().getId(), user.getEmail(), request.systemPrompt(), request.timezone(), "Actualización de perfil");
+                user.getTenant().getId(), user.getEmail(), request.systemPrompt(), request.timezone(),
+                request.appApprovalMode(), request.appTargetCharacters(), request.appImageModel(), "Actualización de configuración");
         return ResponseEntity.ok(mapToTenantResponse(updated));
     }
 
@@ -97,11 +98,12 @@ public class TenantController {
         User user = authHelper.getCurrentUser(auth);
         Tenant tenant = user.getTenant();
 
-        // Crear una instancia temporal de tenant con el prompt de prueba
+        // Prueba con el mismo servicio que usa Crear publicación; no persiste ni publica.
         Tenant tempTenant = Tenant.builder()
                 .id(tenant.getId())
                 .systemPrompt(request.testPrompt())
                 .timezone(tenant.getTimezone())
+                .appTargetCharacters(tenant.getAppTargetCharacters())
                 .build();
 
         String topic = (request.sampleTopic() != null && !request.sampleTopic().isBlank())
@@ -116,15 +118,17 @@ public class TenantController {
                 "https://ejemplo.com/recurso-prueba"
         );
 
-        String approach = request.approach() != null ? request.approach() : "EXPERT";
-        String generatedSample = contentGeneratorService.generateVersionWithApproach(tempTenant, source, approach);
+        var generatedSample = composeService.generate(tempTenant, new com.deyvid.backend.dto.request.ComposeRequest(
+                topic, source.rawContent(), com.deyvid.backend.dto.request.ComposeRequest.Tone.PROFESSIONAL,
+                "Profesionales de LinkedIn", com.deyvid.backend.dto.request.ComposeRequest.Goal.SHARE_LEARNING,
+                "Ejemplo de prueba de voz. No inventes hechos personales.", null, null));
+        String approach = request.approach() != null ? request.approach() : "PROFESSIONAL";
 
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "approach", approach,
                 "topic", topic,
-                "generatedSample", generatedSample,
-                "estimatedTokens", 480
+                "generatedSample", generatedSample.text()
         ));
     }
 
@@ -193,7 +197,10 @@ public class TenantController {
                 t.getIsActive(),
                 t.getIsEmergencyPaused(),
                 t.getIsDryRun(),
-                t.getCreatedAt()
+                t.getCreatedAt(),
+                t.getAppApprovalMode(),
+                t.getAppTargetCharacters(),
+                t.getAppImageModel()
         );
     }
 }

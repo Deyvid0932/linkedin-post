@@ -18,7 +18,7 @@ public class VectorStoreService {
 
     private final VectorStore vectorStore;
 
-    public VectorStoreService(@Autowired(required = false) VectorStore vectorStore) {
+    public VectorStoreService(@org.springframework.lang.Nullable VectorStore vectorStore) {
         this.vectorStore = vectorStore;
     }
 
@@ -47,7 +47,7 @@ public class VectorStoreService {
     }
 
     public List<String> findTopLikedContexts(Tenant tenant, String topicQuery) {
-        if (vectorStore == null) {
+        if (vectorStore == null || tenant == null || tenant.getId() == null) {
             return List.of();
         }
 
@@ -56,11 +56,13 @@ public class VectorStoreService {
                     .query(topicQuery)
                     .topK(3)
                     .similarityThreshold(0.6)
+                    .filterExpression("tenantId == '" + tenant.getId() + "' && puntajeUsuario > 0")
                     .build();
 
             List<Document> results = vectorStore.similaritySearch(request);
             return results.stream()
                     .filter(doc -> {
+                        if (!tenant.getId().toString().equals(doc.getMetadata().get("tenantId"))) return false;
                         Object scoreObj = doc.getMetadata().get("puntajeUsuario");
                         return scoreObj != null && Integer.parseInt(scoreObj.toString()) > 0;
                     })

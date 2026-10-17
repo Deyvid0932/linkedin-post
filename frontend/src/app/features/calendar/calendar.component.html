@@ -1,0 +1,296 @@
+<div class="ui-page">
+  <header class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <p
+        class="mb-2 text-xs font-bold uppercase tracking-[.14em] text-indigo-700 dark:text-indigo-300"
+      >
+        Publicar
+      </p>
+      <h1 class="ui-title">Calendario</h1>
+      <p class="mt-2 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
+        Organiza la cola real de GitHub Actions. Las fechas son objetivos; GitHub puede ejecutar el
+        workflow con retraso.
+      </p>
+    </div>
+    <a routerLink="/queue" class="ui-button">Ver cola</a>
+  </header>
+
+  <section class="ui-card space-y-4" aria-label="Controles del calendario">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <button type="button" class="ui-button" (click)="move(-1)" aria-label="Periodo anterior">
+          ‹
+        </button>
+        <button type="button" class="ui-button" (click)="goToday()">Hoy</button>
+        <button type="button" class="ui-button" (click)="move(1)" aria-label="Periodo siguiente">
+          ›
+        </button>
+        <h2 class="ml-2 text-lg font-semibold">{{ periodLabel() }}</h2>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="sr-only" for="calendar-repository">Repositorio</label>
+        <select
+          id="calendar-repository"
+          class="ui-input min-w-52"
+          [value]="repositoryId()"
+          (change)="selectRepository($any($event.target).value)"
+        >
+          <option value="">Elige un repositorio</option>
+          @for (repo of repositories(); track repo.id) {
+            <option [value]="repo.id">{{ repo.repoOwner }}/{{ repo.repoName }}</option>
+          }
+        </select>
+        <div
+          class="inline-flex rounded-lg border border-slate-200 p-1 dark:border-neutral-700"
+          role="group"
+          aria-label="Vista del calendario"
+        >
+          <button
+            type="button"
+            class="ui-button"
+            [attr.aria-pressed]="mode() === 'week'"
+            (click)="mode.set('week')"
+          >
+            Semana
+          </button>
+          <button
+            type="button"
+            class="ui-button"
+            [attr.aria-pressed]="mode() === 'month'"
+            (click)="mode.set('month')"
+          >
+            Mes
+          </button>
+          <button
+            type="button"
+            class="ui-button"
+            [attr.aria-pressed]="mode() === 'list'"
+            (click)="mode.set('list')"
+          >
+            Lista
+          </button>
+        </div>
+      </div>
+    </div>
+    <div
+      class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-neutral-800 dark:text-neutral-400"
+    >
+      <span
+        >{{ snapshot()?.repository || 'Selecciona un repositorio' }}
+        @if (snapshot()) {
+          · rama {{ snapshot()?.branch }}
+        }
+      </span>
+      <span>Zona horaria: {{ timezone }}</span>
+      <button
+        type="button"
+        class="text-indigo-700 underline dark:text-indigo-300"
+        (click)="load()"
+        [disabled]="loading()"
+      >
+        Actualizar
+      </button>
+    </div>
+  </section>
+
+  @if (error()) {
+    <div
+      role="alert"
+      class="rounded-xl border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
+    >
+      {{ error() }}
+      <button type="button" class="ml-2 underline" (click)="load()">Reintentar</button>
+    </div>
+  }
+  @if (message()) {
+    <div
+      role="status"
+      class="rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+    >
+      {{ message() }}
+    </div>
+  }
+  @if (loading()) {
+    <p role="status" class="py-10 text-center text-sm text-slate-500">
+      Leyendo cola y recibos desde GitHub…
+    </p>
+  } @else if (!repositoryId()) {
+    <section class="ui-card py-12 text-center">
+      <h2 class="font-semibold">Conecta un repositorio para ver su calendario</h2>
+      <a
+        routerLink="/settings/github"
+        class="mt-3 inline-flex text-sm text-indigo-700 underline dark:text-indigo-300"
+        >Ir a Canales</a
+      >
+    </section>
+  } @else if (!posts().length) {
+    <section class="ui-card py-12 text-center">
+      <h2 class="font-semibold">No hay publicaciones en esta cola</h2>
+      <p class="mt-2 text-sm text-slate-500 dark:text-neutral-400">
+        Cuando subas una cola aprobada a GitHub, aparecerá aquí.
+      </p>
+      <a
+        routerLink="/queue"
+        class="mt-4 inline-flex text-sm font-semibold text-indigo-700 underline dark:text-indigo-300"
+        >Preparar cola</a
+      >
+    </section>
+  } @else if (mode() === 'list') {
+    <section class="ui-card overflow-hidden p-0" aria-label="Publicaciones del repositorio">
+      <ul class="divide-y divide-slate-100 dark:divide-neutral-800">
+        @for (post of posts(); track post.id) {
+          <li class="flex flex-wrap items-start justify-between gap-4 p-4 sm:p-5">
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-semibold">{{ post.publishAt | date: 'EEE, d MMM · HH:mm' }}</span
+                ><span
+                  class="rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="statusClass(post.status)"
+                  >{{ statusLabel(post.status) }}</span
+                >
+                @if (post.hasImage) {
+                  <span class="text-xs text-slate-500">Con imagen</span>
+                }
+              </div>
+              <p
+                class="mt-2 whitespace-pre-line text-sm text-slate-600 line-clamp-3 dark:text-neutral-300"
+              >
+                {{ post.text }}
+              </p>
+              @if (post.postUrn) {
+                <p class="mt-2 text-xs text-slate-500">Recibo LinkedIn: {{ post.postUrn }}</p>
+              }
+            </div>
+            @if (canReschedule(post)) {
+              <button type="button" class="ui-button" (click)="edit(post)">Reprogramar</button>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  } @else if (mode() === 'week') {
+    <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7" aria-label="Semana">
+      @for (day of weekDays(); track day.key) {
+        <article
+          class="min-h-48 rounded-xl border border-slate-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900"
+          [class.ring-1]="day.today"
+          [class.ring-indigo-500]="day.today"
+          (dragover)="allowDrop($event)"
+          (drop)="dropOn(day.date, $event)"
+        >
+          <h2 class="mb-3 text-sm font-semibold" [class.text-indigo-700]="day.today">
+            {{ day.date | date: 'EEEE d' }}
+          </h2>
+          <div class="space-y-2">
+            @for (post of postsFor(day); track post.id) {
+              <button
+                type="button"
+                class="w-full rounded-lg border border-slate-200 p-2 text-left hover:border-indigo-400 dark:border-neutral-700 dark:hover:border-indigo-500"
+                [draggable]="canReschedule(post)"
+                (dragstart)="startDrag(post, $event)"
+                (click)="edit(post)"
+              >
+                <span class="block text-xs font-semibold"
+                  >{{ post.publishAt | date: 'HH:mm' }} · {{ statusLabel(post.status) }}</span
+                ><span
+                  class="mt-1 block line-clamp-3 text-xs text-slate-600 dark:text-neutral-300"
+                  >{{ post.text }}</span
+                >
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </section>
+  } @else {
+    <section class="ui-card p-3 sm:p-5" aria-label="Mes">
+      <div
+        class="grid grid-cols-7 border-b border-slate-200 pb-2 text-center text-xs font-semibold text-slate-500 dark:border-neutral-800"
+      >
+        @for (day of weekNames; track day) {
+          <span>{{ day }}</span>
+        }
+      </div>
+      <div class="grid grid-cols-7">
+        @for (day of monthDays(); track day.key) {
+          <div
+            class="min-h-24 border-b border-r border-slate-100 p-1.5 dark:border-neutral-800 sm:min-h-32 sm:p-2"
+            [class.opacity-50]="!day.inMonth"
+            [class.bg-indigo-50]="day.today"
+            (dragover)="allowDrop($event)"
+            (drop)="dropOn(day.date, $event)"
+          >
+            <div class="mb-1 flex items-center justify-between">
+              <span class="text-xs font-semibold">{{ day.date | date: 'd' }}</span
+              ><span class="text-[10px] text-slate-400">{{ postsFor(day).length || '' }}</span>
+            </div>
+            <div class="space-y-1">
+              @for (post of postsFor(day).slice(0, 2); track post.id) {
+                <button
+                  type="button"
+                  class="w-full truncate rounded-md border border-slate-200 px-1 py-1 text-left text-[10px] dark:border-neutral-700"
+                  [draggable]="canReschedule(post)"
+                  (dragstart)="startDrag(post, $event)"
+                  (click)="edit(post)"
+                >
+                  {{ post.publishAt | date: 'HH:mm' }} {{ statusLabel(post.status) }}
+                </button>
+              }
+              @if (postsFor(day).length > 2) {
+                <span class="text-[10px] text-slate-500">+{{ postsFor(day).length - 2 }} más</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  @if (selectedPost(); as post) {
+    <section
+      class="ui-card border-indigo-200 dark:border-indigo-900"
+      aria-labelledby="reschedule-title"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 id="reschedule-title" class="ui-section-title">Reprogramar publicación</h2>
+          <p class="mt-1 text-xs text-slate-500">
+            Solo se cambiará la fecha. Texto, imagen, aprobación e identificador se conservan.
+          </p>
+        </div>
+        <button class="ui-button" type="button" (click)="selectedPost.set(null)">Cerrar</button>
+      </div>
+      <p class="mt-4 line-clamp-2 text-sm">{{ post.text }}</p>
+      <form
+        class="mt-4 flex flex-wrap items-end gap-3"
+        (submit)="$event.preventDefault(); saveSchedule()"
+      >
+        <div>
+          <label for="new-publish-date" class="mb-1 block text-sm font-medium"
+            >Nueva fecha y hora ({{ timezone }})</label
+          ><input
+            id="new-publish-date"
+            class="ui-input"
+            type="datetime-local"
+            [value]="scheduleValue()"
+            (input)="scheduleValue.set($any($event.target).value)"
+            [min]="minimumDate()"
+            required
+          />
+        </div>
+        <button
+          type="submit"
+          class="ui-button ui-button--primary"
+          [disabled]="saving() || !scheduleValue()"
+        >
+          {{ saving() ? 'Guardando…' : 'Guardar fecha' }}
+        </button>
+      </form>
+    </section>
+  }
+  <p class="text-xs text-slate-500 dark:text-neutral-400">
+    Arrastra una publicación pendiente a otro día o usa «Reprogramar». Los posts con intentos
+    registrados no se pueden mover. Los estados «Publicado» aparecen solo con recibo confirmado de
+    GitHub.
+  </p>
+</div>

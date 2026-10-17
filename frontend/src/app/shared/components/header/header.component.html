@@ -1,0 +1,24 @@
+<header
+  class="app-topbar sticky top-0 z-30 flex h-16 items-center justify-between gap-3 px-4 sm:px-7"
+>
+  <div class="flex min-w-0 items-center gap-3"></div>
+  <div class="flex min-w-0 items-center gap-3">
+    <button
+      class="app-automation-chip"
+      (click)="state.enabled() === null ? state.load() : state.toggle()"
+      [disabled]="state.loading() || state.busy()"
+      [attr.aria-pressed]="state.enabled()"
+      [title]="state.explanation"
+    >
+      <span
+        class="app-automation-dot"
+        [class.app-automation-dot--active]="state.enabled() === true"
+        aria-hidden="true"
+      ></span
+      >{{ state.loading() ? 'Consultando backend…' : state.label() }}</button
+    ><app-theme-toggle />
+  </div>
+</header>
+@if (state.error()) {
+  <p role="alert" class="ui-alert">{{ state.error() }}</p>
+}

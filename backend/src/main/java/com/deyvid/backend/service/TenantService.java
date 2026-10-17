@@ -37,6 +37,7 @@ public class TenantService {
 
     @Transactional
     public User registerUserAndTenant(String name, String email, String password) {
+        email = email.trim().toLowerCase(java.util.Locale.ROOT);
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new IllegalArgumentException("El email ya se encuentra registrado");
         }
@@ -71,7 +72,9 @@ public class TenantService {
     }
 
     @Transactional
-    public Tenant updateTenantProfile(UUID tenantId, String userEmail, String systemPrompt, String timezone, String changeNotes) {
+    public Tenant updateTenantProfile(UUID tenantId, String userEmail, String systemPrompt, String timezone,
+                                      String appApprovalMode, Integer appTargetCharacters, String appImageModel,
+                                      String changeNotes) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant no encontrado"));
 
@@ -97,12 +100,18 @@ public class TenantService {
         }
 
         if (timezone != null && !timezone.isBlank()) {
+            try { java.time.ZoneId.of(timezone); }
+            catch (java.time.DateTimeException e) { throw new IllegalArgumentException("Zona horaria inválida"); }
             tenant.setTimezone(timezone);
             auditLogService.recordAction(tenant, userEmail, "UPDATE_TIMEZONE", "Zona horaria cambiada a " + timezone);
             scheduleManagementService.refreshAllTenantJobs(tenantId);
             notificationService.createNotification(tenant, "INFO", "Zona Horaria Actualizada",
                     "La zona horaria fue configurada a " + timezone + ". Todos los horarios activos de Quartz fueron recalculados y sincronizados.");
         }
+
+        if (appApprovalMode != null) tenant.setAppApprovalMode(appApprovalMode);
+        if (appTargetCharacters != null) tenant.setAppTargetCharacters(appTargetCharacters);
+        if (appImageModel != null) tenant.setAppImageModel(appImageModel);
 
         return tenantRepository.save(tenant);
     }

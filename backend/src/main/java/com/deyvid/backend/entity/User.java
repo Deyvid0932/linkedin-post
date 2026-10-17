@@ -37,6 +37,10 @@ public class User {
     @Column(name = "password_hash")
     private String passwordHash;
 
+    @Builder.Default
+    @Column(name = "token_version", nullable = false)
+    private long tokenVersion = 0;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

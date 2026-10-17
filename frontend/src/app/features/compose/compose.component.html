@@ -1,0 +1,268 @@
+@if (advancedOpened()) {
+  <div [hidden]="!advanced()" class="mx-auto max-w-7xl space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300">
+          Modo avanzado
+        </p>
+        <h1 class="text-2xl font-bold">Estudio de contenido</h1>
+      </div>
+      <a
+        routerLink="/compose"
+        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
+        >Volver al modo simple</a
+      >
+    </div>
+    <app-swipe-studio />
+  </div>
+}
+<div [hidden]="advanced()" class="composer-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">TU ESPACIO EDITORIAL</p>
+      <h1>Una idea. Tu propia voz.</h1>
+      <p>Prepara contenido a tu ritmo y deja tus próximos posts listos.</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <a routerLink="/compose" [queryParams]="{ advanced: true }" class="secondary">Modo avanzado</a
+      ><button class="secondary" (click)="newDraft()" [disabled]="busy() || readingImage()">
+        ＋ Nuevo borrador
+      </button>
+    </div>
+  </header>
+  <div class="workflow" aria-label="Proceso de publicación" role="status">
+    <span><b>01</b> {{ queued() ? 'Guardado' : 'Edición' }}</span
+    ><i>→</i><span><b>02</b> {{ reviewed() || queued() ? 'Revisado' : 'Por revisar' }}</span
+    ><i>→</i><span><b>03</b> {{ queued() ? 'Aprobado' : 'Por aprobar' }}</span>
+  </div>
+  @if (error()) {
+    <div class="notice error" role="alert">{{ error() }}</div>
+  }
+  @if (message()) {
+    <div class="notice success" role="status">{{ message() }}</div>
+  }
+  @if (busy() || readingImage()) {
+    <div class="notice" role="status">{{ readingImage() ? 'Cargando imagen…' : action() }}</div>
+  }
+  <div class="editor-grid">
+    <section class="editor-panel" aria-labelledby="editor-title">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">BORRADOR</p>
+          <h2 id="editor-title">Dale forma a tu idea</h2>
+        </div>
+        <span class="badge">{{
+          queued()
+            ? 'Aprobado · en cola'
+            : form.dirty
+              ? 'Cambios sin guardar'
+              : currentId()
+                ? 'Guardado'
+                : 'Nuevo'
+        }}</span>
+      </div>
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <fieldset [disabled]="busy() || queued() || readingImage()">
+          <label for="post-title">¿De qué quieres hablar?</label
+          ><input
+            id="post-title"
+            formControlName="title"
+            maxlength="200"
+            placeholder="Ej. Lo que aprendí optimizando una API con Spring Boot"
+          />
+          <fieldset class="tone-options">
+            <legend>¿Cómo quieres sonar?</legend>
+            @for (tone of tones; track tone.value) {
+              <label class="tone-card" [class.selected]="form.controls.tone.value === tone.value"
+                ><input type="radio" formControlName="tone" [value]="tone.value" /><span
+                  ><strong>{{ tone.label }}</strong
+                  ><small>{{ tone.detail }}</small></span
+                ></label
+              >
+            }
+          </fieldset>
+          <div class="two-columns">
+            <div>
+              <label for="post-audience">¿A quién te diriges?</label
+              ><input
+                id="post-audience"
+                formControlName="audience"
+                maxlength="200"
+                placeholder="Ej. Desarrolladores y líderes técnicos"
+              />
+            </div>
+            <div>
+              <label for="post-goal">¿Qué quieres conseguir?</label
+              ><select id="post-goal" formControlName="goal">
+                <option value="" disabled>Elige un objetivo</option>
+                <option value="TEACH">Enseñar algo útil</option>
+                <option value="DISCUSS">Abrir una conversación</option>
+                <option value="SHOW_PROJECT">Mostrar un proyecto</option>
+                <option value="SHARE_LEARNING">Compartir un aprendizaje</option>
+              </select>
+            </div>
+          </div>
+          <div class="text-label">
+            <label for="post-text">Tu texto o contexto</label
+            ><span>{{ text().length }} / 3000</span>
+          </div>
+          <textarea
+            id="post-text"
+            formControlName="text"
+            (input)="updateText()"
+            maxlength="3000"
+            rows="9"
+            placeholder="Escribe el post tú mismo o comparte los hechos que la IA debe tener en cuenta. Tu experiencia, tus palabras."
+            aria-describedby="text-help"
+          ></textarea>
+          <p class="helper" id="text-help">
+            La IA propone; tú revisas. Aporta hechos reales para que el contenido suene a ti.
+          </p>
+          <div class="upload-area">
+            <input
+              id="post-image"
+              type="file"
+              accept="image/png,image/jpeg"
+              (change)="selectImage($event)"
+            /><label for="post-image" class="upload-label"
+              ><strong>＋ Añadir una imagen</strong><span>PNG o JPEG · hasta 5 MB</span></label
+            >
+            @if (image()) {
+              <div class="attachment">
+                <span>{{ imageName() }}</span
+                ><button class="text-button" type="button" (click)="removeImage()">
+                  Quitar imagen
+                </button>
+              </div>
+            }
+          </div>
+          <details class="preferences">
+            <summary>Indicaciones adicionales para la IA</summary>
+            <label for="post-instructions" class="sr-only">Indicaciones adicionales</label
+            ><textarea
+              id="post-instructions"
+              formControlName="instructions"
+              rows="3"
+              maxlength="1500"
+              placeholder="Ej. Sin emojis, con un ejemplo concreto, evita un tono de venta…"
+            ></textarea>
+          </details>
+          <div class="ai-actions">
+            <button
+              class="secondary"
+              type="button"
+              (click)="generate(false)"
+              [disabled]="form.invalid || !text().trim()"
+            >
+              Mejorar mi texto</button
+            ><button
+              class="secondary"
+              type="button"
+              (click)="generate(true)"
+              [disabled]="form.invalid || !image()"
+            >
+              Escribir desde la imagen
+            </button>
+          </div>
+          <label for="post-account">Cuenta de destino</label
+          ><select id="post-account" formControlName="targetCredentialId">
+            <option value="">Elegir al aprobar</option>
+            @for (account of accounts(); track account.id) {
+              <option [value]="account.id">
+                {{ account.displayName }} ·
+                {{ account.accountType === 'PERSON' ? 'Perfil personal' : 'Página' }}
+              </option>
+            }
+          </select>
+          @if (!accounts().length) {
+            <p class="helper">
+              Puedes guardar ahora. <a routerLink="/settings/linkedin">Conecta LinkedIn</a> para
+              aprobar y programar.
+            </p>
+          }
+        </fieldset>
+        <div class="save-actions">
+          @if (queued()) {
+            <button class="secondary" type="button" (click)="unqueue()" [disabled]="busy()">
+              Retirar de la cola para editar
+            </button>
+          } @else {
+            <button
+              class="secondary"
+              type="submit"
+              [disabled]="busy() || readingImage() || form.invalid"
+            >
+              Guardar borrador</button
+            ><button
+              class="secondary"
+              type="button"
+              (click)="review()"
+              [disabled]="busy() || form.invalid || !text().trim()"
+            >
+              Revisar contenido</button
+            ><button
+              class="primary"
+              type="button"
+              (click)="save(true)"
+              [disabled]="
+                busy() ||
+                readingImage() ||
+                !reviewed() ||
+                form.invalid ||
+                !text().trim() ||
+                !form.controls.targetCredentialId.value
+              "
+            >
+              Aprobar y poner en cola →
+            </button>
+          }
+        </div>
+      </form>
+      @if (prompt()) {
+        <details class="prompt-details">
+          <summary>Ver las indicaciones usadas</summary>
+          <p>{{ prompt() }}</p>
+        </details>
+      }
+    </section>
+    <aside class="preview-column">
+      <div class="preview-heading">
+        <span class="eyebrow">VISTA PREVIA</span><span>Contenido de ejemplo · sin métricas</span>
+      </div>
+      <article class="post-preview">
+        <div class="post-author">
+          <div class="avatar">{{ initials() }}</div>
+          <div>
+            <strong>{{ user()?.name || 'Tu nombre' }}</strong>
+            <p>Tu publicación en LinkedIn</p>
+            <small>Vista previa</small>
+          </div>
+        </div>
+        <p class="post-content">
+          {{
+            text() ||
+              'Tu próximo post empieza aquí. Escribe una idea o sube una imagen y elige cómo quieres sonar.'
+          }}
+        </p>
+        @if (image()) {
+          <img [src]="image()" alt="Imagen adjunta al borrador" />
+        }
+        <div class="preview-footer">
+          Así se verá el contenido. El formato final puede variar en LinkedIn.
+        </div>
+      </article>
+      <section class="automation-note">
+        <span class="note-icon">↗</span>
+        <div>
+          <h3>¿Qué sigue?</h3>
+          <p>
+            Guarda tus ideas en la biblioteca y administra por separado las publicaciones aprobadas.
+          </p>
+          <a routerLink="/library">Abrir biblioteca →</a><br /><a routerLink="/queue"
+            >Revisar cola y programación →</a
+          >
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
