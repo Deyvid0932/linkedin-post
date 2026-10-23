@@ -1,11 +1,130 @@
-<div class="max-w-6xl mx-auto space-y-10">
-  <!-- SECCIÓN LINKEDIN (Ancho Completo) -->
-  <div>
-    <app-linkedin-settings></app-linkedin-settings>
-  </div>
+<main class="ui-page connections-page">
+  <header class="ui-heading">
+    <div>
+      <p class="ui-meta">CANALES Y SERVICIOS</p>
+      <h1 class="ui-title">Conexiones</h1>
+      <p class="ui-muted">
+        Consulta qué servicios están configurados y abre cada espacio para administrarlos.
+        AutoPost publica actualmente en LinkedIn; GitHub aporta contexto técnico y la IA prepara
+        contenido.
+      </p>
+    </div>
+    <button type="button" class="ui-button" (click)="load()" [disabled]="loading()">
+      {{ loading() ? 'Actualizando…' : 'Actualizar estados' }}
+    </button>
+  </header>
 
-  <!-- SECCIÓN GITHUB (Ancho Completo Alineado) -->
-  <div class="pt-6 border-t border-slate-200 dark:border-neutral-800">
-    <app-github-settings></app-github-settings>
-  </div>
-</div>
+  @if (loading() && !loaded()) {
+    <p class="ui-empty" role="status">Consultando el estado de tus conexiones…</p>
+  }
+
+  <section class="connections-grid" aria-label="Servicios conectados">
+    <article class="ui-card connection-card" aria-labelledby="linkedin-connection-title">
+      <div class="connection-card-heading">
+        <div class="connection-icon connection-icon--linkedin" aria-hidden="true">in</div>
+        <span class="ui-meta">PUBLICACIÓN</span>
+      </div>
+      <div>
+        <h2 id="linkedin-connection-title" class="ui-section-title">LinkedIn</h2>
+        @if (linkedinError()) {
+          <p class="ui-alert connection-feedback" role="alert">{{ linkedinError() }}</p>
+        } @else if (linkedinAccounts(); as accounts) {
+          <p class="connection-summary">
+            @if (accounts.length) {
+              {{ accounts.length }} {{ accounts.length === 1 ? 'cuenta vinculada' : 'cuentas vinculadas' }}
+              · {{ activeLinkedInCount() }} habilitadas
+            } @else {
+              Aún no hay cuentas vinculadas.
+            }
+          </p>
+          @if (expiredLinkedInCount() > 0) {
+            <p class="connection-warning" role="status">
+              {{ expiredLinkedInCount() }} {{ expiredLinkedInCount() === 1 ? 'cuenta necesita' : 'cuentas necesitan' }} reconexión.
+            </p>
+          }
+        } @else if (loading()) {
+          <p class="connection-summary" role="status">Consultando cuentas…</p>
+        } @else {
+          <p class="connection-summary">No se pudo confirmar el estado.</p>
+        }
+      </div>
+      <p class="connection-description">
+        Administra perfiles autorizados con LinkedIn y páginas de empresa configuradas con sus
+        permisos de publicación.
+      </p>
+      <a class="ui-button ui-button--primary connection-action" routerLink="/settings/linkedin">
+        Gestionar cuentas
+      </a>
+    </article>
+
+    <article class="ui-card connection-card" aria-labelledby="github-connection-title">
+      <div class="connection-card-heading">
+        <div class="connection-icon connection-icon--github" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.1c-3.1.67-3.76-1.31-3.76-1.31-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.67.08-.67 1.12.08 1.71 1.15 1.71 1.15 1 .1.74 2.08 3.87 1.48.1-.72.39-1.22.7-1.5-2.48-.28-5.1-1.24-5.1-5.52 0-1.22.44-2.21 1.16-2.99-.12-.29-.5-1.42.11-2.95 0 0 .95-.3 3.05 1.14a10.63 10.63 0 0 1 5.55 0c2.1-1.43 3.05-1.14 3.05-1.14.61 1.53.23 2.66.11 2.95.72.78 1.15 1.77 1.15 2.99 0 4.29-2.63 5.24-5.12 5.52.4.35.75 1.03.75 2.08v3.08c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg>
+        </div>
+        <span class="ui-meta">FUENTE DE CONTENIDO</span>
+      </div>
+      <div>
+        <h2 id="github-connection-title" class="ui-section-title">GitHub</h2>
+        @if (githubError()) {
+          <p class="ui-alert connection-feedback" role="alert">{{ githubError() }}</p>
+        } @else if (githubStatus(); as status) {
+          <span class="ui-status" [class.ui-status--success]="status.connected">
+            {{ status.connected ? 'Conectado como @' + status.username : 'Sin conectar' }}
+          </span>
+        } @else if (loading()) {
+          <p class="connection-summary" role="status">Consultando conexión…</p>
+        } @else {
+          <p class="connection-summary">No se pudo confirmar el estado.</p>
+        }
+        @if (reposError()) {
+          <p class="connection-warning" role="alert">No se pudo consultar la lista de repositorios.</p>
+        } @else if (repos(); as repositories) {
+          <p class="connection-summary">
+            {{ activeRepoCount() }} {{ activeRepoCount() === 1 ? 'repositorio supervisado' : 'repositorios supervisados' }}
+          </p>
+        }
+      </div>
+      <p class="connection-description">
+        Los commits recientes pueden servir como contexto para publicaciones técnicas. Esta conexión
+        no publica directamente en redes sociales.
+      </p>
+      <a class="ui-button connection-action" routerLink="/settings/github">Gestionar repositorios</a>
+    </article>
+
+    <article class="ui-card connection-card" aria-labelledby="ai-connection-title">
+      <div class="connection-card-heading">
+        <div class="connection-icon connection-icon--ai" aria-hidden="true">✦</div>
+        <span class="ui-meta">REDACCIÓN E IMÁGENES</span>
+      </div>
+      <div>
+        <h2 id="ai-connection-title" class="ui-section-title">Proveedores de IA</h2>
+        @if (aiError()) {
+          <p class="ui-alert connection-feedback" role="alert">{{ aiError() }}</p>
+        } @else if (aiStatuses(); as providers) {
+          <p class="connection-summary">
+            {{ configuredAiCount() }} de {{ providers.length }} servicios con una credencial disponible.
+          </p>
+          <ul class="provider-status-list">
+            @for (provider of providers; track provider.provider) {
+              <li>
+                <span>{{ provider.label }}</span>
+                <span class="ui-meta">{{ aiSourceLabel(provider.effectiveSource) }}</span>
+              </li>
+            }
+          </ul>
+        } @else if (loading()) {
+          <p class="connection-summary" role="status">Consultando proveedores…</p>
+        } @else {
+          <p class="connection-summary">No se pudo confirmar el estado.</p>
+        }
+      </div>
+      <p class="connection-description">
+        Las claves del espacio se administran en Ajustes y se guardan cifradas en el servidor.
+      </p>
+      <a class="ui-button connection-action" routerLink="/settings/ai-connections">
+        Configurar proveedores
+      </a>
+    </article>
+  </section>
+</main>

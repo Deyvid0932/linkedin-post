@@ -1,63 +1,30 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { finalize } from 'rxjs';
 import { TenantService } from '../../core/services/tenant.service';
 import { parseRecurring } from '../../core/services/schedule-format';
 import { DialogComponent } from '../../shared/components/dialog/dialog.component';
 import { Schedule, ScheduleService } from '../../core/services/schedule.service';
-import { CredentialService } from '../../core/services/credential.service';
-import { GitHubRepo } from '../../core/models/credential.model';
-import {
-  GitHubAutomationConfig,
-  GitHubAutomationService,
-} from '../../core/services/github-automation.service';
-import { catchError, of } from 'rxjs';
+import { AiConnectionsService, NanoGptImageModel } from '../../core/services/ai-connections.service';
+import { AutomationStateService } from '../../core/services/automation-state.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe, DialogComponent],
+  imports: [ReactiveFormsModule, DatePipe, DecimalPipe, DialogComponent],
   templateUrl: './settings.component.html',
 })
 export class SettingsComponent implements OnInit {
+  readonly automation = inject(AutomationStateService);
   private readonly fb = inject(FormBuilder);
   private readonly tenantService = inject(TenantService);
   private readonly scheduleService = inject(ScheduleService);
-  private readonly credentials = inject(CredentialService);
-  private readonly actionsConfigService = inject(GitHubAutomationService);
+  private readonly aiConnectionsService = inject(AiConnectionsService);
   readonly parsePattern = parseRecurring;
-  readonly imageModels = [
-    {
-      id: 'recraft-ai/recraft-v4.1-flash/text-to-image',
-      name: 'Recraft V4.1 Flash · diseños e ilustraciones',
-      price: '~$0.008',
-    },
-    {
-      id: 'qwen-image-2.1/text-to-image',
-      name: 'Qwen Image 2.1 · buen texto y relación calidad/precio',
-      price: '~$0.020',
-    },
-    { id: 'bytedance/seedream-v5.0-flash', name: 'Seedream 5.0 Flash · rápido', price: '~$0.027' },
-    { id: 'seedream-v4', name: 'Seedream 4.0 · composición y detalle', price: '~$0.030' },
-    { id: 'nano-banana', name: 'Nano Banana · generación y edición', price: '~$0.039' },
-    { id: 'nano-banana-2-fast', name: 'Nano Banana 2 Fast · 2K rápido', price: '~$0.045' },
-    {
-      id: 'black-forest-labs/flux-3/text-to-image',
-      name: 'FLUX.3 Image · fotografía e ilustración',
-      price: '~$0.050',
-    },
-    { id: 'ideogram/v4.5', name: 'Ideogram V4.5 · texto dentro de imágenes', price: '~$0.060' },
-    {
-      id: 'google/gemini-nano-banana-2.1',
-      name: 'Nano Banana 2.1 · calidad y consistencia',
-      price: '~$0.060',
-    },
-    { id: 'gpt-image-2', name: 'GPT Image 2 · modelo avanzado de OpenAI', price: '~$0.066' },
-    { id: 'qwen-image-2.1-pro', name: 'Qwen Image 2.1 Pro · alta resolución', price: '~$0.075' },
-    { id: 'nano-banana-pro', name: 'Nano Banana Pro · calidad profesional', price: '~$0.140' },
-    { id: 'gpt-image-1.5', name: 'GPT Image 1.5 · opción premium', price: '~$0.167' },
-  ] as const;
+  readonly imageModels = signal<NanoGptImageModel[]>([]);
+  readonly loadingImageModels = signal(true);
+  readonly imageModelsError = signal('');
   readonly week = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   readonly custom = computed(() =>
     this.schedules().filter((s) => !parseRecurring(s.cronExpression)),
@@ -74,15 +41,9 @@ export class SettingsComponent implements OnInit {
     ),
   );
   readonly loadingTenant = signal(true);
+  readonly platformApprovalRequired = signal(false);
   readonly timezone = signal('America/Lima');
-  readonly actionRepos = signal<GitHubRepo[]>([]);
-  readonly actionsRepositoryId = signal('');
   readonly savingAppConfig = signal(false);
-  readonly savingActionsConfig = signal(false);
-  readonly loadingActionsConfig = signal(false);
-  readonly actionsReview = signal<Record<string, unknown>[]>([]);
-  readonly actionsReviewLoading = signal(false);
-  readonly reviewingId = signal<string | null>(null);
   readonly savingTimezone = signal(false);
   readonly loadingSchedules = signal(true);
   readonly addingSchedule = signal(false);
@@ -92,7 +53,6 @@ export class SettingsComponent implements OnInit {
   readonly editingScheduleId = signal<string | null>(null);
   readonly pendingDelete = signal<string | null>(null);
   readonly deleting = signal(false);
-  private actionsLoadSequence = 0;
   readonly scheduleForm = this.fb.nonNullable.group({
     time: ['09:00', Validators.required],
     frequency: ['DAILY', Validators.required],
@@ -102,51 +62,58 @@ export class SettingsComponent implements OnInit {
     appTargetCharacters: [1200, [Validators.min(100), Validators.max(3000)]],
     appImageModel: ['qwen-image-2.1/text-to-image'],
   });
-  readonly actionsForm = this.fb.nonNullable.group({
-    approvalMode: ['REQUIRE_APPROVAL'],
-    targetCharacters: [1200, [Validators.min(100), Validators.max(3000)]],
-    prompt: ['', Validators.maxLength(5000)],
-    imageModel: ['qwen-image-2.1/text-to-image'],
-    timezone: ['America/Lima'],
-    publishTime: ['08:00', Validators.required],
-    enabled: [false],
-  });
 
   ngOnInit(): void {
+    this.automation.load();
     this.tenantService
       .getTenantInfo()
       .pipe(finalize(() => this.loadingTenant.set(false)))
       .subscribe({
         next: (tenant) => {
           this.timezone.set(tenant?.timezone || 'America/Lima');
+          this.platformApprovalRequired.set(tenant?.platformApprovalRequired ?? false);
           this.appForm.patchValue({
             appApprovalMode: tenant.appApprovalMode || 'REQUIRE_APPROVAL',
             appTargetCharacters: tenant.appTargetCharacters || 1200,
-            appImageModel: this.normalizeAppImageModel(tenant.appImageModel),
+            appImageModel: tenant.appImageModel || 'qwen-image-2.1/text-to-image',
           });
-          this.actionsForm.controls.timezone.setValue(tenant?.timezone || 'America/Lima');
         },
         error: (err) =>
           this.errorMessage.set(
             this.errorFor(err, 'No pudimos cargar la zona horaria de la cuenta.'),
           ),
       });
-    this.credentials
-      .getMonitoredRepos()
-      .pipe(catchError(() => of([])))
-      .subscribe((repos) => {
-        this.actionRepos.set(repos.filter((repo) => repo.isActive));
-        const active = repos.filter((repo) => repo.isActive);
-        if (!this.actionsRepositoryId() && active.length) {
-          this.actionsRepositoryId.set(active[0].id);
-          this.loadActionsConfig(active[0].id);
-        }
-      });
+    this.loadImageModels();
     this.loadSchedules();
   }
 
+  loadImageModels(): void {
+    this.loadingImageModels.set(true);
+    this.imageModelsError.set('');
+    this.aiConnectionsService
+      .getImageModels()
+      .pipe(finalize(() => this.loadingImageModels.set(false)))
+      .subscribe({
+        next: (models) => {
+          const catalog = (models || [])
+            .filter((model) => model.id && model.name && Number.isFinite(model.estimatedPriceUsd) && model.estimatedPriceUsd >= 0)
+            .sort((a, b) => a.estimatedPriceUsd - b.estimatedPriceUsd);
+          if (!catalog.length) {
+            this.imageModelsError.set('El catálogo de modelos de imagen está vacío.');
+            return;
+          }
+          this.imageModels.set(catalog);
+          const selected = this.appForm.controls.appImageModel.value;
+          this.appForm.controls.appImageModel.setValue(this.normalizeImageModel(selected));
+        },
+        error: (err) => this.imageModelsError.set(
+          this.errorFor(err, 'No pudimos cargar los modelos de imagen de NanoGPT.'),
+        ),
+      });
+  }
+
   saveAppConfig(): void {
-    if (this.appForm.invalid || this.savingAppConfig()) return;
+    if (this.appForm.invalid || this.savingAppConfig() || this.loadingImageModels() || this.imageModelsError() || !this.imageModels().length) return;
     this.savingAppConfig.set(true);
     this.errorMessage.set('');
     this.successMessage.set('');
@@ -178,120 +145,11 @@ export class SettingsComponent implements OnInit {
       'nano-banana-2.1': 'google/gemini-nano-banana-2.1',
     };
     if (model && legacy[model]) return legacy[model];
-    return this.imageModels.some((option) => option.id === model)
+    return this.imageModels().some((option) => option.id === model)
       ? model!
-      : 'qwen-image-2.1/text-to-image';
-  }
-
-  selectActionsRepository(repositoryId: string): void {
-    this.actionsLoadSequence++;
-    this.actionsRepositoryId.set(repositoryId);
-    if (repositoryId) this.loadActionsConfig(repositoryId);
-    else {
-      this.loadingActionsConfig.set(false);
-      this.actionsReview.set([]);
-      this.actionsForm.reset({
-        approvalMode: 'REQUIRE_APPROVAL',
-        targetCharacters: 1200,
-        prompt: '',
-        imageModel: 'qwen-image-2.1/text-to-image',
-        timezone: 'America/Lima',
-        publishTime: '08:00',
-        enabled: false,
-      });
-    }
-  }
-
-  private loadActionsConfig(repositoryId: string): void {
-    const sequence = ++this.actionsLoadSequence;
-    this.loadingActionsConfig.set(true);
-    this.actionsConfigService
-      .get(repositoryId)
-      .pipe(
-        finalize(() => {
-          if (sequence === this.actionsLoadSequence) this.loadingActionsConfig.set(false);
-        }),
-      )
-      .subscribe({
-        next: (config) => {
-          if (sequence === this.actionsLoadSequence && repositoryId === this.actionsRepositoryId())
-            this.actionsForm.patchValue({
-              ...config,
-              imageModel: this.normalizeImageModel(config.imageModel),
-            });
-        },
-        error: (err) => {
-          if (sequence === this.actionsLoadSequence)
-            this.errorMessage.set(
-              this.errorFor(err, 'No pudimos leer la configuración de GitHub Actions.'),
-            );
-        },
-      });
-    this.loadActionsReview(repositoryId, sequence);
-  }
-
-  private loadActionsReview(repositoryId: string, sequence: number): void {
-    this.actionsReviewLoading.set(true);
-    this.actionsConfigService
-      .pending(repositoryId)
-      .pipe(finalize(() => this.actionsReviewLoading.set(false)))
-      .subscribe({
-        next: (posts) => {
-          if (sequence === this.actionsLoadSequence && repositoryId === this.actionsRepositoryId())
-            this.actionsReview.set(posts);
-        },
-        error: (err) => {
-          if (sequence === this.actionsLoadSequence)
-            this.errorMessage.set(this.errorFor(err, 'No pudimos leer los borradores de Actions.'));
-        },
-      });
-  }
-
-  approveActionsPost(postId: string): void {
-    const repositoryId = this.actionsRepositoryId();
-    if (!repositoryId || this.reviewingId()) return;
-    this.reviewingId.set(postId);
-    this.errorMessage.set('');
-    this.successMessage.set('');
-    this.actionsConfigService
-      .approve(repositoryId, postId)
-      .pipe(finalize(() => this.reviewingId.set(null)))
-      .subscribe({
-        next: (result) => {
-          this.successMessage.set(result.message);
-          this.loadActionsReview(repositoryId, this.actionsLoadSequence);
-        },
-        error: (err) =>
-          this.errorMessage.set(
-            this.errorFor(
-              err,
-              'No se confirmó la aprobación. Revisa la cola de GitHub antes de repetirla.',
-            ),
-          ),
-      });
-  }
-
-  saveActionsConfig(): void {
-    const repositoryId = this.actionsRepositoryId();
-    if (!repositoryId || this.actionsForm.invalid || this.savingActionsConfig()) return;
-    this.savingActionsConfig.set(true);
-    this.errorMessage.set('');
-    this.successMessage.set('');
-    const raw = this.actionsForm.getRawValue();
-    const config: GitHubAutomationConfig = {
-      ...raw,
-      approvalMode: raw.approvalMode as GitHubAutomationConfig['approvalMode'],
-    };
-    this.actionsConfigService
-      .save(repositoryId, config)
-      .pipe(finalize(() => this.savingActionsConfig.set(false)))
-      .subscribe({
-        next: () => this.successMessage.set('Configuración guardada en el repositorio de GitHub.'),
-        error: (err) =>
-          this.errorMessage.set(
-            this.errorFor(err, 'No pudimos guardar la configuración en GitHub.'),
-          ),
-      });
+      : this.imageModels().some((option) => option.id === 'qwen-image-2.1/text-to-image')
+        ? 'qwen-image-2.1/text-to-image'
+        : this.imageModels()[0]?.id || 'qwen-image-2.1/text-to-image';
   }
 
   changeTimezone(value: string): void {

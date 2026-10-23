@@ -16,7 +16,7 @@ export class AutomationStateService {
         : 'Publicación pausada',
   );
   readonly explanation =
-    'Este control solo afecta al backend. No pausa GitHub Actions ni confirma que el servidor esté ejecutando trabajos.';
+    'Este control pausa la publicación programada del backend. El estado no confirma que el servidor esté disponible.';
   load(): void {
     if (this.loading()) return;
     this.loading.set(true);

@@ -3,6 +3,9 @@ package com.deyvid.backend.controller;
 import com.deyvid.backend.dto.request.BackupTopicRequest;
 import com.deyvid.backend.dto.request.BulkTopicRequests;
 import com.deyvid.backend.dto.request.InterestTopicRequest;
+import com.deyvid.backend.dto.request.TopicExploreRequest;
+import com.deyvid.backend.dto.response.TopicExploreResponse;
+import com.deyvid.backend.dto.response.TopicTrendResponse;
 import com.deyvid.backend.entity.BackupTopic;
 import com.deyvid.backend.entity.InterestTopic;
 import com.deyvid.backend.entity.User;
@@ -10,6 +13,8 @@ import com.deyvid.backend.repository.BackupTopicRepository;
 import com.deyvid.backend.repository.InterestTopicRepository;
 import com.deyvid.backend.security.AuthHelper;
 import com.deyvid.backend.service.AuditLogService;
+import com.deyvid.backend.service.TopicExplorationService;
+import com.deyvid.backend.service.TopicTrendService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +33,25 @@ public class TopicController {
     private final BackupTopicRepository backupTopicRepository;
     private final InterestTopicRepository interestTopicRepository;
     private final AuditLogService auditLogService;
+    private final TopicExplorationService topicExplorationService;
+    private final TopicTrendService topicTrendService;
+
+    @GetMapping("/trends")
+    public ResponseEntity<TopicTrendResponse> recentSignals(
+            Authentication auth,
+            @RequestParam String niche,
+            @RequestParam(defaultValue = "7d") String period) {
+        User user = authHelper.getCurrentUser(auth);
+        return ResponseEntity.ok(topicTrendService.findRecentSignals(user.getTenant(), niche, period));
+    }
+
+    @PostMapping("/explore")
+    public ResponseEntity<TopicExploreResponse> exploreIdeas(
+            Authentication auth,
+            @Valid @RequestBody TopicExploreRequest request) {
+        User user = authHelper.getCurrentUser(auth);
+        return ResponseEntity.ok(topicExplorationService.explore(user.getTenant(), request.niche()));
+    }
 
     @GetMapping
     public ResponseEntity<List<BackupTopic>> getUnifiedTopics(Authentication auth) {

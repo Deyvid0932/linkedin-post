@@ -19,6 +19,28 @@ export interface BulkTopicRequestPayload {
   isAiResearchDefault?: boolean;
 }
 
+export interface TopicExploreResponse {
+  niche: string;
+  ideas: string[];
+  source: string;
+}
+
+export interface TopicTrendSignal {
+  id: string;
+  title: string;
+  discussionUrl: string;
+  points: number;
+  comments: number;
+  createdAt: string;
+}
+
+export interface TopicTrendResponse {
+  niche: string;
+  source: string;
+  fetchedAt: string;
+  signals: TopicTrendSignal[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -29,6 +51,14 @@ export class TopicService {
 
   getTopics(): Observable<BackupTopic[]> {
     return this.http.get<BackupTopic[]>(this.API_URL);
+  }
+
+  exploreIdeas(niche: string): Observable<TopicExploreResponse> {
+    return this.http.post<TopicExploreResponse>(`${this.API_URL}/explore`, { niche });
+  }
+
+  getRecentSignals(niche: string, period: '24h' | '7d' | '30d' = '7d'): Observable<TopicTrendResponse> {
+    return this.http.get<TopicTrendResponse>(`${this.API_URL}/trends`, { params: { niche, period } });
   }
 
   addTopic(data: {

@@ -2,14 +2,15 @@ import { TestBed } from '@angular/core/testing';
 import { Router, ActivatedRouteSnapshot, RouterStateSnapshot, UrlTree } from '@angular/router';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
+import { Observable, firstValueFrom, of } from 'rxjs';
 
 describe('authGuard', () => {
-  let authServiceMock: { isAuthenticated: ReturnType<typeof vi.fn> };
+  let authServiceMock: { ensureSession: ReturnType<typeof vi.fn> };
   let routerMock: { createUrlTree: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     authServiceMock = {
-      isAuthenticated: vi.fn(),
+      ensureSession: vi.fn(),
     };
     routerMock = {
       createUrlTree: vi.fn(),
@@ -23,18 +24,18 @@ describe('authGuard', () => {
     });
   });
 
-  it('should allow access when user is authenticated', () => {
-    authServiceMock.isAuthenticated.mockReturnValue(true);
+  it('should allow access when user is authenticated', async () => {
+    authServiceMock.ensureSession.mockReturnValue(of(true));
 
     const result = TestBed.runInInjectionContext(() =>
       authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot),
     );
 
-    expect(result).toBe(true);
+    expect(await firstValueFrom(result as Observable<boolean | UrlTree>)).toBe(true);
   });
 
-  it('should redirect to /auth/login with returnUrl query param when user is not authenticated', () => {
-    authServiceMock.isAuthenticated.mockReturnValue(false);
+  it('should redirect to /auth/login with returnUrl query param when user is not authenticated', async () => {
+    authServiceMock.ensureSession.mockReturnValue(of(false));
     const mockUrlTree = {} as UrlTree;
     routerMock.createUrlTree.mockReturnValue(mockUrlTree);
 
@@ -42,9 +43,9 @@ describe('authGuard', () => {
       authGuard({} as ActivatedRouteSnapshot, { url: '/dashboard' } as RouterStateSnapshot),
     );
 
+    expect(await firstValueFrom(result as Observable<boolean | UrlTree>)).toBe(mockUrlTree);
     expect(routerMock.createUrlTree).toHaveBeenCalledWith(['/auth/login'], {
       queryParams: { returnUrl: '/dashboard' },
     });
-    expect(result).toBe(mockUrlTree);
   });
 });

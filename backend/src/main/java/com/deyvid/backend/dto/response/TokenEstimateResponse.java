@@ -4,7 +4,8 @@ public record TokenEstimateResponse(
         int estimatedPromptTokens,
         int estimatedCompletionTokens,
         int totalEstimatedTokens,
-        double estimatedCostUsd,
-        int remainingBalanceTokens,
-        String modelName
+        Double estimatedCostUsd,
+        Integer remainingBalanceTokens,
+        String modelName,
+        String note
 ) {}

@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "tertiary-fixed-dim": "#7bd0ff",
+          "surface-container-low": "#131b2e",
+          "primary-container": "#4d8eff",
+          "surface-container-lowest": "#060e20",
+          "surface-container-high": "#222a3d",
+          "on-error": "#690005",
+          "on-surface-variant": "#c2c6d6",
+          "secondary": "#b7c8e1",
+          "on-error-container": "#ffdad6",
+          "primary-fixed-dim": "#adc6ff",
+          "error-container": "#93000a",
+          "surface-variant": "#2d3449",
+          "inverse-on-surface": "#283044",
+          "surface-container-highest": "#2d3449",
+          "on-primary-container": "#00285d",
+          "tertiary-container": "#009bd1",
+          "tertiary": "#7bd0ff",
+          "surface-tint": "#adc6ff",
+          "surface": "#0b1326",
+          "surface-bright": "#31394d",
+          "on-secondary-container": "#a9bad3",
+          "on-tertiary-fixed-variant": "#004c69",
+          "inverse-primary": "#005ac2",
+          "background": "#0b1326",
+          "error": "#ffb4ab",
+          "secondary-container": "#3a4a5f",
+          "secondary-fixed-dim": "#b7c8e1",
+          "on-tertiary": "#00354a",
+          "on-primary": "#002e6a",
+          "on-secondary": "#213145",
+          "on-surface": "#dae2fd",
+          "secondary-fixed": "#d3e4fe",
+          "surface-container": "#171f33",
+          "on-secondary-fixed-variant": "#38485d",
+          "tertiary-fixed": "#c4e7ff",
+          "on-primary-fixed-variant": "#004395",
+          "on-primary-fixed": "#001a42",
+          "inverse-surface": "#dae2fd",
+          "primary-fixed": "#d8e2ff",
+          "outline-variant": "#424754",
+          "on-secondary-fixed": "#0b1c30",
+          "on-tertiary-fixed": "#001e2c",
+          "surface-dim": "#0b1326",
+          "on-background": "#dae2fd",
+          "primary": "#adc6ff",
+          "on-tertiary-container": "#002d40",
+          "outline": "#8c909f"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "gutter-desktop": "1.5rem",
+          "margin-desktop": "2rem",
+          "gutter": "1rem",
+          "space-lg": "1.25rem",
+          "space-sm": "0.5rem",
+          "margin": "1rem",
+          "space-xl": "2rem",
+          "space-xs": "0.25rem",
+          "space-md": "0.75rem"
+        },
+        "fontFamily": {
+          "body-md": [
+            "Inter"
+          ],
+          "label-sm": [
+            "Geist"
+          ],
+          "body-lg": [
+            "Inter"
+          ],
+          "headline-xl": [
+            "Geist"
+          ],
+          "headline-md": [
+            "Geist"
+          ],
+          "headline-xl-mobile": [
+            "Geist"
+          ],
+          "label-md": [
+            "Geist"
+          ],
+          "headline-lg": [
+            "Geist"
+          ],
+          "body-sm": [
+            "Inter"
+          ],
+          "code-sm": [
+            "Geist"
+          ]
+        },
+        "fontSize": {
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "20px",
+              "letterSpacing": "-0.005em",
+              "fontWeight": "400"
+            }
+          ],
+          "label-sm": [
+            "11px",
+            {
+              "lineHeight": "14px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "500"
+            }
+          ],
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-xl": [
+            "36px",
+            {
+              "lineHeight": "44px",
+              "letterSpacing": "-0.03em",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-md": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.015em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-xl-mobile": [
+            "28px",
+            {
+              "lineHeight": "36px",
+              "letterSpacing": "-0.025em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-md": [
+            "13px",
+            {
+              "lineHeight": "18px",
+              "letterSpacing": "0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-lg": [
+            "24px",
+            {
+              "lineHeight": "32px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "body-sm": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0",
+              "fontWeight": "400"
+            }
+          ],
+          "code-sm": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0",
+              "fontWeight": "400"
+            }
+          ]
+        }
+      },
+    },
+  }</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-16 px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center"><span class="material-symbols-outlined text-on-primary-container text-[18px]">terminal</span></div><span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">OmniPost</span></div><span class="px-space-xs py-0.5 rounded bg-primary-container/20 text-primary font-label-sm text-label-sm uppercase font-semibold tracking-wider">Admin</span></div><div class="px-space-lg py-space-sm"><div class="p-space-xs bg-surface-container-lowest rounded-xl flex items-center gap-space-xs"><button class="flex-1 py-1 px-space-sm rounded-lg text-center font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" type="button">Creador</button><button class="flex-1 py-1 px-space-sm rounded-lg text-center font-label-sm text-label-sm bg-primary-container text-on-primary-container font-semibold shadow-[0_1px_8px_rgba(0,0,0,0.04)] transition-all" type="button">Admin</button></div></div><nav class="flex flex-col gap-space-xs px-space-md mt-space-md" data-active-classes="bg-surface-container-high text-primary font-semibold"><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="usuarios-y-equipos" href="#"><span class="material-symbols-outlined text-[20px]">group</span><span class="font-label-md text-label-md">Usuarios y Equipos</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="limites-y-cuotas-api" href="#"><span class="material-symbols-outlined text-[20px]">speed</span><span class="font-label-md text-label-md">Límites &amp; Cuotas API</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="consumo-de-tokens-y-byok" href="#"><span class="material-symbols-outlined text-[20px]">key</span><span class="font-label-md text-label-md">Consumo de Tokens &amp; BYOK</span></a><a class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="auditoria-y-webhooks" href="#"><span class="material-symbols-outlined text-[20px]">rule</span><span class="font-label-md text-label-md">Auditoría y Webhooks</span></a><a aria-current="page" class="flex items-center gap-space-md px-space-md py-space-sm rounded-xl transition-all bg-surface-container-high text-primary font-semibold" data-path="ajustes-del-sistema" href="#"><span class="material-symbols-outlined text-[20px]">tune</span><span class="font-label-md text-label-md">Ajustes del Sistema</span></a></nav></div><div class="p-space-lg"><div class="p-space-md rounded-xl bg-surface-container flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant">Entorno Global</span><span class="font-code-sm text-code-sm text-on-surface">Producción / us-east</span></div><div class="flex items-center gap-space-xs"><span class="w-2 h-2 rounded-full bg-tertiary-container animate-pulse"></span></div></div></div></aside><div class="pl-64 flex flex-col min-h-screen"><header class="fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-space-xl flex items-center justify-between"><div class="flex items-center gap-space-lg flex-1 max-w-md"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span><input class="w-full bg-surface-container-lowest text-on-surface font-body-sm text-body-sm pl-10 pr-12 py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-outline" placeholder="Buscar o presionar Cmd + K..." type="text"/><span class="absolute right-3 top-1/2 -translate-y-1/2 font-code-sm text-code-sm text-outline px-1.5 py-0.5 rounded bg-surface-container">⌘K</span></div></div><div class="flex items-center gap-space-lg"><div class="hidden md:flex items-center gap-space-xs px-space-md py-space-xs rounded-full bg-surface-container text-tertiary font-label-sm text-label-sm"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span><span>API: Online</span></div><div class="flex items-center gap-space-sm text-on-surface-variant"><button class="p-space-sm rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors relative" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary"></span></button><button class="p-space-sm rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">help</span></button></div><div class="flex items-center gap-space-md pl-space-md"><div class="flex flex-col text-right hidden sm:flex"><span class="font-label-md text-label-md font-semibold text-on-surface">Elena Rostova</span><span class="font-label-sm text-label-sm text-outline">Super Admin</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-surface px-space-xl py-space-lg flex-1"><div class="flex flex-col w-full gap-space-lg pb-space-xl">
+<!-- Top Telemetry & Control Bar -->
+<div class="flex flex-col xl:flex-row xl:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-space-xs font-label-sm text-label-sm uppercase tracking-wider text-outline">
+<span class="hover:text-on-surface-variant transition-colors cursor-pointer">ADMINISTRACIÓN GLOBAL</span>
+<span class="material-symbols-outlined text-[12px] text-outline-variant">chevron_right</span>
+<span class="hover:text-on-surface-variant transition-colors cursor-pointer">CONFIGURACIÓN GENERAL</span>
+<span class="material-symbols-outlined text-[12px] text-outline-variant">chevron_right</span>
+<span class="text-primary font-semibold">Ajustes del Sistema</span>
+</nav>
+<!-- Main Title -->
+<div class="flex flex-wrap items-center gap-space-md mt-space-xs">
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">Ajustes del Sistema y Preferencias del Workspace</h1>
+<div class="flex items-center gap-space-xs">
+<span class="inline-flex items-center gap-1.5 px-space-sm py-0.5 rounded-full bg-surface-container-high text-tertiary font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            Entorno: Producción Multi-Tenant
+          </span>
+<span class="inline-flex items-center px-space-sm py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-code-sm text-code-sm">
+            v3.4.12-enterprise
+          </span>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-4xl">
+        Parámetros globales de publicación, políticas de seguridad corporativa, retención de datos y marca blanca.
+      </p>
+</div>
+<!-- Action Toolbar -->
+<div class="flex items-center gap-space-sm self-start xl:self-auto shrink-0">
+<div class="flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-outline">sync</span>
+<span>Cambios pendientes: <strong class="text-on-surface font-semibold" id="pendingCounter">0</strong></span>
+</div>
+<button class="flex items-center gap-space-sm px-space-lg py-space-sm rounded-lg bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold hover:bg-primary transition-all shadow-md active:scale-[0.99]" id="saveGlobalBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Guardar Cambios Globales</span>
+</button>
+</div>
+</div>
+<!-- Status Metric Ribbon -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-space-md">
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Post-Engine SOC2</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-0.5">Compliant</span>
+<span class="font-body-sm text-body-sm text-tertiary">Zero-Data Activo</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[22px]">verified_user</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Gobernanza SSO</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-0.5">SAML 2.0 / Okta</span>
+<span class="font-body-sm text-body-sm text-primary">2FA Estricto (Admin/Senior)</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[22px]">badge</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Heurística Antiban</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-0.5">v2025.2</span>
+<span class="font-body-sm text-body-sm text-tertiary-fixed-dim">Link Scan + Safe Words</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary-fixed-dim">
+<span class="material-symbols-outlined text-[22px]">security_update_good</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Dominio Personalizado</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-0.5 truncate max-w-[150px]">app.editorial...</span>
+<span class="font-body-sm text-body-sm text-tertiary">SSL Let's Encrypt OK</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[22px]">domain</span>
+</div>
+</div>
+</div>
+<!-- Workspace Settings Grid with Vertical Master-Detail Navigation -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Tab Navigation Rail (Left Pane) -->
+<div class="lg:col-span-3 flex flex-col gap-space-xs p-space-sm bg-surface-container-low rounded-xl sticky top-20 shadow-sm">
+<div class="px-space-md py-space-sm font-label-sm text-label-sm uppercase tracking-wider text-outline">
+        Categorías de Control
+      </div>
+<button class="settings-tab-btn flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-left transition-all bg-surface-container-high text-primary font-semibold" data-tab-target="tab-publishing" type="button">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md truncate">Publicación y Aprobación</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant opacity-80 truncate">Flujos, IA y límites</span>
+</div>
+</button>
+<button class="settings-tab-btn flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-left transition-all text-on-surface-variant hover:bg-surface-container hover:text-on-surface" data-tab-target="tab-security" type="button">
+<span class="material-symbols-outlined text-[20px]">shield</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md truncate">Seguridad, SSO y Acceso</span>
+<span class="font-body-sm text-body-sm text-outline truncate">SAML, 2FA e IPs</span>
+</div>
+</button>
+<button class="settings-tab-btn flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-left transition-all text-on-surface-variant hover:bg-surface-container hover:text-on-surface" data-tab-target="tab-privacy" type="button">
+<span class="material-symbols-outlined text-[20px]">database</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md truncate">Retención y Privacidad</span>
+<span class="font-body-sm text-body-sm text-outline truncate">GDPR, SOC2 y copias</span>
+</div>
+</button>
+<button class="settings-tab-btn flex items-center gap-space-md px-space-md py-space-sm rounded-lg text-left transition-all text-on-surface-variant hover:bg-surface-container hover:text-on-surface" data-tab-target="tab-whitelabel" type="button">
+<span class="material-symbols-outlined text-[20px]">branding_watermark</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md truncate">Marca Blanca &amp; Branding</span>
+<span class="font-body-sm text-body-sm text-outline truncate">Dominios, SMTP y logos</span>
+</div>
+</button>
+<!-- Contextual Quick Spec Box -->
+<div class="mt-space-lg p-space-md bg-surface-container rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-tertiary">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span class="font-label-sm text-label-sm font-semibold uppercase">Modo Multi-Tenant</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Los cambios impactan a 14 sub-cuentas vinculadas y 62 creadores federados. Requiere doble confirmación al guardar.
+        </p>
+</div>
+</div>
+<!-- Configuration Main Panel (Right Pane) -->
+<div class="lg:col-span-9 flex flex-col gap-space-lg">
+<!-- ================= SECTION 1: PUBLICACIÓN Y APROBACIÓN ================= -->
+<div class="settings-section flex flex-col gap-space-lg" id="tab-publishing">
+<!-- Section Header Card -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">rule_folder</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Políticas Globales de Publicación y Aprobación</h2>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-primary-container/20 text-primary font-label-sm text-label-sm">Pipeline Activo</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Supervisión editorial automatizada, validación de reglas de canal y ajuste algorítmico de horas pico para maximizar engagement.
+          </p>
+</div>
+<!-- Setting Item: Approval Workflow -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Flujo de Aprobación Obligatorio para Creadores Junior / Agencias externas</span>
+<span class="px-space-xs py-0.5 rounded bg-surface-container-high text-outline font-label-sm text-label-sm">Requerido</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Exige el visto bueno formal de un Editor Senior o Admin antes de despachar publicaciones a redes de alta visibilidad como LinkedIn, X (Twitter) o YouTube Shorts.
+            </p>
+<div class="flex items-center gap-space-md mt-space-xs font-code-sm text-code-sm text-secondary">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>LinkedIn Company Pages</span>
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>X Enterprise Handle</span>
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-outline"></span>TikTok (Exento)</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer config-control" data-key="approval_workflow" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Setting Item: Smart Publishing Window -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Ventana de Publicación Inteligente (Smart Shift)</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Permite a los modelos de telemetría de OmniPost reprogramar posts dinámicamente según la saturación de feeds y el pico de atención orgánica estimada.
+              </p>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container-lowest p-1 rounded-lg shrink-0">
+<button class="px-space-md py-1 rounded-md bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold transition-all" type="button">+/- 30 min (Recomendado)</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-all" type="button">+/- 15 min</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm transition-all" type="button">Desactivado</button>
+</div>
+</div>
+<!-- Micro Visualizer of Publishing Curve -->
+<div class="p-space-md rounded-lg bg-surface-container flex flex-col gap-space-xs">
+<div class="flex items-center justify-between font-label-sm text-label-sm text-outline">
+<span>Curva de Densidad de Tráfico (LinkedIn EMEA)</span>
+<span class="text-tertiary">Alineación Algorítmica Óptima: 14:15 - 14:45 CET</span>
+</div>
+<div class="w-full h-12 flex items-end gap-1.5 pt-2">
+<div class="flex-1 bg-surface-container-highest rounded-t h-[20%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[35%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[45%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[60%]"></div>
+<div class="flex-1 bg-tertiary-container/40 rounded-t h-[75%]"></div>
+<div class="flex-1 bg-primary-container rounded-t h-[95%] relative">
+<span class="absolute -top-5 left-1/2 -translate-x-1/2 font-code-sm text-code-sm text-primary font-bold">Slot</span>
+</div>
+<div class="flex-1 bg-tertiary-container/40 rounded-t h-[80%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[65%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[40%]"></div>
+<div class="flex-1 bg-surface-container-highest rounded-t h-[25%]"></div>
+</div>
+</div>
+</div>
+<!-- Setting Item: Heuristics 2025 Antiban -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Validación Antiban &amp; Heurísticas 2025</span>
+<span class="px-space-xs py-0.5 rounded bg-tertiary/10 text-tertiary font-label-sm text-label-sm font-semibold">Motor Heurístico</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Chequeo previo al envío de hipervínculos externos, acortadores no corporativos y palabras penalizadas por los algoritmos de recomendación para blindar la reputación de dominio.
+            </p>
+<div class="flex flex-wrap items-center gap-space-sm mt-space-xs">
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span> Zero UTM Spoofing
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span> Restricción de Follow-Bait
+              </span>
+<span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[14px] text-tertiary">check_circle</span> Validación de OpenGraph
+              </span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer config-control" data-key="antiban_heuristic" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+<!-- ================= SECTION 2: SEGURIDAD, SSO Y GOBERNANZA ================= -->
+<div class="settings-section flex flex-col gap-space-lg" id="tab-security">
+<!-- Header -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">enhanced_encryption</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Seguridad, SSO y Gobernanza de Acceso</h2>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-tertiary/20 text-tertiary font-label-sm text-label-sm">Auditoría Estricta</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Proveedores de identidad federada, gestión de tokens criptográficos y barreras de red para la organización.
+          </p>
+</div>
+<!-- SAML Provider Status Card -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined text-[28px]">hub</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-md text-headline-md text-on-surface">SAML 2.0 / Okta &amp; Google Workspace SSO</span>
+<span class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded bg-tertiary/20 text-tertiary font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Configurado y Activo
+                  </span>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Metadatos de IdP sincronizados el 14/10/2025 • Certificado x509 expira en 312 días</span>
+</div>
+</div>
+<button class="px-space-md py-space-sm rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-bright transition-colors shrink-0" type="button">
+              Probar Conexión IdP
+            </button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
+<div class="p-space-md rounded-lg bg-surface-container-lowest flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">ACS URL (OmniPost Callback)</span>
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-secondary truncate">https://auth.omnipost.internal/sso/saml/assertion</span>
+<button class="text-outline hover:text-on-surface ml-space-sm" type="button"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-lowest flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Entity ID (Audience URI)</span>
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-code-sm text-secondary truncate">urn:omnipost:workspace:enterprise-prod-01</span>
+<button class="text-outline hover:text-on-surface ml-space-sm" type="button"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- 2FA Multi-factor Policy -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Forzar Autenticación Multifactor (2FA / FIDO2)</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Exige tokens TOTP o llaves físicas de hardware (YubiKey/FIDO2) a todas las cuentas que cuenten con roles de Administrador o Creador Senior al iniciar sesión.
+            </p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer config-control" data-key="force_2fa" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Session Inactivity Timeout -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-xl">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Tiempo de Expiración de Sesión Inactiva</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Cierre automático de credenciales activas en navegadores y tokens OAuth por falta de interacción del operador.
+            </p>
+</div>
+<div class="w-full md:w-64 shrink-0">
+<select class="w-full bg-surface-container-lowest text-on-surface font-body-sm text-body-sm px-space-md py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer config-control" data-key="session_timeout">
+<option value="4h">4 Horas (Recomendado SecOps)</option>
+<option selected="" value="12h">12 Horas (Jornada Estándar)</option>
+<option value="24h">24 Horas (Máximo Corporativo)</option>
+</select>
+</div>
+</div>
+<!-- IP Whitelisting Range -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Restricción de Acceso por Rango de IPs (IP Whitelist)</span>
+<span class="font-code-sm text-code-sm text-outline">CIDR Blocks Permitidos: 3</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Bloquea todo el tráfico administrativo no originado desde la VPN interna de la agencia o gateways dedicados de la red corporativa.
+            </p>
+</div>
+<div class="relative w-full">
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-code-sm text-code-sm p-space-md rounded-lg focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-outline config-control" data-key="ip_whitelist" rows="3">198.51.100.0/24 # Sede Central Madrid
+203.0.113.45/32 # Gateway VPN Global
+10.240.0.0/16 # Subred Cloud de Staging</textarea>
+</div>
+<span class="font-body-sm text-body-sm text-outline">Separe cada rango de red CIDR con saltos de línea. Los comentarios con '#' se omiten automáticamente.</span>
+</div>
+</div>
+<!-- ================= SECTION 3: RETENCIÓN DE DATOS Y PRIVACIDAD ================= -->
+<div class="settings-section flex flex-col gap-space-lg" id="tab-privacy">
+<!-- Header -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">policy</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Retención de Datos y Privacidad (GDPR / SOC2)</h2>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-tertiary-fixed-dim/20 text-tertiary-fixed-dim font-label-sm text-label-sm">Auditoría Criptográfica</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Ciclo de vida de telemetría de IA, políticas de no-almacenamiento en modelos de terceros y exportaciones forenses.
+          </p>
+</div>
+<!-- Setting Item: Prompt Log Retention -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs max-w-xl">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Retención de Logs de Prompts y Respuestas de IA</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Determina el plazo de borrado criptográfico definitivo de las peticiones generativas enviadas por redactores y community managers.
+            </p>
+</div>
+<div class="w-full md:w-64 shrink-0">
+<select class="w-full bg-surface-container-lowest text-on-surface font-body-sm text-body-sm px-space-md py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer config-control" data-key="log_retention">
+<option value="30d">30 Días (GDPR Ultra-Strict)</option>
+<option selected="" value="90d">90 Días (Estándar Corporativo)</option>
+<option value="365d">365 Días (Compliance Financiero)</option>
+<option value="indefinite">Indefinido (No recomendado)</option>
+</select>
+</div>
+</div>
+<!-- Setting Item: Zero-Data Retention Toggle -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-space-md hover:bg-surface-container transition-colors">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Zero-Data Retention en Inferencia (ZDR Clause)</span>
+<span class="px-space-xs py-0.5 rounded bg-tertiary-container/30 text-tertiary font-label-sm text-label-sm font-semibold">BYOK &amp; LLMs</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Garantiza que ningún proveedor de LLM integrado (Anthropic, OpenAI, Mistral) entrene modelos fundacionales con los borradores, prompts, documentos confidenciales o respuestas procesadas en este workspace.
+            </p>
+<div class="flex items-center gap-space-xs text-tertiary font-body-sm text-body-sm mt-space-xs">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Acuerdos BAA / DPA suscritos con SLA de aislamiento instantáneo</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0">
+<input checked="" class="sr-only peer config-control" data-key="zero_data_retention" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Setting Item: Full Workspace Backup -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Descarga de Copia de Seguridad Completa del Workspace</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Exportación exhaustiva que incluye historial de copias publicadas, matrices analíticas, roles y configuraciones en formato cifrado.
+            </p>
+<span class="font-code-sm text-code-sm text-outline">Última copia generada automáticamente: Ayer a las 03:00 UTC (Tamaño: 1.42 GB)</span>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">data_object</span>
+<span>JSON Dump</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-space-sm rounded-lg bg-surface-container-high hover:bg-surface-bright text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>SQL Dump</span>
+</button>
+</div>
+</div>
+</div>
+<!-- ================= SECTION 4: BRANDING Y MARCA BLANCA ================= -->
+<div class="settings-section flex flex-col gap-space-lg" id="tab-whitelabel">
+<!-- Header -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">palette</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Branding y Personalización de Marca Blanca (White-label)</h2>
+</div>
+<span class="px-space-sm py-0.5 rounded-full bg-primary/20 text-primary font-label-sm text-label-sm">Enterprise License</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Alinee la interfaz con la identidad corporativa de la agencia para reportes a clientes y acceso multi-portal.
+          </p>
+</div>
+<!-- Custom Domain & Hostname -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Dominio Personalizado y Enrutamiento CNAME</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Configure la URL mediante la cual sus editores y clientes accederán al portal sin referencias de marca compartida.
+            </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-md items-center">
+<div class="md:col-span-8 relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]">language</span>
+<input class="w-full bg-surface-container-lowest text-on-surface font-code-sm text-code-sm pl-10 pr-4 py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary config-control" data-key="custom_domain" type="text" value="app.editorial-enterprise.com"/>
+</div>
+<div class="md:col-span-4 flex items-center gap-space-xs">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<span class="font-label-sm text-label-sm text-tertiary font-semibold">SSL Let's Encrypt Activo</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-lowest flex items-center justify-between font-code-sm text-code-sm">
+<div class="flex items-center gap-space-md text-outline">
+<span>CNAME Record:</span>
+<span class="text-on-surface select-all">app.editorial-enterprise.com → ingress.cluster-04.omnipost.net</span>
+</div>
+<span class="text-primary flex items-center gap-1 font-semibold text-[11px]"><span class="material-symbols-outlined text-[14px]">done_all</span> Verificado</span>
+</div>
+</div>
+<!-- Logo & Watermark Assets Preview -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Identidad Visual de Reportes y Videos Generados</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Logotipos vectoriales para portadas de PDF analíticos y marca de agua sutil en renderizados automatizados para TikTok / Shorts.
+            </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg pt-space-xs">
+<!-- Brand Logo Box -->
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Logo Primario para Informes (SVG / PNG)</span>
+<div class="h-36 rounded-lg bg-surface-container flex flex-col items-center justify-center p-space-md relative overflow-hidden group">
+<img class="h-12 object-contain opacity-90 group-hover:opacity-100 transition-opacity" data-alt="A minimalist executive corporate vector emblem in cobalt blue and clean silver lines, high contrast dark theme aesthetic for editorial software branding" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMTkySwMxcg-D_DNce_nUh-SlQP2ohd4HSkouesSmYWnUfaqfbMca7wjqnrb2u23RJV-9IL0PuYlOg7u1pZdeTTGjzczwDqow0lF9-BaG1SbUKq9kASshZ9cM7hwjFpV8od1HUusnqYpKcCUdt9OcpWBLuHmd3bziEoE5zTIfJoXVJvLml4HhC-j5G9JzJ7b0N6CYoH5OGKuoH6q4L_GJPBOHteUN55hI2vI6pDWSOCZ4Ut7nV4OTX"/>
+<div class="absolute bottom-2 right-2 flex gap-1">
+<button class="p-1 rounded bg-surface-container-highest text-on-surface hover:text-primary transition-colors text-[14px]" title="Reemplazar Logo" type="button">
+<span class="material-symbols-outlined text-[16px]">upload_file</span>
+</button>
+<button class="p-1 rounded bg-surface-container-highest text-on-surface hover:text-error transition-colors text-[14px]" title="Eliminar" type="button">
+<span class="material-symbols-outlined text-[16px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Video Watermark Box -->
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider">Marca de Agua de Video (Alpha PNG)</span>
+<div class="h-36 rounded-lg bg-surface-container flex flex-col items-center justify-center p-space-md relative overflow-hidden group">
+<img class="h-10 object-contain opacity-60 group-hover:opacity-90 transition-opacity" data-alt="A translucent high-tech watermark badge with sharp typography, modern dark editorial agency crest with 40 percent opacity on midnight slate background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBv1Ybf8r32pkxYmRl-3U0zspiZaJCsPiwxuL_8KV61I8tjZDmCiAr-qxN1uiNuHHSiZXhy98zGZk6KCSvNxGPU7p9_zO94YP41N8PRAlZaj_ZOG8wq-EKLidMjMFGMxgwhkRQ3BGK-tdNhJ0tz4qmZnSJlQcaoyy_T-rXCcIQLWKQVkhp-STX-FQsr00NNFqr8kDMcenBOsxB9wO4iJRGq3OgHhuOxtBXuIGQvLHG5zzIC_M7HLa3T"/>
+<div class="absolute bottom-2 left-2 text-outline font-code-sm text-code-sm">
+                  Posición: Inferior Derecha (Opacidad: 35%)
+                </div>
+<div class="absolute bottom-2 right-2 flex gap-1">
+<button class="p-1 rounded bg-surface-container-highest text-on-surface hover:text-primary transition-colors text-[14px]" title="Editar Parámetros" type="button">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Dedicated SMTP & SendGrid Configuration -->
+<div class="p-space-lg rounded-xl bg-surface-container-low shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Notificaciones y Alertas por Email (Servidor Dedicado)</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                Despacho de notificaciones de aprobación editorial y alertas de publicaciones fallidas desde su propio dominio.
+              </p>
+</div>
+<div class="flex items-center gap-space-xs bg-surface-container-lowest p-1 rounded-lg">
+<button class="px-space-md py-1 rounded-md bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold" type="button">SendGrid API</button>
+<button class="px-space-md py-1 rounded-md text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm" type="button">SMTP Personalizado</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-sm text-label-sm text-outline">SendGrid API Key</label>
+<div class="relative">
+<input class="w-full bg-surface-container-lowest text-on-surface font-code-sm text-code-sm px-space-md py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary config-control" data-key="smtp_key" type="password" value="SG.vX90_mock_enterprise_key_secure_8829103984"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline text-[18px] cursor-pointer hover:text-on-surface">visibility_off</span>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<label class="font-label-sm text-label-sm text-outline">Remitente Autorizado (From Address)</label>
+<input class="w-full bg-surface-container-lowest text-on-surface font-code-sm text-code-sm px-space-md py-space-sm rounded-lg focus:outline-none focus:ring-1 focus:ring-primary config-control" data-key="smtp_sender" type="email" value="alertas@editorial-enterprise.com"/>
+</div>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-xs">
+<button class="px-space-md py-space-sm rounded-lg bg-surface-container text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+              Enviar Email de Prueba
+            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  (function() {
+    // Interactive Tab Switching
+    const tabButtons = document.querySelectorAll('.settings-tab-btn');
+    const sections = document.querySelectorAll('.settings-section');
+    const pendingCounter = document.getElementById('pendingCounter');
+    const saveBtn = document.getElementById('saveGlobalBtn');
+    let dirtyChanges = 0;
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.getAttribute('data-tab-target');
+        
+        tabButtons.forEach(b => {
+          b.classList.remove('bg-surface-container-high', 'text-primary', 'font-semibold');
+          b.classList.add('text-on-surface-variant');
+        });
+        btn.classList.add('bg-surface-container-high', 'text-primary', 'font-semibold');
+        btn.classList.remove('text-on-surface-variant');
+
+        sections.forEach(sec => {
+          if (sec.id === targetId) {
+            sec.classList.remove('hidden');
+          } else {
+            sec.classList.add('hidden');
+          }
+        });
+      });
+    });
+
+    // Initialize: show only first tab initially
+    sections.forEach((sec, index) => {
+      if (index !== 0) sec.classList.add('hidden');
+    });
+
+    // Track Configuration Changes
+    const controls = document.querySelectorAll('.config-control');
+    controls.forEach(ctrl => {
+      ctrl.addEventListener('change', () => {
+        dirtyChanges++;
+        pendingCounter.textContent = dirtyChanges;
+        pendingCounter.classList.add('text-primary');
+        saveBtn.classList.add('ring-2', 'ring-primary');
+      });
+    });
+
+    // Save button reset micro-interaction
+    saveBtn.addEventListener('click', () => {
+      if (dirtyChanges > 0) {
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span> Guardando...`;
+        saveBtn.disabled = true;
+
+        setTimeout(() => {
+          dirtyChanges = 0;
+          pendingCounter.textContent = '0';
+          pendingCounter.classList.remove('text-primary');
+          saveBtn.classList.remove('ring-2', 'ring-primary');
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = `<span class="material-symbols-outlined text-[18px]">check</span> Cambios Guardados`;
+
+          setTimeout(() => {
+            saveBtn.innerHTML = originalText;
+          }, 2000);
+        }, 600);
+      }
+    });
+  })();
+</script></main></div></body></html>

@@ -1,5 +1,8 @@
 package com.deyvid.backend.service.ai;
 
+import com.deyvid.backend.entity.Tenant;
+import com.deyvid.backend.service.TenantAiCredentialService;
+import com.deyvid.backend.service.TenantAiQuotaService;
 import com.deyvid.backend.service.linkedin.ContentSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,7 +22,13 @@ public class ImageGeneratorService {
     @org.springframework.beans.factory.annotation.Value("${nanogpt.api-key:${NANOGPT_API_KEY:${NANOGPT_KEY:}}}")
     private String configuredNanoGptApiKey;
 
+    @org.springframework.beans.factory.annotation.Value("${NANOGPT_IMAGE_RESOLUTION:}")
+    private String configuredNanoGptImageResolution;
+
     private final WebClient genericWebClient;
+    private final TenantAiCredentialService tenantAiCredentialService;
+    private final TenantAiQuotaService tenantAiQuotaService;
+    private final AiUsageEventService aiUsageEventService;
 
     // Colección de imágenes fotográficas limpias y profesionales de alta resolución sin dependencia de APIs externas
     private static final List<String> CURATED_TECH_IMAGES = List.of(
@@ -30,7 +39,29 @@ public class ImageGeneratorService {
     );
 
     public ImageGeneratorService(@Qualifier("genericWebClient") WebClient genericWebClient) {
+        this(genericWebClient, null, null);
+    }
+
+    public ImageGeneratorService(@Qualifier("genericWebClient") WebClient genericWebClient,
+                                 TenantAiCredentialService tenantAiCredentialService) {
+        this(genericWebClient, tenantAiCredentialService, null);
+    }
+
+    public ImageGeneratorService(@Qualifier("genericWebClient") WebClient genericWebClient,
+                                 TenantAiCredentialService tenantAiCredentialService,
+                                 TenantAiQuotaService tenantAiQuotaService) {
+        this(genericWebClient, tenantAiCredentialService, tenantAiQuotaService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ImageGeneratorService(@Qualifier("genericWebClient") WebClient genericWebClient,
+                                 TenantAiCredentialService tenantAiCredentialService,
+                                 TenantAiQuotaService tenantAiQuotaService,
+                                 AiUsageEventService aiUsageEventService) {
         this.genericWebClient = genericWebClient;
+        this.tenantAiCredentialService = tenantAiCredentialService;
+        this.tenantAiQuotaService = tenantAiQuotaService;
+        this.aiUsageEventService = aiUsageEventService;
     }
 
     private String getEffectiveNanoGptApiKey() {
@@ -72,11 +103,17 @@ public class ImageGeneratorService {
     }
 
     public ImageData generateAiImageWithNanoGpt(String topicTitle, String postText, String requestedModel) {
-        String apiKey = getEffectiveNanoGptApiKey();
+        return generateAiImageWithNanoGpt(topicTitle, postText, requestedModel, null);
+    }
+
+    public ImageData generateAiImageWithNanoGpt(String topicTitle, String postText, String requestedModel, Tenant tenant) {
+        String apiKey = getEffectiveNanoGptApiKey(tenant);
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("No se configuró NANOGPT_API_KEY; se usará la imagen de respaldo disponible.");
             return null;
         }
+
+        if (tenantAiQuotaService != null) tenantAiQuotaService.consume(tenant);
 
         String model = NanoGptImageModels.normalize(requestedModel);
         String topic = (topicTitle == null || topicTitle.isBlank()) ? "software engineering" : topicTitle.trim();
@@ -93,7 +130,9 @@ public class ImageGeneratorService {
         requestBody.put("n", 1);
         requestBody.put("response_format", "b64_json");
         if (model.contains("nano-banana")) {
-            String resolution = System.getenv("NANOGPT_IMAGE_RESOLUTION");
+            String resolution = configuredNanoGptImageResolution;
+            if (resolution == null || resolution.isBlank()) resolution = System.getProperty("NANOGPT_IMAGE_RESOLUTION");
+            if (resolution == null || resolution.isBlank()) resolution = System.getenv("NANOGPT_IMAGE_RESOLUTION");
             if (resolution == null || resolution.isBlank()) resolution = model.equals("nano-banana-2-fast") ? "2k" : "1k";
             requestBody.put("resolution", resolution);
             requestBody.put("aspect_ratio", "16:9");
@@ -122,6 +161,14 @@ public class ImageGeneratorService {
                     byte[] png = normalizeGeneratedImage(java.util.Base64.getDecoder().decode(base64));
                     if (png != null) {
                         String dataUrl = "data:image/png;base64," + java.util.Base64.getEncoder().encodeToString(png);
+                        if (aiUsageEventService != null && tenant != null) {
+                            try {
+                                aiUsageEventService.recordImageGeneration(tenant, "NanoGPT", model);
+                            } catch (RuntimeException usageError) {
+                                // Metrics must not turn a completed provider response into a failed generation.
+                                log.warn("No se pudo registrar el evento de generación de imagen NanoGPT.");
+                            }
+                        }
                         log.info("Imagen de NanoGPT lista ({} bytes, modelo {})", png.length, model);
                         return new ImageData(png, dataUrl);
                     }
@@ -242,12 +289,16 @@ public class ImageGeneratorService {
     }
 
     public ImageData generateOrFetchImage(ContentSource source, String postText, String imageModel) {
+        return generateOrFetchImage(source, postText, imageModel, null);
+    }
+
+    public ImageData generateOrFetchImage(ContentSource source, String postText, String imageModel, Tenant tenant) {
         String topicTitle = (source != null && source.title() != null && !source.title().isBlank())
                 ? source.title()
                 : "Technology and Software Engineering";
 
         // 1. Intentar generar una imagen editorial con el modelo NanoGPT elegido.
-        ImageData nanoGptData = generateAiImageWithNanoGpt(topicTitle, postText, imageModel);
+        ImageData nanoGptData = generateAiImageWithNanoGpt(topicTitle, postText, imageModel, tenant);
         if (nanoGptData != null && nanoGptData.bytes() != null && nanoGptData.bytes().length > 1000) {
             return nanoGptData;
         }
@@ -404,6 +455,15 @@ public class ImageGeneratorService {
             log.warn("No se pudieron descargar bytes desde {}: {}. Usando banner local.", imageUrl, e.getMessage());
             return null;
         }
+    }
+
+    private String getEffectiveNanoGptApiKey(Tenant tenant) {
+        if (tenantAiCredentialService != null && tenant != null && tenant.getId() != null) {
+            String workspaceKey = tenantAiCredentialService.getApiKey(
+                    tenant.getId(), TenantAiCredentialService.Provider.NANOGPT_IMAGE);
+            if (workspaceKey != null && !workspaceKey.isBlank()) return workspaceKey;
+        }
+        return getEffectiveNanoGptApiKey();
     }
 
     private byte[] createFallbackPngBytes() {

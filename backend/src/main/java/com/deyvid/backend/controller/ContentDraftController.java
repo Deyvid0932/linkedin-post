@@ -1,6 +1,10 @@
 package com.deyvid.backend.controller;
 
 import com.deyvid.backend.dto.request.ComposeRequest;
+import com.deyvid.backend.dto.request.ContentAdaptRequest;
+import com.deyvid.backend.dto.request.SaveContentVariantRequest;
+import com.deyvid.backend.dto.response.AdaptedContentResponse;
+import com.deyvid.backend.dto.response.ContentVariantResponse;
 import com.deyvid.backend.entity.*;
 import com.deyvid.backend.entity.enums.SourceMode;
 import com.deyvid.backend.repository.*;
@@ -24,6 +28,7 @@ public class ContentDraftController {
     private final ComposeService composer;
     private final SafeImageService images;
     private final PublicationAttemptService attempts;
+    private final ContentVariantService variantService;
 
     public record DraftResponse(UUID id, String title, String text, String imageUrl, String tone, String audience, String goal, String instructions,
                                 UUID targetCredentialId, boolean queued, LocalDateTime updatedAt) {}
@@ -41,6 +46,31 @@ public class ContentDraftController {
     @PostMapping("/generate")
     public ComposeService.Proposal generate(Authentication principal, @Valid @RequestBody ComposeRequest req) {
         return composer.generate(auth.getCurrentUser(principal).getTenant(), req);
+    }
+
+    @PostMapping("/adapt")
+    public AdaptedContentResponse adapt(Authentication principal, @Valid @RequestBody ContentAdaptRequest request) {
+        if (request.content().text() == null || request.content().text().isBlank()) {
+            throw new IllegalArgumentException("Escribe o genera un texto antes de adaptarlo a otro canal");
+        }
+        var tenant = auth.getCurrentUser(principal).getTenant();
+        var proposal = composer.adaptForChannel(tenant, request.content(), request.channel());
+        int configuredTarget = tenant.getAppTargetCharacters() == null ? 1200 : tenant.getAppTargetCharacters();
+        return new AdaptedContentResponse(
+                request.channel().name(), proposal.text(), proposal.text().length(),
+                Math.min(configuredTarget, request.channel().recommendedCharacters()), false);
+    }
+
+    @GetMapping("/drafts/{id}/variants")
+    public List<ContentVariantResponse> listVariants(Authentication principal, @PathVariable UUID id) {
+        return variantService.list(auth.getCurrentTenantId(principal), id);
+    }
+
+    @PutMapping("/drafts/{id}/variants")
+    public ContentVariantResponse saveVariant(Authentication principal, @PathVariable UUID id,
+                                               @Valid @RequestBody SaveContentVariantRequest request) {
+        User user = auth.getCurrentUser(principal);
+        return variantService.save(user.getTenant().getId(), id, user.getEmail(), request);
     }
 
     @PostMapping("/drafts")

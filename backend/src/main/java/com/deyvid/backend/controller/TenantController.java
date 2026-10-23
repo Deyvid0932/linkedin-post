@@ -17,6 +17,7 @@ import com.deyvid.backend.repository.PublishingScheduleRepository;
 import com.deyvid.backend.repository.TenantRepository;
 import com.deyvid.backend.security.AuthHelper;
 import com.deyvid.backend.service.TenantService;
+import com.deyvid.backend.service.PlatformPublicationPolicyService;
 import com.deyvid.backend.service.ComposeService;
 import com.deyvid.backend.service.linkedin.ContentSource;
 import com.deyvid.backend.entity.enums.SourceMode;
@@ -45,6 +46,7 @@ public class TenantController {
     private final PublishingScheduleRepository scheduleRepository;
     private final LinkedInCredentialRepository linkedInCredentialRepository;
     private final ComposeService composeService;
+    private final PlatformPublicationPolicyService publicationPolicyService;
 
     @GetMapping({"/profile", "/current"})
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -61,7 +63,8 @@ public class TenantController {
         User user = authHelper.getCurrentUser(auth);
         Tenant updated = tenantService.updateTenantProfile(
                 user.getTenant().getId(), user.getEmail(), request.systemPrompt(), request.timezone(),
-                request.appApprovalMode(), request.appTargetCharacters(), request.appImageModel(), "Actualización de configuración");
+                request.appApprovalMode(), request.appTargetCharacters(), request.appImageModel(),
+                request.appTextModel(), "Actualización de configuración");
         return ResponseEntity.ok(mapToTenantResponse(updated));
     }
 
@@ -104,6 +107,8 @@ public class TenantController {
                 .systemPrompt(request.testPrompt())
                 .timezone(tenant.getTimezone())
                 .appTargetCharacters(tenant.getAppTargetCharacters())
+                .appImageModel(tenant.getAppImageModel())
+                .appTextModel(tenant.getAppTextModel())
                 .build();
 
         String topic = (request.sampleTopic() != null && !request.sampleTopic().isBlank())
@@ -200,7 +205,9 @@ public class TenantController {
                 t.getCreatedAt(),
                 t.getAppApprovalMode(),
                 t.getAppTargetCharacters(),
-                t.getAppImageModel()
+                t.getAppImageModel(),
+                t.getAppTextModel(),
+                publicationPolicyService.getPolicy().approvalRequired()
         );
     }
 }

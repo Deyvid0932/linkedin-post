@@ -5,9 +5,7 @@
       <h1 class="ui-title">Historial</h1>
       <p class="ui-muted">Resultados de publicación y contenido completo, sin perder contexto.</p>
     </div>
-    @if (historyView() === 'APP') {
-      <button class="ui-button" (click)="ask('clear')">Limpiar historial</button>
-    }
+    <button class="ui-button" type="button" (click)="ask('clear')">Limpiar historial</button>
   </header>
   @if (error()) {
     <div role="alert" class="ui-alert">
@@ -17,22 +15,6 @@
   @if (message()) {
     <p role="status">{{ message() }}</p>
   }
-  <nav class="ui-toolbar" aria-label="Origen del historial">
-    <button
-      class="ui-button"
-      [attr.aria-pressed]="historyView() === 'APP'"
-      (click)="setHistoryView('APP')"
-    >
-      Publicaciones de AutoPost</button
-    ><button
-      class="ui-button"
-      [attr.aria-pressed]="historyView() === 'ACTIONS'"
-      (click)="setHistoryView('ACTIONS')"
-    >
-      Publicaciones de GitHub Actions
-    </button>
-  </nav>
-  @if (historyView() === 'APP') {
     <section class="ui-card grid gap-4">
       <div class="ui-toolbar">
         <input
@@ -54,7 +36,7 @@
           <option value="DRAFT">Borrador</option>
         </select>
       </div>
-      <div class="ui-toolbar" aria-label="Origen">
+      <div class="ui-toolbar" role="group" aria-label="Origen de la publicación">
         @for (origin of origins; track origin.value) {
           <button
             class="ui-button"
@@ -111,69 +93,6 @@
         </div>
       </div>
     </section>
-  } @else {
-    <section class="ui-card grid gap-4">
-      <div class="ui-toolbar justify-between">
-        <div>
-          <h2 class="ui-section-title">Hechas por GitHub Actions</h2>
-          <p class="ui-meta">
-            Recibos leídos del repositorio conectado; la hora real puede diferir de la programada.
-          </p>
-        </div>
-        <div class="ui-actions">
-          @if (actionRepositories().length) {
-            <select
-              class="ui-input"
-              aria-label="Repositorio del historial"
-              [value]="actionRepositoryId()"
-              (change)="selectActionRepository($any($event.target).value)"
-            >
-              @for (repo of actionRepositories(); track repo.id) {
-                <option [value]="repo.id">{{ repo.repoOwner }}/{{ repo.repoName }}</option>
-              }
-            </select>
-          }
-          <button class="ui-button" (click)="loadActionHistory()" [disabled]="actionsLoading()">
-            Actualizar
-          </button>
-        </div>
-      </div>
-      @if (actionsLoading()) {
-        <p role="status" class="ui-empty">Cargando registros de GitHub…</p>
-      } @else if (!actionRepositoryId()) {
-        <p class="ui-empty">Conecta GitHub y agrega el repositorio de automatización.</p>
-      } @else {
-        @for (post of actionsHistory(); track post['id']) {
-          <article class="ui-row">
-            <div class="min-w-0 flex-1">
-              @if (post['imageDataUrl']) {
-                <img
-                  [src]="$any(post['imageDataUrl'])"
-                  alt="Imagen de la publicación de GitHub Actions"
-                  class="mb-3 max-h-56 rounded-lg object-contain"
-                />
-              }
-              <p class="ui-excerpt">
-                {{ post['text'] || post['title'] || 'Publicación de GitHub Actions' }}
-              </p>
-              <p class="ui-meta">
-                {{ post['status'] }} · Programada: {{ post['publishAt'] || '—' }} ·
-                Intento/resultado: {{ post['publishedAt'] || post['createdAt'] || '—' }}
-              </p>
-              @if (post['postUrn']) {
-                <p class="ui-meta">LinkedIn: {{ post['postUrn'] }}</p>
-              }
-            </div>
-            <span class="ui-status" [class.ui-status--success]="post['status'] === 'SUCCESS'"
-              >GitHub Actions</span
-            >
-          </article>
-        } @empty {
-          <p class="ui-empty">Aún no hay recibos de GitHub Actions en este repositorio.</p>
-        }
-      }
-    </section>
-  }
   @if (selected(); as post) {
     <app-dialog title="Detalle de publicación" [side]="true" (closed)="selected.set(null)"
       ><div class="ui-toolbar">

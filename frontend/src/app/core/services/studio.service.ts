@@ -34,10 +34,10 @@ export class StudioService {
   testPrompt(
     customPrompt: string,
     sampleTopic?: string,
-  ): Observable<{ generatedText: string; tokensUsed: number; costUsd: number }> {
-    return this.http.post<{ generatedText: string; tokensUsed: number; costUsd: number }>(
-      `${this.apiUrl}/test-prompt`,
-      { customPrompt, sampleTopic },
+  ): Observable<{ success: boolean; approach: string; topic: string; generatedSample: string }> {
+    return this.http.post<{ success: boolean; approach: string; topic: string; generatedSample: string }>(
+      `${environment.apiUrl}/tenant/prompt/test`,
+      { testPrompt: customPrompt, sampleTopic },
     );
   }
 

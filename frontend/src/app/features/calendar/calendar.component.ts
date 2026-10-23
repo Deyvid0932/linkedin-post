@@ -1,237 +1,213 @@
-import { DatePipe } from '@angular/common';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
-import { CredentialService } from '../../core/services/credential.service';
-import {
-  GitHubQueuePost,
-  GitHubQueueService,
-  GitHubQueueSnapshot,
-} from '../../core/services/github-queue.service';
-import { GitHubRepo } from '../../core/models/credential.model';
+import { PublicationLog } from '../../core/models/publication.model';
+import { TenantService } from '../../core/services/tenant.service';
+import { PublicationService } from '../../core/services/publication.service';
+import { Schedule, ScheduleService } from '../../core/services/schedule.service';
+import { parseRecurring } from '../../core/services/schedule-format';
 
-type CalendarMode = 'week' | 'month' | 'list';
-interface CalendarDay {
-  date: Date;
-  key: string;
-  inMonth: boolean;
-  today: boolean;
+type CalendarView = 'week' | 'month' | 'list';
+
+interface CalendarSlot {
+  id: string;
+  time: string;
+  description: string;
 }
+
+interface CalendarDay {
+  key: string;
+  weekday: string;
+  dayNumber: number;
+  label: string;
+  currentMonth: boolean;
+  today: boolean;
+  slots: CalendarSlot[];
+}
+
+const WEEKDAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+const DEFAULT_TIMEZONE = 'America/Lima';
 
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [DatePipe, RouterLink],
+  imports: [RouterLink],
   templateUrl: './calendar.component.html',
+  styleUrl: './calendar.component.css',
 })
 export class CalendarComponent implements OnInit {
-  private readonly credentials = inject(CredentialService);
-  private readonly queueService = inject(GitHubQueueService);
-  readonly timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  readonly weekNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  readonly repositories = signal<GitHubRepo[]>([]);
-  readonly repositoryId = signal('');
-  readonly snapshot = signal<GitHubQueueSnapshot | null>(null);
-  readonly posts = computed(() => this.snapshot()?.posts || []);
-  readonly loading = signal(false);
-  readonly saving = signal(false);
-  readonly error = signal('');
-  readonly message = signal('');
-  readonly mode = signal<CalendarMode>('week');
-  readonly selectedPost = signal<GitHubQueuePost | null>(null);
-  readonly scheduleValue = signal('');
-  readonly cursor = signal(
-    new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()),
+  private readonly tenantService = inject(TenantService);
+  private readonly publicationService = inject(PublicationService);
+  private readonly scheduleService = inject(ScheduleService);
+
+  readonly view = signal<CalendarView>('week');
+  readonly schedules = signal<Schedule[]>([]);
+  readonly queuedPosts = signal<PublicationLog[]>([]);
+  readonly timezone = signal(DEFAULT_TIMEZONE);
+  readonly anchorDate = signal(this.todayForTimezone(DEFAULT_TIMEZONE));
+  readonly loadingSchedules = signal(true);
+  readonly loadingQueue = signal(true);
+  readonly scheduleError = signal('');
+  readonly queueError = signal('');
+
+  readonly days = computed(() =>
+    this.view() === 'week' ? this.buildWeek() : this.view() === 'month' ? this.buildMonth() : [],
   );
-  readonly periodLabel = computed(() =>
-    this.mode() === 'month'
-      ? this.cursor().toLocaleDateString('es', { month: 'long', year: 'numeric' })
-      : this.mode() === 'week'
-        ? this.weekRangeLabel()
-        : 'Todas las fechas de la cola',
+  readonly recurringSchedules = computed(() =>
+    this.schedules()
+      .filter((schedule) => schedule.isActive)
+      .flatMap((schedule) => {
+        const pattern = parseRecurring(schedule.cronExpression);
+        return pattern
+          ? [{ schedule, pattern }]
+          : [];
+      }),
   );
+  readonly customSchedules = computed(() =>
+    this.schedules().filter((schedule) => schedule.isActive && !parseRecurring(schedule.cronExpression)),
+  );
+  readonly periodLabel = computed(() => {
+    const date = this.anchorDate();
+    if (this.view() === 'month' || this.view() === 'list') {
+      return new Intl.DateTimeFormat('es-PE', {
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(date);
+    }
+    const monday = this.startOfWeek(date);
+    const sunday = this.plusDays(monday, 6);
+    const options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', timeZone: 'UTC' };
+    const from = new Intl.DateTimeFormat('es-PE', options).format(monday);
+    const to = new Intl.DateTimeFormat('es-PE', {
+      ...options,
+      year: 'numeric',
+    }).format(sunday);
+    return `${from} – ${to}`;
+  });
 
   ngOnInit(): void {
-    this.credentials.getMonitoredRepos().subscribe({
-      next: (repos) => {
-        this.repositories.set(repos.filter((repo) => repo.isActive));
-        if (!this.repositoryId() && repos.length) {
-          this.repositoryId.set(repos[0].id);
-          this.load();
-        }
-      },
-      error: () => this.error.set('No pudimos cargar tus repositorios. Revisa Canales → GitHub.'),
-    });
-  }
-
-  selectRepository(id: string): void {
-    this.repositoryId.set(id);
-    this.snapshot.set(null);
     this.load();
   }
+
   load(): void {
-    const id = this.repositoryId();
-    if (!id) return;
-    this.loading.set(true);
-    this.error.set('');
-    this.message.set('');
-    this.queueService
-      .load(id)
-      .pipe(finalize(() => this.loading.set(false)))
+    this.loadingSchedules.set(true);
+    this.loadingQueue.set(true);
+    this.scheduleError.set('');
+    this.queueError.set('');
+
+    this.tenantService.getTenantInfo().subscribe({
+      next: (tenant) => {
+        const timezone = tenant?.timezone || DEFAULT_TIMEZONE;
+        this.timezone.set(timezone);
+        this.anchorDate.set(this.todayForTimezone(timezone));
+      },
+      error: () => undefined,
+    });
+    this.scheduleService
+      .getSchedules()
+      .pipe(finalize(() => this.loadingSchedules.set(false)))
       .subscribe({
-        next: (snapshot) => this.snapshot.set(snapshot),
-        error: (response) =>
-          this.error.set(
-            response?.status === 404
-              ? 'No encontramos una cola en la rama predeterminada.'
-              : 'No pudimos leer la cola y sus recibos de GitHub. Comprueba el PAT y vuelve a intentar.',
-          ),
+        next: (schedules) => this.schedules.set(schedules || []),
+        error: () => this.scheduleError.set('No pudimos cargar los horarios recurrentes.'),
+      });
+    this.publicationService
+      .getQueue()
+      .pipe(finalize(() => this.loadingQueue.set(false)))
+      .subscribe({
+        next: (posts) => this.queuedPosts.set(posts || []),
+        error: () => this.queueError.set('No pudimos cargar la cola de publicaciones.'),
       });
   }
 
-  move(delta: number): void {
-    const current = this.cursor();
-    const next = new Date(current);
-    if (this.mode() === 'month') next.setMonth(next.getMonth() + delta);
-    else next.setDate(next.getDate() + delta * 7);
-    this.cursor.set(next);
+  setView(view: CalendarView): void {
+    this.view.set(view);
   }
+
   goToday(): void {
-    this.cursor.set(new Date());
+    this.anchorDate.set(this.todayForTimezone(this.timezone()));
   }
-  weekDays(): CalendarDay[] {
-    const start = this.startOfWeek(this.cursor());
-    return Array.from({ length: 7 }, (_, i) =>
-      this.day(new Date(start.getFullYear(), start.getMonth(), start.getDate() + i), true),
-    );
-  }
-  monthDays(): CalendarDay[] {
-    const first = new Date(this.cursor().getFullYear(), this.cursor().getMonth(), 1);
-    const offset = (first.getDay() + 6) % 7;
-    const start = new Date(first.getFullYear(), first.getMonth(), 1 - offset);
-    return Array.from({ length: 42 }, (_, i) => {
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-      return this.day(date, date.getMonth() === first.getMonth());
-    });
-  }
-  postsFor(day: CalendarDay): GitHubQueuePost[] {
-    return this.posts().filter(
-      (post) => post.publishAt && this.key(new Date(post.publishAt)) === day.key,
-    );
-  }
-  canReschedule(post: GitHubQueuePost): boolean {
-    return post.status === 'SCHEDULED' && !!post.publishAt && !post.attemptedAt;
-  }
-  statusLabel(status: string): string {
-    return (
-      (
-        {
-          SCHEDULED: 'Previsto',
-          SUCCESS: 'Publicado confirmado',
-          SENDING: 'Envío en curso',
-          UNKNOWN: 'Revisar resultado',
-          INVALID_DATE: 'Fecha inválida',
-          UNAPPROVED: 'No aprobado',
-        } as Record<string, string>
-      )[status] || status
-    );
-  }
-  statusClass(status: string): string {
-    return status === 'SUCCESS'
-      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
-      : status === 'UNKNOWN' || status === 'SENDING'
-        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
-        : status === 'INVALID_DATE' || status === 'UNAPPROVED'
-          ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
-          : 'bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-200';
-  }
-  edit(post: GitHubQueuePost): void {
-    if (!this.canReschedule(post)) return;
-    this.selectedPost.set(post);
-    this.scheduleValue.set(this.toLocalDateTime(new Date(post.publishAt!)));
-  }
-  startDrag(post: GitHubQueuePost, event: DragEvent): void {
-    if (!this.canReschedule(post)) {
-      event.preventDefault();
+
+  movePeriod(direction: -1 | 1): void {
+    const date = this.anchorDate();
+    if (this.view() === 'month') {
+      this.anchorDate.set(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + direction, 1)));
       return;
     }
-    event.dataTransfer?.setData('text/plain', post.id);
+    this.anchorDate.set(this.plusDays(date, this.view() === 'week' ? direction * 7 : direction * 30));
   }
-  allowDrop(event: DragEvent): void {
-    event.preventDefault();
+
+  private buildWeek(): CalendarDay[] {
+    const monday = this.startOfWeek(this.anchorDate());
+    return Array.from({ length: 7 }, (_, index) => this.toDay(this.plusDays(monday, index), true));
   }
-  dropOn(date: Date, event: DragEvent): void {
-    event.preventDefault();
-    const id = event.dataTransfer?.getData('text/plain');
-    const post = this.posts().find((item) => item.id === id);
-    if (!post || !this.canReschedule(post)) return;
-    const old = new Date(post.publishAt!);
-    date.setHours(old.getHours(), old.getMinutes(), 0, 0);
-    this.selectedPost.set(post);
-    this.scheduleValue.set(this.toLocalDateTime(date));
+
+  private buildMonth(): CalendarDay[] {
+    const anchor = this.anchorDate();
+    const first = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1));
+    const mondayOffset = (first.getUTCDay() + 6) % 7;
+    const start = this.plusDays(first, -mondayOffset);
+    const last = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0));
+    const totalDays = mondayOffset + last.getUTCDate();
+    const cellCount = Math.ceil(totalDays / 7) * 7;
+    return Array.from({ length: cellCount }, (_, index) =>
+      this.toDay(this.plusDays(start, index), this.plusDays(start, index).getUTCMonth() === anchor.getUTCMonth()),
+    );
   }
-  saveSchedule(): void {
-    const post = this.selectedPost();
-    const snapshot = this.snapshot();
-    const value = this.scheduleValue();
-    if (!post || !snapshot || !this.canReschedule(post) || !value || this.saving()) return;
-    const date = new Date(value);
-    if (!Number.isFinite(date.getTime()) || date.getTime() <= Date.now()) {
-      this.error.set('La nueva fecha tiene que estar en el futuro.');
-      return;
-    }
-    this.saving.set(true);
-    this.error.set('');
-    this.message.set('');
-    this.queueService
-      .schedule(
-        snapshot.repositoryId,
-        post.id,
-        date.toISOString(),
-        this.timezone,
-        snapshot.revision,
-      )
-      .pipe(finalize(() => this.saving.set(false)))
-      .subscribe({
-        next: (result) => {
-          this.snapshot.set(result.queue);
-          this.selectedPost.set(null);
-          this.message.set('Fecha guardada en GitHub.');
-        },
-        error: (response) => {
-          this.error.set(
-            response?.status === 409
-              ? 'La cola cambió o Actions reservó el envío. Recarga para ver el estado actualizado.'
-              : 'No se guardó el cambio. El texto y la imagen siguen en GitHub; revisa la conexión y vuelve a cargar.',
-          );
-          if (response?.status === 409) this.load();
-        },
-      });
+
+  private toDay(date: Date, currentMonth: boolean): CalendarDay {
+    const dayIndex = (date.getUTCDay() + 6) % 7;
+    const key = this.dateKey(date);
+    const slots = this.recurringSchedules()
+      .filter(({ pattern }) => pattern.days.includes(dayIndex))
+      .map(({ schedule, pattern }) => ({
+        id: schedule.id,
+        time: pattern.time,
+        description: schedule.description,
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+    return {
+      key,
+      weekday: WEEKDAYS[dayIndex],
+      dayNumber: date.getUTCDate(),
+      label: new Intl.DateTimeFormat('es-PE', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: 'UTC',
+      }).format(date),
+      currentMonth,
+      today: key === this.dateKey(this.todayForTimezone(this.timezone())),
+      slots,
+    };
   }
-  minimumDate(): string {
-    return this.toLocalDateTime(new Date(Date.now() + 60_000));
-  }
-  private day(date: Date, inMonth: boolean): CalendarDay {
-    const today = new Date();
-    return { date, key: this.key(date), inMonth, today: this.key(date) === this.key(today) };
-  }
-  private key(date: Date): string {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  }
+
   private startOfWeek(date: Date): Date {
-    const value = new Date(date);
-    value.setDate(value.getDate() - ((value.getDay() + 6) % 7));
-    return value;
+    return this.plusDays(date, -((date.getUTCDay() + 6) % 7));
   }
-  private weekRangeLabel(): string {
-    const start = this.startOfWeek(this.cursor());
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    return `${start.toLocaleDateString('es', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+  private plusDays(date: Date, days: number): Date {
+    const next = new Date(date);
+    next.setUTCDate(next.getUTCDate() + days);
+    return next;
   }
-  private toLocalDateTime(date: Date): string {
-    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
-    return local.toISOString().slice(0, 16);
+
+  private todayForTimezone(timezone: string): Date {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(new Date());
+      const part = (type: string) => Number(parts.find((entry) => entry.type === type)?.value);
+      return new Date(Date.UTC(part('year'), part('month') - 1, part('day')));
+    } catch {
+      return this.todayForTimezone(DEFAULT_TIMEZONE);
+    }
+  }
+
+  private dateKey(date: Date): string {
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
   }
 }

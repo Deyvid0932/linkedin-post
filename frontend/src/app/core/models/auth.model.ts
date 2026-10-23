@@ -10,8 +10,6 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-  token: string;
-  type: string;
   userId: string;
   tenantId: string;
   name: string;

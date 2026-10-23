@@ -1,6 +1,7 @@
 package com.deyvid.backend.service;
 
 import com.deyvid.backend.dto.response.OnboardingStatusResponse;
+import com.deyvid.backend.service.ai.DeepSeekTextModels;
 import com.deyvid.backend.entity.*;
 import com.deyvid.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,7 @@ public class TenantService {
     private final BackupTopicRepository backupTopicRepository;
     private final InterestTopicRepository interestTopicRepository;
     private final PublishingScheduleRepository publishingScheduleRepository;
+    private final ConfiguredAdminBootstrap configuredAdminBootstrap;
 
     @Transactional
     public User registerUserAndTenant(String name, String email, String password) {
@@ -66,6 +68,8 @@ public class TenantService {
                 .isActive(true)
                 .build();
 
+        configuredAdminBootstrap.grantIfConfigured(user);
+
         User savedUser = userRepository.save(user);
         auditLogService.recordAction(savedTenant, email, "REGISTER_USER", "Usuario y organización creados exitosamente");
         return savedUser;
@@ -74,6 +78,7 @@ public class TenantService {
     @Transactional
     public Tenant updateTenantProfile(UUID tenantId, String userEmail, String systemPrompt, String timezone,
                                       String appApprovalMode, Integer appTargetCharacters, String appImageModel,
+                                      String appTextModel,
                                       String changeNotes) {
         Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant no encontrado"));
@@ -112,6 +117,13 @@ public class TenantService {
         if (appApprovalMode != null) tenant.setAppApprovalMode(appApprovalMode);
         if (appTargetCharacters != null) tenant.setAppTargetCharacters(appTargetCharacters);
         if (appImageModel != null) tenant.setAppImageModel(appImageModel);
+        if (appTextModel != null) {
+            String supportedModel = DeepSeekTextModels.requireSupported(appTextModel);
+            if (!supportedModel.equals(tenant.getAppTextModel())) {
+                tenant.setAppTextModel(supportedModel);
+                auditLogService.recordAction(tenant, userEmail, "UPDATE_TEXT_MODEL", supportedModel);
+            }
+        }
 
         return tenantRepository.save(tenant);
     }

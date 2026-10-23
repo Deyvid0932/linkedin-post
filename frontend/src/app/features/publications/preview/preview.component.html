@@ -40,7 +40,7 @@
       class="p-12 text-center text-slate-400 bg-white dark:bg-neutral-900/50 rounded-2xl border border-slate-200 dark:border-neutral-800 shadow-xl space-y-4"
     >
       <div
-        class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"
+        class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"
       ></div>
       <div class="text-sm font-semibold text-slate-700 dark:text-neutral-300">
         Generando preview con DeepSeek IA...
@@ -54,7 +54,7 @@
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div
-            class="w-12 h-12 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold"
+            class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold"
           >
             U
           </div>
@@ -114,7 +114,7 @@
             >¿Quieres usar tu propia imagen real?</span
           >
           <label
-            class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold cursor-pointer transition-all"
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold cursor-pointer transition-all"
           >
             Subir Imagen de mi PC
             <input type="file" (change)="onFileSelected($event)" accept="image/*" class="hidden" />
@@ -135,7 +135,7 @@
     <button
       (click)="approveAndPublish()"
       [disabled]="publishing()"
-      class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+      class="w-full py-4 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
     >
       @if (publishing()) {
         <span

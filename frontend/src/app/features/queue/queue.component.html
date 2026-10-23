@@ -1,228 +1,90 @@
-<div class="ui-page">
-  <header class="flex flex-wrap items-end justify-between gap-4">
+<main class="ui-page">
+  <header class="ui-heading">
     <div>
-      <p
-        class="mb-2 text-xs font-bold uppercase tracking-[.14em] text-indigo-600 dark:text-indigo-300"
-      >
-        Crear y publicar
-      </p>
-      <h1 class="ui-title">Cola de publicación</h1>
-      <p class="mt-2 max-w-2xl text-sm text-slate-600 dark:text-neutral-300">
-        Prepara la fecha y envía a GitHub los posts que ya aprobaste. Actions puede publicarlos
-        aunque tu PC esté apagada.
+      <p class="ui-meta">PUBLICAR</p>
+      <h1 class="ui-title">Cola de publicaciones</h1>
+      <p class="ui-muted">
+        Posts aprobados que el backend enviará en sus próximos horarios configurados.
       </p>
     </div>
-    <a
-      routerLink="/compose"
-      class="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700"
-      >Crear publicación</a
-    >
+    <button class="ui-button" type="button" (click)="load()" [disabled]="loading()">
+      {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+    </button>
   </header>
 
+  <p class="ui-meta">
+    La publicación programada requiere que el backend esté activo. Esta cola no asigna una fecha
+    individual a cada post.
+  </p>
   @if (error()) {
-    <div
-      role="alert"
-      class="rounded-lg border border-rose-300 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
-    >
-      {{ error() }} <button class="ml-2 underline" (click)="load()">Volver a intentar</button>
+    <div role="alert" class="ui-alert">
+      {{ error() }} <button class="ui-button" type="button" (click)="load()">Reintentar</button>
     </div>
   }
   @if (message()) {
-    <div
-      role="status"
-      class="rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
-    >
-      {{ message() }}
-      @if (githubUrl()) {
-        <a class="ml-2 underline" [href]="githubUrl()" target="_blank" rel="noopener noreferrer"
-          >Ver en GitHub</a
-        >
-      }
-    </div>
-  }
-  @if (busy()) {
-    <p role="status" class="text-sm text-slate-500">{{ action() }}</p>
+    <p role="status" class="ui-alert">{{ message() }}</p>
   }
 
-  <section class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,.9fr)]">
-    <article class="ui-card">
-      <div class="flex items-center justify-between gap-3">
-        <div>
-          <h2 class="ui-section-title">Posts aprobados</h2>
-          <p class="mt-1 text-sm text-slate-500 dark:text-neutral-400">
-            {{ queuedDrafts().length }} en total
-          </p>
+  <section class="ui-card" aria-label="Publicaciones aprobadas">
+    @if (loading()) {
+      <p role="status" class="ui-empty">Cargando cola…</p>
+    } @else {
+      @for (post of posts(); track post.id) {
+        <article class="ui-row">
+          @if (post.imageUrl) {
+            <img [src]="post.imageUrl" alt="" class="size-16 shrink-0 rounded-lg object-cover" />
+          }
+          <div class="min-w-0 flex-1">
+            <p class="ui-excerpt">{{ post.generatedText || 'Publicación aprobada' }}</p>
+            <p class="ui-meta">
+              {{ post.sourceReference || 'AutoPost' }} · Pendiente de publicación
+            </p>
+          </div>
+          <span class="ui-status">Aprobada</span>
+          <div class="ui-actions">
+            <button class="ui-button" type="button" (click)="pendingAction.set({ kind: 'remove', post })">
+              Quitar
+            </button>
+            <button
+              class="ui-button ui-button--primary"
+              type="button"
+              (click)="pendingAction.set({ kind: 'publish', post })"
+            >
+              Publicar ahora
+            </button>
+          </div>
+        </article>
+      } @empty {
+        <div class="ui-empty">
+          <p>Tu cola está vacía.</p>
+          <p class="ui-meta">Aprueba una publicación desde el editor para añadirla aquí.</p>
+          <a routerLink="/compose" class="ui-button ui-button--primary">Crear publicación</a>
         </div>
-        <button
-          type="button"
-          class="text-sm text-indigo-600 underline dark:text-indigo-300"
-          (click)="load()"
-          [disabled]="loading()"
-        >
-          Actualizar
+      }
+    }
+  </section>
+
+  @if (pendingAction(); as action) {
+    <app-dialog
+      [title]="action.kind === 'publish' ? 'Publicar ahora' : 'Quitar de la cola'"
+      (closed)="pendingAction.set(null)"
+    >
+      <p>
+        @if (action.kind === 'publish') {
+          Se enviará este contenido a LinkedIn ahora, sujeto al estado de la cuenta, la pausa y sus
+          límites diarios.
+        } @else {
+          Se retirará el post de la cola aprobada. No se borrará el texto de tu biblioteca.
+        }
+      </p>
+      <div class="ui-actions">
+        <button class="ui-button" type="button" (click)="pendingAction.set(null)" [disabled]="busy()">
+          Cancelar
+        </button>
+        <button class="ui-button ui-button--primary" type="button" (click)="confirmAction()" [disabled]="busy()">
+          {{ busy() ? 'Procesando…' : 'Confirmar' }}
         </button>
       </div>
-      @if (loading()) {
-        <p role="status" class="py-8 text-center text-sm text-slate-500">Cargando la cola…</p>
-      } @else if (!queuedDrafts().length) {
-        <div class="my-5 rounded-xl bg-slate-50 p-8 text-center dark:bg-neutral-800/60">
-          <p class="font-medium">Todavía no hay publicaciones aprobadas.</p>
-          <p class="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-            Los borradores no se envían hasta que los apruebes.
-          </p>
-          <a
-            routerLink="/compose"
-            class="mt-4 inline-flex text-sm font-semibold text-indigo-600 underline dark:text-indigo-300"
-            >Ir a Crear publicación</a
-          >
-        </div>
-      } @else {
-        <ul class="mt-5 divide-y divide-slate-100 dark:divide-neutral-800">
-          @for (draft of queuedDrafts(); track draft.id) {
-            <li class="flex items-start justify-between gap-4 py-4 first:pt-0">
-              <div class="min-w-0">
-                <p class="truncate font-semibold">{{ draft.title || 'Publicación sin título' }}</p>
-                <p
-                  class="mt-1 line-clamp-2 whitespace-pre-line text-sm text-slate-500 dark:text-neutral-400"
-                >
-                  {{ draft.text }}
-                </p>
-                <p class="mt-2 text-xs text-slate-500">
-                  {{ accountName(draft.targetCredentialId) }}
-                </p>
-              </div>
-              <span
-                class="shrink-0 rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
-                >Aprobado</span
-              >
-            </li>
-          }
-        </ul>
-      }
-    </article>
-
-    <article class="h-fit ui-card">
-      <h2 class="ui-section-title">Subir cola a GitHub</h2>
-      <p class="mt-1 text-sm text-slate-500 dark:text-neutral-400">
-        Se enviarán los posts aprobados de la cuenta elegida, uno por día.
-      </p>
-      <div class="mt-5 space-y-4">
-        <div>
-          <label class="mb-1.5 block text-sm font-medium">Cuenta vinculada a Actions</label>
-          @if (bindingLoading()) {
-            <p role="status" class="ui-input text-slate-500">Comprobando la vinculación…</p>
-          } @else if (binding(); as linked) {
-            <div class="ui-input flex items-center justify-between gap-3">
-              <span>{{ linked.accountName }}</span
-              ><span
-                class="text-xs"
-                [class.text-emerald-700]="linked.status === 'SYNCED'"
-                [class.text-amber-700]="linked.status !== 'SYNCED'"
-                >{{
-                  linked.status === 'SYNCED' ? 'Sincronizada' : 'Sincronización pendiente'
-                }}</span
-              >
-            </div>
-            @if (linked.status !== 'SYNCED') {
-              <p class="mt-1 text-xs text-amber-700">
-                Reintenta la sincronización desde Canales → GitHub antes de subir.
-              </p>
-            }
-          } @else {
-            <div
-              class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
-            >
-              Vincula primero el perfil personal de LinkedIn con este repositorio en
-              <a routerLink="/settings/github" class="font-semibold underline">Canales → GitHub</a>.
-            </div>
-          }
-        </div>
-        <div>
-          <label for="queue-start" class="mb-1.5 block text-sm font-medium"
-            >Fecha del primer post</label
-          ><input
-            id="queue-start"
-            type="datetime-local"
-            [value]="firstPostAt()"
-            (input)="firstPostAt.set($any($event.target).value)"
-            class="ui-input"
-          />
-        </div>
-        <div>
-          <label for="queue-repository" class="mb-1.5 block text-sm font-medium"
-            >Repositorio conectado</label
-          ><select
-            id="queue-repository"
-            [value]="repositoryId()"
-            (change)="selectRepository($any($event.target).value)"
-            class="ui-input"
-          >
-            <option value="">Elige un repositorio</option>
-            @for (repo of repositories(); track repo.id) {
-              <option [value]="repo.id">{{ repo.repoOwner }}/{{ repo.repoName }}</option>
-            }
-          </select>
-        </div>
-        <div
-          class="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600 dark:bg-neutral-800/60 dark:text-neutral-300"
-        >
-          La subida reemplaza <code>automation/queue.json</code>. Usa un repositorio privado si
-          incluye contenido que aún no publicaste. Para evitar duplicados, publica cada cola con un
-          único mecanismo.
-        </div>
-        <div class="grid gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            (click)="downloadQueue()"
-            [disabled]="busy() || loading() || !selectedDrafts().length"
-            class="min-h-11 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
-          >
-            Descargar JSON</button
-          ><button
-            type="button"
-            (click)="uploadQueue()"
-            [disabled]="
-              busy() ||
-              loading() ||
-              bindingLoading() ||
-              binding()?.status !== 'SYNCED' ||
-              !repositoryId() ||
-              !selectedDrafts().length
-            "
-            class="min-h-11 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-          >
-            Subir a GitHub
-          </button>
-        </div>
-      </div>
-    </article>
-  </section>
-</div>
-@if (confirmation(); as c) {
-  <app-dialog title="Reemplazar cola de GitHub" (closed)="confirmation.set(null)"
-    ><p>
-      Se reemplazará íntegramente <code>automation/queue.json</code>, incluidos los posts anteriores
-      que todavía contenga, aunque no se hayan publicado.
-    </p>
-    <dl class="grid gap-2">
-      <dt>Repositorio</dt>
-      <dd>{{ c.repository.repoOwner }}/{{ c.repository.repoName }}</dd>
-      <dt>Cuenta</dt>
-      <dd>{{ c.account.displayName }}</dd>
-      <dt>Publicaciones</dt>
-      <dd>{{ c.ids.length }}</dd>
-      <dt>Primera fecha</dt>
-      <dd>{{ c.displayDate }} · {{ c.timezone }}</dd>
-    </dl>
-    <p class="ui-meta">
-      Guardar la cola no confirma una publicación. GitHub Actions ejecuta el envío con su
-      configuración independiente.
-    </p>
-    <div class="ui-actions">
-      <button class="ui-button" (click)="confirmation.set(null)">Cancelar</button
-      ><button class="ui-button ui-button--primary" (click)="confirmUpload()" [disabled]="busy()">
-        Reemplazar cola
-      </button>
-    </div></app-dialog
-  >
-}
+    </app-dialog>
+  }
+</main>

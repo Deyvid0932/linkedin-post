@@ -1,669 +1,85 @@
-<div class="ui-page space-y-7 animate-fadeIn">
-  <!-- 1. HEADER DE LA SECCIÓN -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-    <div>
-      <h1 class="ui-title">
-        <span
-          class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-500/20"
-          >in</span
-        >
-        <span>Cuentas Conectadas de LinkedIn</span>
-      </h1>
-      <p class="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1">
-        Gestiona tus perfiles personales y páginas de empresa con permisos de publicación
-        independientes.
-      </p>
-    </div>
-
-    <button
-      (click)="connectWithLinkedIn()"
-      [disabled]="connectingOAuth()"
-      class="min-h-11 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer disabled:opacity-60"
-    >
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-      </svg>
-      <span>{{ connectingOAuth() ? 'Abriendo LinkedIn…' : 'Conectar LinkedIn' }}</span>
-    </button>
-  </div>
-
-  <!-- MENSAJES DE ESTADO -->
-  @if (successMessage()) {
-    <div
-      class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-semibold flex items-center justify-between gap-2 animate-fadeIn"
-    >
-      <div class="flex items-center gap-2">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-        <span>{{ successMessage() }}</span>
-      </div>
-      <button
-        (click)="successMessage.set(null)"
-        class="text-emerald-600 dark:text-emerald-400 hover:opacity-75 text-lg font-bold px-2 cursor-pointer"
-      >
-        ✕
-      </button>
-    </div>
-  }
-
-  @if (errorMessage()) {
-    <div
-      class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-sm font-semibold flex items-center justify-between gap-2 animate-fadeIn"
-    >
-      <div class="flex items-center gap-2">
-        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-        <span>{{ errorMessage() }}</span>
-      </div>
-      <button
-        (click)="errorMessage.set(null)"
-        class="hover:opacity-75 text-lg font-bold px-2 cursor-pointer"
-      >
-        ✕
-      </button>
-    </div>
-  }
-
-  <!-- LISTADO DE CUENTAS CONECTADAS -->
-  <div class="space-y-4">
-    @if (loading()) {
-      <div class="p-12 text-center text-slate-400 glass-card-pro rounded-3xl space-y-3">
-        <div
-          class="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"
-        ></div>
-        <div class="text-xs font-semibold">Cargando cuentas vinculadas de LinkedIn...</div>
-      </div>
-    } @else if (accounts().length === 0) {
-      <!-- EMPTY STATE -->
-      <div
-        class="p-10 text-center glass-card-pro rounded-3xl border border-dashed border-slate-300 dark:border-neutral-800 space-y-4"
-      >
-        <div
-          class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto shadow-inner"
-        >
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-            />
-          </svg>
-        </div>
-        <div class="space-y-1 max-w-sm mx-auto">
-          <h3 class="text-base font-bold text-slate-900 dark:text-white">
-            Sin cuentas de LinkedIn vinculadas
-          </h3>
-          <p class="text-xs text-slate-500 dark:text-neutral-400">
-            Conecta tu perfil personal o página de empresa para activar publicaciones automáticas y
-            en tiempo real.
-          </p>
-        </div>
-        <button
-          (click)="connectWithLinkedIn()"
-          class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all inline-flex items-center gap-2 cursor-pointer"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <span>Conectar perfil de LinkedIn</span>
-        </button>
-        <button
-          type="button"
-          (click)="openConnectModal()"
-          class="mx-auto block text-sm text-slate-500 underline"
-        >
-          Conectar página de empresa manualmente
-        </button>
-      </div>
-    } @else {
-      <!-- GRID DE TARJETAS DE CUENTAS -->
-      <div class="grid grid-cols-1 gap-4">
-        @for (acc of accounts(); track acc.id) {
-          <div
-            class="connection-card border border-slate-200/80 dark:border-neutral-800 rounded-3xl p-5 sm:p-6 bg-white/70 dark:bg-neutral-900/60 backdrop-blur-xl shadow-xs space-y-5 transition-all"
-          >
-            <!-- CABECERA DE LA CUENTA -->
-            <div
-              class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-neutral-800"
-            >
-              <div class="flex items-center gap-3.5">
-                <!-- ICONO DE TIPO -->
-                <div
-                  class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm"
-                  [class]="
-                    acc.accountType === 'PERSON'
-                      ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50'
-                      : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/50'
-                  "
-                >
-                  @if (acc.accountType === 'PERSON') {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  } @else {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                      />
-                    </svg>
-                  }
-                </div>
-
-                <!-- DETALLES DE NOMBRE Y BADGES -->
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="text-base font-extrabold text-slate-900 dark:text-white">{{
-                      acc.displayName
-                    }}</span>
-
-                    <!-- BADGE TIPO -->
-                    @if (acc.accountType === 'PERSON') {
-                      <span
-                        class="px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[13px] font-bold border border-blue-500/20"
-                      >
-                        Perfil Personal
-                      </span>
-                    } @else {
-                      <span
-                        class="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[13px] font-bold border border-indigo-500/20"
-                      >
-                        Página de Organización
-                      </span>
-                    }
-
-                    <!-- BADGE PRINCIPAL -->
-                    @if (acc.isPrimary) {
-                      <span
-                        class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[13px] font-bold border border-amber-500/20"
-                      >
-                        Principal
-                      </span>
-                    }
-                  </div>
-
-                  <details class="text-xs text-slate-500 dark:text-neutral-400">
-                    <summary class="cursor-pointer">Detalles técnicos</summary>
-                    <code class="mt-2 block break-all">{{ acc.authorUrn }}</code>
-                    @if (acc.vanityName) {
-                      <span class="text-slate-400">• {{ acc.vanityName }}</span>
-                    }
-                  </details>
-                </div>
-              </div>
-
-              <!-- INTERRUPTOR / TOGGLE ENABLED -->
-              <div class="flex items-center gap-3 self-end sm:self-auto">
-                <div class="text-right">
-                  <div
-                    class="text-xs font-bold"
-                    [class]="
-                      acc.isEnabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                    "
-                  >
-                    {{
-                      acc.status === 'EXPIRED'
-                        ? 'Token expirado'
-                        : acc.isEnabled
-                          ? 'Cuenta habilitada'
-                          : 'Cuenta desactivada'
-                    }}
-                  </div>
-                  <div class="text-[13px] text-slate-400">
-                    {{ acc.isEnabled ? 'Disponible para pipeline' : 'Excluida de subidas' }}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  role="switch"
-                  [attr.aria-checked]="acc.isEnabled"
-                  [attr.aria-label]="'Habilitar publicaciones en ' + acc.displayName"
-                  (click)="toggleAccount(acc)"
-                  [disabled]="actionLoading() === acc.id"
-                  class="w-12 h-6 rounded-full transition-colors relative flex items-center p-0.5 cursor-pointer shadow-inner"
-                  [class]="acc.isEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-neutral-700'"
-                >
-                  <div
-                    class="w-5 h-5 rounded-full bg-white shadow-md transform transition-transform"
-                    [class]="acc.isEnabled ? 'translate-x-6' : 'translate-x-0'"
-                  ></div>
-                </button>
-              </div>
-            </div>
-
-            <!-- BARRA DE VIGENCIA DEL TOKEN -->
-            <div
-              class="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-800/40 border border-slate-200/80 dark:border-neutral-700/60 space-y-2"
-            >
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-600 dark:text-neutral-400 font-semibold"
-                  >Vigencia del Token de Acceso:</span
-                >
-
-                <span
-                  class="font-bold font-mono text-xs"
-                  [ngClass]="{
-                    'text-emerald-600 dark:text-emerald-400': acc.daysRemaining > 15,
-                    'text-amber-600 dark:text-amber-400':
-                      acc.daysRemaining <= 15 && acc.daysRemaining > 0,
-                    'text-rose-600 dark:text-rose-400': acc.daysRemaining <= 0,
-                  }"
-                >
-                  {{
-                    acc.status === 'EXPIRED'
-                      ? 'Token expirado'
-                      : acc.daysRemaining + ' días restantes'
-                  }}
-                  @if (acc.tokenExpiresAt) {
-                    <span class="text-slate-400 font-normal">
-                      (Expira: {{ acc.tokenExpiresAt | date: 'dd/MM/yyyy' }})</span
-                    >
-                  }
-                </span>
-              </div>
-
-              <div
-                class="w-full bg-slate-200 dark:bg-neutral-700 h-2.5 rounded-full overflow-hidden"
-              >
-                <div
-                  class="h-full rounded-full transition-all duration-500"
-                  [style.width.%]="calcPercentage(acc.daysRemaining)"
-                  [ngClass]="{
-                    'bg-emerald-500': acc.daysRemaining > 15,
-                    'bg-amber-500': acc.daysRemaining <= 15 && acc.daysRemaining > 0,
-                    'bg-rose-500': acc.daysRemaining <= 0,
-                  }"
-                ></div>
-              </div>
-            </div>
-
-            <!-- ACCIONES INFERIORES DE LA CUENTA Y GESTIÓN DE LÍMITE -->
-            <div
-              class="flex flex-col md:flex-row md:items-center justify-between pt-2 border-t border-slate-100 dark:border-neutral-800 text-xs gap-3"
-            >
-              <!-- CONTROL RÁPIDO DE LÍMITE DIARIO -->
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-slate-500 dark:text-neutral-400 font-semibold text-[13px]"
-                  >Límite Diario:</span
-                >
-                <div
-                  class="flex items-center bg-slate-100 dark:bg-neutral-800 rounded-xl p-1 border border-slate-200 dark:border-neutral-700"
-                >
-                  <button
-                    (click)="adjustLimit(acc, -1)"
-                    [disabled]="(acc.maxPostsPerDay || 1) <= 1 || actionLoading() === acc.id"
-                    class="w-6 h-6 rounded-lg bg-white dark:bg-neutral-900 flex items-center justify-center font-bold text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700 disabled:opacity-30 cursor-pointer shadow-xs"
-                  >
-                    -
-                  </button>
-                  <span
-                    class="px-3 font-bold font-mono text-indigo-600 dark:text-indigo-400 text-xs"
-                  >
-                    {{ acc.maxPostsPerDay || 1 }} post/día
-                  </span>
-                  <button
-                    (click)="adjustLimit(acc, 1)"
-                    [disabled]="(acc.maxPostsPerDay || 1) >= 10 || actionLoading() === acc.id"
-                    class="w-6 h-6 rounded-lg bg-white dark:bg-neutral-900 flex items-center justify-center font-bold text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700 disabled:opacity-30 cursor-pointer shadow-xs"
-                  >
-                    +
-                  </button>
-                </div>
-
-                <span class="text-xs text-slate-500"
-                  >El límite se aplica a los envíos de esta cuenta.</span
-                >
-
-                @if (!acc.isPrimary) {
-                  <button
-                    (click)="setAsPrimary(acc)"
-                    [disabled]="actionLoading() === acc.id"
-                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-600 dark:text-neutral-300 font-semibold transition-colors cursor-pointer"
-                  >
-                    Principal
-                  </button>
-                }
-              </div>
-
-              <div class="flex items-center gap-2 self-end md:self-auto">
-                <button
-                  (click)="requestEditAccount(acc)"
-                  class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-slate-700 dark:text-neutral-200 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                    />
-                  </svg>
-                  <span>Renovar Token</span>
-                </button>
-
-                <div
-                  class="h-4 w-px bg-slate-200 dark:border-neutral-700 hidden sm:block mx-1"
-                ></div>
-
-                <button
-                  (click)="disconnectAccount(acc)"
-                  [disabled]="actionLoading() === acc.id"
-                  title="Desconectar cuenta"
-                  class="px-3 py-1.5 rounded-xl border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 font-semibold transition-colors cursor-pointer flex items-center gap-1.5"
-                >
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  <span>Desconectar</span>
-                </button>
-              </div>
-            </div>
-          </div>
+<div class="ui-page channel-settings">
+  <header class="ui-heading">
+    <div><h1 class="ui-title">Canales</h1><p class="ui-muted mt-2">Conecta tus cuentas y decide dónde publicar.</p></div>
+    <button type="button" class="ui-button ui-button--primary" (click)="connectWithLinkedIn()" [disabled]="connectingOAuth()">{{ connectingOAuth() ? 'Abriendo LinkedIn…' : '+ Conectar LinkedIn' }}</button>
+  </header>
+  @if(successMessage()) { <p class="ui-alert ui-alert--success" role="status">{{ successMessage() }}</p> }
+  @if(errorMessage()) { <p class="ui-alert" role="alert">{{ errorMessage() }}</p> }
+  <section class="settings-section" aria-labelledby="connected-channels-title">
+    <div class="channel-section-heading"><h2 id="connected-channels-title" class="ui-section-title">Tus cuentas</h2><button type="button" class="channel-text-button" (click)="loadAccounts()" [disabled]="loading()">{{ loading() ? 'Actualizando…' : 'Actualizar' }}</button></div>
+    @if(accountsLoadError()) { <div class="ui-alert" role="alert">{{ accountsLoadError() }} <button type="button" class="channel-text-button" (click)="loadAccounts()">Reintentar</button></div> }
+    @if(loading() && !accounts().length) {
+      <p class="channel-empty" role="status">Consultando tus cuentas de LinkedIn…</p>
+    } @else if(!accounts().length && !accountsLoadError()) {
+      <div class="channel-empty"><span class="channel-network" aria-hidden="true">in</span><h3>Conecta tu primera cuenta</h3><p>Inicia sesión en LinkedIn y autoriza a AutoPost a publicar en tu nombre.</p><button type="button" class="ui-button" (click)="connectWithLinkedIn()" [disabled]="connectingOAuth()">Conectar LinkedIn</button></div>
+    }
+    @if(accounts().length) {
+      <div class="channel-list">
+        @for(acc of accounts(); track acc.id) {
+          <article class="channel-account">
+            <span class="channel-network" aria-label="LinkedIn">in</span>
+            <span class="channel-avatar" aria-hidden="true">{{ accountInitials(acc.displayName) }}</span>
+            <div class="channel-account-copy"><strong>{{ acc.displayName }}</strong><span>{{ acc.accountType === 'PERSON' ? 'Perfil personal' : 'Página de empresa' }} · LinkedIn @if(acc.isPrimary) { <span class="channel-primary">Principal</span> }</span><small [class.channel-expiring]="acc.daysRemaining <= 15">{{ expirationLabel(acc) }}</small></div>
+            <span class="channel-state" [class.channel-state--connected]="acc.isValid && acc.isEnabled"><i aria-hidden="true"></i>{{ !acc.isValid ? 'Reconectar' : acc.isEnabled ? 'Conectado' : 'Publicación pausada' }}</span>
+            <button type="button" class="ui-button" [attr.aria-expanded]="preferencesId() === acc.id" aria-controls="channel-preferences" (click)="preferencesId.set(preferencesId() === acc.id ? null : acc.id)">Preferencias<span class="sr-only"> de {{ acc.displayName }}</span></button>
+          </article>
         }
       </div>
     }
-  </div>
-
-  <!-- MODAL CONECTAR / EDITAR CUENTA -->
-  @if (showConnectModal()) {
-    <div
-      class="fixed inset-0 bg-slate-900/40 dark:bg-neutral-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full border border-slate-200 dark:border-neutral-800 shadow-2xl p-6 space-y-5 animate-fadeIn"
-      >
-        <div
-          class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800"
-        >
-          <div class="flex items-center gap-2.5">
-            <span
-              class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white text-xs font-bold"
-              >in</span
-            >
-            <h3 class="font-extrabold text-base text-slate-900 dark:text-white">
-              {{ editingAccountId() ? 'Renovar Token de Cuenta' : 'Vincular Cuenta de LinkedIn' }}
-            </h3>
-          </div>
-          <button
-            (click)="closeConnectModal()"
-            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg font-bold cursor-pointer"
-          >
-            ✕
-          </button>
-        </div>
-
-        <!-- SELECTOR DE TIPO (PERSON VS ORGANIZATION) -->
-        @if (!editingAccountId()) {
-          <div class="grid grid-cols-2 gap-3 p-1 rounded-2xl bg-slate-100 dark:bg-neutral-800/80">
-            <button
-              type="button"
-              (click)="selectedType.set('PERSON')"
-              [class]="
-                selectedType() === 'PERSON'
-                  ? 'bg-white dark:bg-neutral-900 text-blue-600 dark:text-blue-400 font-extrabold shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white font-semibold'
-              "
-              class="py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              <span>Perfil Personal</span>
-            </button>
-
-            <button
-              type="button"
-              (click)="selectedType.set('ORGANIZATION')"
-              [class]="
-                selectedType() === 'ORGANIZATION'
-                  ? 'bg-white dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 font-extrabold shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-white font-semibold'
-              "
-              class="py-2 px-3 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
-              <span>Página de Empresa</span>
-            </button>
-          </div>
-        }
-
-        <form [formGroup]="accountForm" (ngSubmit)="submitAccount()" class="space-y-4 text-xs">
-          <!-- OPCIÓN DE REUTILIZAR TOKEN EXISTENTE PARA ORGANIZACIÓN -->
-          @if (
-            selectedType() === 'ORGANIZATION' && !editingAccountId() && personAccounts().length > 0
-          ) {
-            <div
-              class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40 space-y-2"
-            >
-              <label
-                class="flex items-center gap-2 font-semibold text-slate-700 dark:text-neutral-200 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  [checked]="useExistingToken()"
-                  (change)="useExistingToken.set(!useExistingToken())"
-                  class="w-4 h-4 text-indigo-600 rounded"
-                />
-                <span>Reutilizar Access Token de mi Perfil Personal</span>
-              </label>
-
-              @if (useExistingToken()) {
-                <div class="pl-6 pt-1 text-[13px] text-slate-500">
-                  Se usarán las credenciales de:
-                  <strong class="text-indigo-600 dark:text-indigo-400">{{
-                    personAccounts()[0].displayName
-                  }}</strong>
-                  (debe tener permisos de Administrador en la página).
-                </div>
-              }
-            </div>
-          }
-
-          <!-- ACCESS TOKEN -->
-          @if (!useExistingToken()) {
-            <div>
-              <label
-                class="block font-semibold text-slate-600 dark:text-neutral-300 uppercase tracking-wider mb-1.5"
-              >
-                LinkedIn Access Token
-              </label>
-              <div class="relative">
-                <input
-                  formControlName="accessToken"
-                  [type]="showToken() ? 'text' : 'password'"
-                  placeholder="AQV... (Pega el token OAuth2)"
-                  class="w-full pl-4 pr-11 py-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-blue-500 transition-all"
-                />
-                <button
-                  type="button"
-                  (click)="showToken.set(!showToken())"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
-                >
-                  {{ showToken() ? 'Ocultar' : 'Ver' }}
-                </button>
-              </div>
-            </div>
-          }
-
-          <!-- CAMPOS ESPECÍFICOS DE ORGANIZACIÓN -->
-          @if (selectedType() === 'ORGANIZATION') {
-            <div>
-              <label
-                class="block font-semibold text-slate-600 dark:text-neutral-300 uppercase tracking-wider mb-1.5"
-              >
-                Nombre de la Empresa (Display Name)
-              </label>
-              <input
-                formControlName="displayName"
-                placeholder="Ej: Mi Empresa Tech SAC"
-                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 transition-all"
-              />
-            </div>
-
-            <div>
-              <label
-                class="block font-semibold text-slate-600 dark:text-neutral-300 uppercase tracking-wider mb-1.5"
-              >
-                Organization ID o URN
-              </label>
-              <input
-                formControlName="authorUrn"
-                placeholder="Ej: 10392812 o urn:li:organization:10392812"
-                class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-indigo-500 transition-all"
-              />
-              <span class="text-[13px] text-slate-400 mt-1 block"
-                >Puedes obtener el ID numérico de tu empresa desde la URL de administración en
-                LinkedIn.</span
-              >
-            </div>
-          }
-
-          <!-- LÍMITE DIARIO DE PUBLICACIONES -->
-          <div>
-            <label
-              class="block font-semibold text-slate-600 dark:text-neutral-300 uppercase tracking-wider mb-1.5"
-            >
-              Límite Máximo de Publicaciones por Día
-            </label>
-            <div class="flex items-center gap-3">
-              <input
-                formControlName="maxPostsPerDay"
-                type="number"
-                min="1"
-                max="10"
-                class="w-32 px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:border-blue-500 transition-all text-xs"
-              />
-              <span class="text-slate-500 text-[13px]"
-                >publicación(es) como máximo cada día para esta cuenta</span
-              >
-            </div>
-          </div>
-
-          <div
-            class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-neutral-800"
-          >
-            <button
-              type="button"
-              (click)="closeConnectModal()"
-              class="px-4 py-2 rounded-xl text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 font-semibold transition-colors cursor-pointer"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              [disabled]="accountForm.invalid && !useExistingToken()"
-              class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-md shadow-blue-500/20 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-            >
-              @if (saving()) {
-                <span
-                  class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"
-                ></span>
-                <span>Guardando...</span>
-              } @else {
-                <span>Guardar y Conectar</span>
-              }
-            </button>
-          </div>
-        </form>
+    <p class="channel-privacy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 10h14v11H5ZM8 10V7a4 4 0 0 1 8 0v3m-4 4v3" /></svg>Iniciarás sesión directamente en LinkedIn. AutoPost no recibe tu contraseña.</p>
+  </section>
+  @if(preferencesAccount(); as acc) {
+    <section id="channel-preferences" class="settings-section channel-preferences" aria-labelledby="channel-preferences-title">
+      <h2 id="channel-preferences-title" class="ui-section-title">Preferencias de {{ acc.displayName }}</h2>
+      <div class="settings-summary-row"><div><strong>Publicación de esta cuenta</strong><p class="ui-muted">Permite o pausa los envíos desde este canal.</p></div><button type="button" class="ui-button" [attr.aria-pressed]="acc.isEnabled" (click)="toggleAccount(acc)" [disabled]="actionLoading() !== null || !acc.isValid">{{ actionLoading() === acc.id ? 'Actualizando…' : acc.isEnabled ? 'Pausar cuenta' : 'Habilitar cuenta' }}</button></div>
+      <div class="settings-summary-row"><div><strong>Límite diario</strong><p class="ui-muted">Máximo de publicaciones diarias para este canal.</p></div><div class="channel-limit"><button type="button" class="ui-button" aria-label="Reducir límite diario" (click)="adjustLimit(acc,-1)" [disabled]="(acc.maxPostsPerDay || 1) <= 1 || actionLoading() !== null">−</button><output>{{ acc.maxPostsPerDay || 1 }} / día</output><button type="button" class="ui-button" aria-label="Aumentar límite diario" (click)="adjustLimit(acc,1)" [disabled]="(acc.maxPostsPerDay || 1) >= 10 || actionLoading() !== null">+</button></div></div>
+      <div class="settings-summary-row"><div><strong>Horarios y revisión</strong><p class="ui-muted">Se configuran para el espacio de trabajo completo.</p></div><a routerLink="/settings/schedule" class="ui-button">Configurar publicación →</a></div>
+      <div class="channel-maintenance">
+        @if(!acc.isPrimary) { <button type="button" class="ui-button" (click)="setAsPrimary(acc)" [disabled]="actionLoading() !== null">Usar como principal</button> }
+        @if(acc.accountType === 'PERSON') { <button type="button" class="ui-button" (click)="connectWithLinkedIn()" [disabled]="connectingOAuth()">Reconectar LinkedIn</button> }
+        @else { <button type="button" class="ui-button" (click)="requestEditAccount(acc)">Renovar credencial</button> }
+        <button type="button" class="ui-button channel-danger" (click)="disconnectAccount(acc)" [disabled]="actionLoading() !== null">Desconectar cuenta</button>
       </div>
-    </div>
+    </section>
   }
-
-  <!-- MODAL ADVERTENCIA AL EDITAR TOKEN -->
-  @if (showEditWarningModal()) {
-    <div
-      class="fixed inset-0 bg-slate-900/40 dark:bg-neutral-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
-      <div
-        class="bg-white dark:bg-neutral-900 rounded-3xl max-w-md w-full border border-slate-200 dark:border-neutral-800 shadow-2xl p-6 space-y-4 animate-fadeIn"
-      >
-        <div class="flex items-center gap-3 text-amber-600 dark:text-amber-400">
-          <div
-            class="w-10 h-10 rounded-2xl bg-amber-500/10 flex items-center justify-center flex-shrink-0"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h3 class="font-bold text-base text-slate-900 dark:text-white">
-              ¿Modificar Token Activo?
-            </h3>
-            <p class="text-xs text-slate-500 dark:text-neutral-400">Advertencia de Continuidad</p>
-          </div>
-        </div>
-
-        <div
-          class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300 leading-relaxed"
-        >
-          Reemplazar el token activo de esta cuenta interrumpirá las publicaciones si el nuevo token
-          carece de los permisos necesarios (<code>w_member_social</code> o
-          <code>w_organization_social</code>).
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-neutral-800">
-          <button
-            (click)="showEditWarningModal.set(false)"
-            class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            (click)="confirmUnlockToken()"
-            class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all cursor-pointer"
-          >
-            Entendido, Continuar
-          </button>
-        </div>
-      </div>
-    </div>
+  <section class="settings-section">
+    <h2 class="ui-section-title">Publicación desde AutoPost</h2><p class="ui-muted">La programación requiere el backend activo y una cuenta habilitada. Puedes revisar los horarios y el modo de aprobación en Publicación.</p>
+    <a class="channel-text-link" routerLink="/settings/schedule">Gestionar horarios de publicación →</a>
+  </section>
+  <details class="channel-advanced">
+    <summary>Páginas de empresa · configuración avanzada</summary>
+    <p class="ui-muted">Las páginas de empresa requieren un token con permisos de publicación y el identificador de la página. Los perfiles personales se conectan con el botón Conectar LinkedIn.</p>
+    <button type="button" class="ui-button" (click)="openConnectModal('ORGANIZATION')">Añadir página de empresa</button>
+  </details>
+  @if(showConnectModal()) {
+    <app-dialog [title]="editingAccountId() ? 'Renovar página de empresa' : 'Añadir página de empresa'" (closed)="closeConnectModal()">
+      <p class="ui-muted">Configuración avanzada para una página de LinkedIn. Necesitas permisos para publicar en nombre de la organización.</p>
+      @if(errorMessage()) { <p class="ui-alert" role="alert">{{ errorMessage() }}</p> }
+      <form [formGroup]="accountForm" (ngSubmit)="submitAccount()" class="settings-form">
+        @if(personAccounts().length && !editingAccountId()) {
+          <label class="settings-checkbox"><input type="checkbox" [checked]="useExistingToken()" (change)="useExistingToken.set(!useExistingToken())" />Usar la credencial de {{ personAccounts()[0].displayName }}</label>
+        }
+        @if(!useExistingToken()) {
+          <label for="company-access-token">Credencial de publicación<input id="company-access-token" class="ui-input" formControlName="accessToken" [type]="showToken() ? 'text' : 'password'" autocomplete="off" /><small>Se requiere un token con permisos de publicación de empresa.</small></label>
+          <label class="settings-checkbox"><input type="checkbox" [checked]="showToken()" (change)="showToken.set(!showToken())" />Mostrar credencial</label>
+        }
+        <label for="company-name">Nombre de la empresa<input id="company-name" class="ui-input" formControlName="displayName" /></label>
+        <label for="company-urn">Identificador de la página<input id="company-urn" class="ui-input" formControlName="authorUrn" placeholder="ID o urn:li:organization:…" /></label>
+        <label for="company-limit">Máximo de publicaciones por día<input id="company-limit" class="ui-input" type="number" min="1" max="10" formControlName="maxPostsPerDay" /></label>
+        <div class="settings-form-actions"><button type="button" class="ui-button" (click)="closeConnectModal()" [disabled]="saving()">Cancelar</button><button type="submit" class="ui-button ui-button--primary" [disabled]="saving() || accountForm.invalid">{{ saving() ? 'Guardando…' : 'Guardar y conectar' }}</button></div>
+      </form>
+    </app-dialog>
+  }
+  @if(showEditWarningModal()) {
+    <app-dialog title="Renovar credencial de empresa" (closed)="showEditWarningModal.set(false)">
+      <p class="ui-muted">La nueva credencial debe tener permisos de publicación para esta página. Si no los tiene, los próximos envíos fallarán.</p><button type="button" class="ui-button" (click)="confirmUnlockToken()">Continuar</button>
+    </app-dialog>
+  }
+  @if(accountToDisconnect(); as acc) {
+    <app-dialog title="Desconectar cuenta" (closed)="cancelDisconnect()">
+      <p>¿Quieres desconectar {{ acc.displayName }}? AutoPost dejará de publicar desde esta cuenta.</p>
+      @if(errorMessage()) { <p class="ui-alert" role="alert">{{ errorMessage() }}</p> }
+      <div class="ui-actions"><button type="button" class="ui-button" (click)="cancelDisconnect()" [disabled]="actionLoading() !== null">Cancelar</button><button type="button" class="ui-button channel-danger" (click)="confirmDisconnect()" [disabled]="actionLoading() !== null">{{ actionLoading() !== null ? 'Desconectando…' : 'Desconectar' }}</button></div>
+    </app-dialog>
   }
 </div>

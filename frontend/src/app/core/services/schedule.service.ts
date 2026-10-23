@@ -11,6 +11,27 @@ export interface Schedule {
   createdAt: string;
 }
 
+export interface PostingDistribution {
+  postsByHour: Record<string, number>;
+  postsByDayOfWeek: Record<string, number>;
+  postsBySource?: Record<string, number>;
+  totalPublishedPosts: number;
+  bestObservedHour: string;
+  bestObservedDay: string;
+  successfulPostsCount: number;
+  /** Publicaciones exitosas con hora confirmada por la API. */
+  publicationsWithPublishedAtCount: number;
+  failedPostsCount: number;
+  successRatePercentage: number | null;
+  recordedTokens: number;
+  tokensByModel: Record<string, number>;
+  inputTokens: number;
+  outputTokens: number;
+  usageEvents: number;
+  /** Tokens de texto reportados por fecha local del espacio (YYYY-MM-DD). */
+  tokensByDay?: Record<string, number>;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -20,6 +41,11 @@ export class ScheduleService {
 
   getSchedules(): Observable<Schedule[]> {
     return this.http.get<Schedule[]>(this.apiUrl);
+  }
+
+  getPostingDistribution(days?: number | null): Observable<PostingDistribution> {
+    const params = days == null ? undefined : { days: `${days}` };
+    return this.http.get<PostingDistribution>(`${this.apiUrl}/distribution`, { params });
   }
 
   createSchedule(cronExpression: string, description: string): Observable<Schedule> {

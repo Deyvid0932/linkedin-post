@@ -1,7 +1,7 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, tap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, LoginRequest, RegisterRequest, UserProfile } from '../models/auth.model';
 
@@ -12,16 +12,24 @@ export class AuthService {
   private readonly API_URL = environment.apiUrl;
   private readonly TOKEN_KEY = 'saas_auth_token';
   private readonly USER_KEY = 'saas_auth_user';
+  private readonly sessionState = signal<'unknown' | 'checking' | 'authenticated' | 'anonymous'>('unknown');
+  private sessionRequest?: Observable<boolean>;
 
-  // Signals para Reactividad y Estado Global
-  readonly tokenSignal = signal<string | null>(this.getStoredToken());
-  readonly currentUserSignal = signal<UserProfile | null>(this.getStoredUser());
-  readonly isAuthenticated = computed(() => !!this.tokenSignal());
+  readonly currentUserSignal = signal<UserProfile | null>(null);
+  readonly isAuthenticated = computed(() => this.sessionState() === 'authenticated');
+
+  isSessionCheckInProgress(): boolean {
+    return this.sessionState() === 'checking';
+  }
 
   constructor(
     private http: HttpClient,
     private router: Router,
-  ) {}
+  ) {
+    // Remove credentials written by older AutoPost versions. Authentication now lives in an HttpOnly cookie.
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
+  }
 
   login(credentials: LoginRequest): Observable<AuthResponse> {
     return this.http
@@ -33,6 +41,14 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(`${this.API_URL}/auth/register`, data)
       .pipe(tap((response) => this.saveSession(response)));
+  }
+
+  acceptInvitation(token: string, name: string, password: string): Observable<{ email: string; message: string }> {
+    return this.http.post<{ email: string; message: string }>(`${this.API_URL}/auth/invitations/accept`, {
+      token,
+      name,
+      password,
+    });
   }
 
   requestPasswordReset(email: string): Observable<{ message: string }> {
@@ -73,11 +89,58 @@ export class AuthService {
             ...current,
             name: updatedUser.name || current.name,
           };
-          localStorage.setItem(this.USER_KEY, JSON.stringify(updated));
           this.currentUserSignal.set(updated);
         }
       }),
     );
+  }
+
+  revokeSessions(currentPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API_URL}/users/me/revoke-sessions`, {
+      currentPassword,
+    });
+  }
+
+  refreshCurrentUser(): Observable<UserProfile> {
+    return this.http.get<{
+      id: string;
+      tenantId: string;
+      name: string;
+      email: string;
+      roles: string[];
+    }>(`${this.API_URL}/users/me`).pipe(
+      map((response): UserProfile => ({
+        userId: response.id,
+        tenantId: response.tenantId,
+        name: response.name,
+        email: response.email,
+        roles: response.roles,
+      })),
+      tap((updated) => {
+        this.currentUserSignal.set(updated);
+        this.sessionState.set('authenticated');
+      }),
+    );
+  }
+
+  ensureSession(): Observable<boolean> {
+    const state = this.sessionState();
+    if (state === 'authenticated') return of(true);
+    if (state === 'anonymous') return of(false);
+    if (this.sessionRequest) return this.sessionRequest;
+
+    this.sessionState.set('checking');
+    this.sessionRequest = this.refreshCurrentUser().pipe(
+      map(() => true),
+      catchError(() => {
+        this.currentUserSignal.set(null);
+        this.sessionState.set('anonymous');
+        return of(false);
+      }),
+      finalize(() => (this.sessionRequest = undefined)),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    return this.sessionRequest;
   }
 
   deleteAccount(): Observable<any> {
@@ -85,20 +148,20 @@ export class AuthService {
   }
 
   logout(queryParams?: Record<string, string>): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    this.tokenSignal.set(null);
-    this.currentUserSignal.set(null);
+    this.clearLocalSession();
+    this.http.post<void>(`${this.API_URL}/auth/logout`, {}).subscribe({ error: () => undefined });
     if (queryParams) this.router.navigate(['/auth/login'], { queryParams });
     else this.router.navigate(['/auth/login']);
   }
 
-  getToken(): string | null {
-    return this.tokenSignal();
+  private clearLocalSession(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
+    this.currentUserSignal.set(null);
+    this.sessionState.set('anonymous');
   }
 
   private saveSession(response: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, response.token);
     const user: UserProfile = {
       userId: response.userId,
       tenantId: response.tenantId,
@@ -106,24 +169,7 @@ export class AuthService {
       email: response.email,
       roles: response.roles,
     };
-    localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-
-    this.tokenSignal.set(response.token);
     this.currentUserSignal.set(user);
-  }
-
-  private getStoredToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  private getStoredUser(): UserProfile | null {
-    const data = localStorage.getItem(this.USER_KEY);
-    if (!data) return null;
-    try {
-      return JSON.parse(data);
-    } catch {
-      localStorage.removeItem(this.USER_KEY);
-      return null;
-    }
+    this.sessionState.set('authenticated');
   }
 }

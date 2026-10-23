@@ -24,7 +24,7 @@ class GenerationCacheServiceTest {
         String key = GenerationCacheService.buildKey(tenantId, "RESEARCH", "Kafka vs RabbitMQ", "COMPARATIVE_B2B", "MICRO");
 
         SwipeVersionDto dto = new SwipeVersionDto(
-                "v-1", "COMPARATIVE_B2B", "Titulo 1", "Texto generado", "http://img.png", 200, 0.0009, 1500.0
+                "v-1", "COMPARATIVE_B2B", "Titulo 1", "Texto generado", "http://img.png", 200, null, null, "deepseek-flash"
         );
 
         cacheService.put(key, dto);

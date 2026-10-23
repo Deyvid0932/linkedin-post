@@ -37,9 +37,11 @@ public class ScheduleController {
     }
 
     @GetMapping("/distribution")
-    public ResponseEntity<com.deyvid.backend.dto.response.PostingDistributionResponse> getPostingDistribution(Authentication auth) {
+    public ResponseEntity<com.deyvid.backend.dto.response.PostingDistributionResponse> getPostingDistribution(
+            Authentication auth,
+            @RequestParam(required = false) Integer days) {
         User user = authHelper.getCurrentUser(auth);
-        return ResponseEntity.ok(postingAnalyticsService.getPostingDistribution(user.getTenant()));
+        return ResponseEntity.ok(postingAnalyticsService.getPostingDistribution(user.getTenant(), days));
     }
 
     @GetMapping

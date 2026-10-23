@@ -83,4 +83,16 @@ describe('TopicService', () => {
     expect(req.request.method).toBe('DELETE');
     req.flush(null);
   });
+
+  it('requests recent signals with the selected bounded period', () => {
+    service.getRecentSignals('Spring Boot', '24h').subscribe();
+
+    const req = httpMock.expectOne((request) =>
+      request.url === 'http://localhost:8080/api/v1/topics/trends' &&
+      request.params.get('niche') === 'Spring Boot' &&
+      request.params.get('period') === '24h',
+    );
+    expect(req.request.method).toBe('GET');
+    req.flush({ niche: 'Spring Boot', source: 'Hacker News · Algolia · últimas 24 horas', fetchedAt: new Date().toISOString(), signals: [] });
+  });
 });

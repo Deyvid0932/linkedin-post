@@ -17,6 +17,16 @@ export interface ContentDraft extends ComposePayload {
   queued: boolean;
   updatedAt: string;
 }
+export type AdaptationChannel = 'X' | 'YOUTUBE_SHORTS' | 'TIKTOK';
+export interface AdaptedContent {
+  id?: string;
+  channel: AdaptationChannel;
+  text: string;
+  characterCount: number;
+  recommendedCharacters: number;
+  publishingAvailable: boolean;
+  updatedAt?: string;
+}
 @Injectable({ providedIn: 'root' })
 export class ContentDraftService {
   private http = inject(HttpClient);
@@ -26,6 +36,15 @@ export class ContentDraftService {
   }
   generate(payload: ComposePayload) {
     return this.http.post<{ text: string; prompt: string }>(`${this.url}/generate`, payload);
+  }
+  adapt(payload: ComposePayload, channel: AdaptationChannel) {
+    return this.http.post<AdaptedContent>(`${this.url}/adapt`, { content: payload, channel });
+  }
+  listVariants(draftId: string) {
+    return this.http.get<AdaptedContent[]>(`${this.url}/drafts/${draftId}/variants`);
+  }
+  saveVariant(draftId: string, variant: Pick<AdaptedContent, 'channel' | 'text'>) {
+    return this.http.put<AdaptedContent>(`${this.url}/drafts/${draftId}/variants`, variant);
   }
   save(payload: ComposePayload, id?: string) {
     return id
@@ -37,17 +56,5 @@ export class ContentDraftService {
   }
   unqueue(id: string) {
     return this.http.post<ContentDraft>(`${this.url}/drafts/${id}/unqueue`, {});
-  }
-  uploadQueue(
-    repositoryId: string,
-    accountId: string,
-    firstPostAt: string,
-    timezone: string,
-    draftIds: string[],
-  ) {
-    return this.http.post<{ postCount: number; branch: string; url: string }>(
-      `${this.url}/github-queue`,
-      { repositoryId, accountId, firstPostAt, timezone, draftIds },
-    );
   }
 }

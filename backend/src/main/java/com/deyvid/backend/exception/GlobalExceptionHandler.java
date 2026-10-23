@@ -32,6 +32,7 @@ public class GlobalExceptionHandler {
         HttpStatus status = switch (ex.getErrorCode()) {
             case "AI_NOT_CONFIGURED" -> HttpStatus.FAILED_DEPENDENCY;  // 424
             case "AI_RATE_LIMIT" -> HttpStatus.TOO_MANY_REQUESTS;      // 429
+            case "AI_QUOTA_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             case "AI_TIMEOUT" -> HttpStatus.GATEWAY_TIMEOUT;           // 504
             default -> HttpStatus.BAD_GATEWAY;                         // 502 - AI_GENERATION_FAILED
         };

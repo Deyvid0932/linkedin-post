@@ -5,6 +5,7 @@ import com.deyvid.backend.entity.enums.*;
 import com.deyvid.backend.repository.*;
 import com.deyvid.backend.service.ai.ImageGeneratorService;
 import com.deyvid.backend.service.linkedin.LinkedInPublisherService;
+import com.deyvid.backend.service.webhook.WebhookDeliveryService;
 import org.junit.jupiter.api.*;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,12 +20,13 @@ class ApprovedPublicationServiceTest {
     PublicationLogService logService = mock(PublicationLogService.class);
     PublicationAttemptService attempts = mock(PublicationAttemptService.class);
     LinkedInPublisherService publisher = mock(LinkedInPublisherService.class);
+    WebhookDeliveryService webhookDeliveryService = mock(WebhookDeliveryService.class);
     Tenant tenant = Tenant.builder().id(UUID.randomUUID()).build();
     LinkedInCredential target = LinkedInCredential.builder().id(UUID.randomUUID()).tenant(tenant).accountType(LinkedInAccountType.PERSON)
             .authorUrn("urn:li:person:test").isEnabled(true).maxPostsPerDay(2).build();
     DraftPreview draft = DraftPreview.builder().id(UUID.randomUUID()).tenant(tenant).sourceMode(SourceMode.BACKUP).isQueued(true)
             .targetCredentialId(target.getId()).generatedText("Reviewed content").build();
-    ApprovedPublicationService service = new ApprovedPublicationService(tenants, drafts, accounts, logs, logService, attempts, mock(ImageGeneratorService.class), publisher);
+    ApprovedPublicationService service = new ApprovedPublicationService(tenants, drafts, accounts, logs, logService, attempts, mock(ImageGeneratorService.class), publisher, webhookDeliveryService);
     @BeforeEach void setup() {
         when(tenants.findByIdForUpdate(tenant.getId())).thenReturn(Optional.of(tenant));
         when(drafts.findFirstByTenantIdAndIsQueuedTrueOrderByCreatedAtAsc(tenant.getId())).thenReturn(Optional.of(draft));

@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../../core/services/auth.service';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 describe('LoginComponent', () => {
@@ -74,5 +74,26 @@ describe('LoginComponent', () => {
 
     expect(component.errorMessage()).toBe('Invalid credentials');
     expect(component.loading()).toBe(false);
+  });
+});
+
+describe('LoginComponent session feedback', () => {
+  it('explains that a new login is required after all sessions are revoked', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { login: vi.fn() } },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: convertToParamMap({ sessionsRevoked: 'true' }) } },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(LoginComponent);
+    expect(fixture.componentInstance.successMessage()).toBe(
+      'Se cerraron todas las sesiones. Inicia sesión de nuevo.',
+    );
   });
 });

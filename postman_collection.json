@@ -1,0 +1,837 @@
+{
+  "info": {
+    "_postman_id": "8f2a4b6c-1e9d-4c3a-92f7-5d3e2b1a8f09",
+    "name": "LinkedIn Automation SaaS API (Full CRUD)",
+    "description": "Colección completa y exhaustiva de endpoints para el SaaS de automatización de contenidos en LinkedIn (Spring Boot + PostgreSQL + pgvector). Contiene operaciones completas de CRUD (POST, GET, PUT, DELETE) para usuarios, credenciales de LinkedIn y GitHub, repositorios monitoreados, estudio Swipe IA, programación con Quartz, banco de temas y métricas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 - Auth & Users (Autenticación y Perfil)",
+      "description": "Registro, Login JWT y gestión completa del perfil de usuario (consultar, actualizar y desactivar cuenta)",
+      "item": [
+        {
+          "name": "1.1 Registro de Usuario y Tenant (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var data = pm.response.json();",
+                  "    if (data.token) {",
+                  "        pm.collectionVariables.set('jwt_token', data.token);",
+                  "        console.log('JWT Token guardado automáticamente:', data.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Deyvid Jair Chupillon Silva\",\n  \"email\": \"dev@saas.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Crea una nueva cuenta de usuario y asocia un Tenant automáticamente."
+          }
+        },
+        {
+          "name": "1.2 Iniciar Sesión (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var data = pm.response.json();",
+                  "    if (data.token) {",
+                  "        pm.collectionVariables.set('jwt_token', data.token);",
+                  "        console.log('JWT Token guardado automáticamente:', data.token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dev@saas.com\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Autentica al usuario y guarda el token JWT en la variable {{jwt_token}} de forma segura vía POST."
+          }
+        },
+        {
+          "name": "1.3 Consultar Mi Perfil de Usuario (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            },
+            "description": "Retorna los datos del usuario autenticado actualmente (nombre, email, roles, tenantId)."
+          }
+        },
+        {
+          "name": "1.4 Actualizar Mi Perfil o Contraseña (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Deyvid Jair Chupillon Silva (Actualizado)\",\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            },
+            "description": "Permite actualizar el nombre y cambiar la contraseña del usuario previa validación de la actual."
+          }
+        },
+        {
+          "name": "1.5 Desactivar Mi Cuenta de Usuario (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "users", "me"]
+            },
+            "description": "Desactiva la cuenta del usuario autenticado."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Credentials (LinkedIn & GitHub CRUD)",
+      "description": "Gestión completa de credenciales y tokens (Guardar, Consultar, Actualizar y Eliminar)",
+      "item": [
+        {
+          "name": "2.1 Estado de Conexión LinkedIn (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/linkedin/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "linkedin", "status"]
+            },
+            "description": "Consulta si hay un Access Token de LinkedIn configurado y cuántos días de vigencia le quedan."
+          }
+        },
+        {
+          "name": "2.2 Guardar Token de LinkedIn (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"AQV_tu_token_de_linkedin_aqui\",\n  \"personUrn\": \"urn:li:person:me\",\n  \"expiresInDays\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/linkedin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "linkedin"]
+            },
+            "description": "Encripta y guarda el token de LinkedIn para el Tenant actual."
+          }
+        },
+        {
+          "name": "2.3 Actualizar Token de LinkedIn (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accessToken\": \"AQV_nuevo_token_renovado_linkedin\",\n  \"personUrn\": \"urn:li:person:me\",\n  \"expiresInDays\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/linkedin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "linkedin"]
+            },
+            "description": "Actualiza el token o renueva la vigencia de la credencial de LinkedIn."
+          }
+        },
+        {
+          "name": "2.4 Desconectar Credencial de LinkedIn (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/linkedin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "linkedin"]
+            },
+            "description": "Elimina las credenciales de LinkedIn del Tenant."
+          }
+        },
+        {
+          "name": "2.5 Estado de Conexión GitHub (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/github/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "github", "status"]
+            },
+            "description": "Verifica si el Personal Access Token (PAT) de GitHub está configurado."
+          }
+        },
+        {
+          "name": "2.6 Guardar Token de GitHub (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalAccessToken\": \"ghp_tu_token_de_github_aqui\",\n  \"githubUsername\": \"Deyvid0932\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/github",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "github"]
+            },
+            "description": "Encripta y guarda el Personal Access Token de GitHub."
+          }
+        },
+        {
+          "name": "2.7 Actualizar Token de GitHub (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalAccessToken\": \"ghp_nuevo_token_actualizado_github\",\n  \"githubUsername\": \"Deyvid0932\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/github",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "github"]
+            },
+            "description": "Actualiza el Personal Access Token o usuario de GitHub."
+          }
+        },
+        {
+          "name": "2.8 Desconectar Credencial de GitHub (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/credentials/github",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "credentials", "github"]
+            },
+            "description": "Elimina el token de GitHub del Tenant."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - GitHub Repos (CRUD de Repositorios)",
+      "description": "Gestión completa de repositorios monitoreados en Modo Proyecto",
+      "item": [
+        {
+          "name": "3.1 Listar Repositorios Monitoreados (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/github/repos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "github", "repos"]
+            },
+            "description": "Obtiene la lista de repositorios configurados y el último commit procesado."
+          }
+        },
+        {
+          "name": "3.2 Obtener Repositorio por ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/github/repos/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "github", "repos", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "e0b8e734-7a1a-4c2d-9b5b-3a5c6e8f1234",
+                  "description": "UUID del repositorio"
+                }
+              ]
+            },
+            "description": "Obtiene los detalles específicos de un repositorio monitoreado."
+          }
+        },
+        {
+          "name": "3.3 Agregar Repositorio a Monitoreo (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repoOwner\": \"Deyvid0932\",\n  \"repoName\": \"linkedin-post\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/github/repos",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "github", "repos"]
+            },
+            "description": "Añade un nuevo repositorio para monitorear commits."
+          }
+        },
+        {
+          "name": "3.4 Actualizar Repositorio Monitoreado (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repoOwner\": \"Deyvid0932\",\n  \"repoName\": \"Gestion-Inventario-APP\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/github/repos/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "github", "repos", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "e0b8e734-7a1a-4c2d-9b5b-3a5c6e8f1234",
+                  "description": "UUID del repositorio a actualizar"
+                }
+              ]
+            },
+            "description": "Actualiza el propietario o nombre de un repositorio monitoreado."
+          }
+        },
+        {
+          "name": "3.5 Eliminar Repositorio Monitoreado (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/github/repos/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "github", "repos", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "e0b8e734-7a1a-4c2d-9b5b-3a5c6e8f1234",
+                  "description": "UUID del repositorio"
+                }
+              ]
+            },
+            "description": "Elimina un repositorio de la lista de monitoreo."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Publications & Swipe Studio (CRUD y Feedback IA)",
+      "description": "Generación Swipe 3 versiones, feedback vectorial con pgvector, actualización de borrador, detalle y limpieza de historial",
+      "item": [
+        {
+          "name": "4.1 Generar Batch Swipe (3 Versiones) (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/swipe-batch",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "swipe-batch"]
+            },
+            "description": "Genera 3 versiones simultáneas (Experto, Storyteller, Provocador) sobre el commit o tema activo, con tokens, costos e imagen dinámica IA."
+          }
+        },
+        {
+          "name": "4.2 Registrar Feedback IA (pgvector) (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"textoGenerado\": \"Optimizar aplicaciones no se logra adivinando, se logra midiendo e implementando persistencia eficiente con Supabase y SQLite...\",\n  \"tema\": \"Gestion-Inventario-APP\",\n  \"puntajeUsuario\": 1,\n  \"estructuraUsada\": \"EXPERT\",\n  \"sourceMode\": \"PROJECT\",\n  \"tokensUsed\": 480,\n  \"costUsd\": 0.00067\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/feedback",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "feedback"]
+            },
+            "description": "Registra una acción de swipe (1 = Like, -1 = Dislike, 0 = Borrador) y guarda el embedding vectorial en PostgreSQL pgvector para aprendizaje continuo."
+          }
+        },
+        {
+          "name": "4.3 Obtener Previsualización Guardada (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/preview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "preview"]
+            },
+            "description": "Obtiene el borrador generado actualmente para el Tenant."
+          }
+        },
+        {
+          "name": "4.4 Generar Nueva Previsualización Manual (POST)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/preview/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "preview", "generate"]
+            },
+            "description": "Fuerza la generación de un nuevo borrador de previsualización sin publicar."
+          }
+        },
+        {
+          "name": "4.5 Actualizar Borrador en Edición (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"generatedText\": \"Texto del post editado manualmente por el usuario antes de publicar en LinkedIn...\",\n  \"imageUrl\": \"https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/preview",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "preview"]
+            },
+            "description": "Permite al usuario actualizar el texto o la imagen de su borrador activo."
+          }
+        },
+        {
+          "name": "4.6 Disparar Pipeline Zero-Touch Inmediata (POST)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/trigger",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "trigger"]
+            },
+            "description": "Ejecuta de inmediato el pipeline de extracción, generación y publicación directa en LinkedIn."
+          }
+        },
+        {
+          "name": "4.7 Historial de Publicaciones Paginado (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Número de página (0-indexed)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Cantidad de registros por página"
+                }
+              ]
+            },
+            "description": "Retorna el historial paginado de posts generados, estado (SUCCESS/FAILED) y URNs de LinkedIn."
+          }
+        },
+        {
+          "name": "4.8 Detalle de Publicación por ID (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+                  "description": "UUID del registro de publicación"
+                }
+              ]
+            },
+            "description": "Obtiene el detalle completo y métricas de auditoría de una publicación por su ID."
+          }
+        },
+        {
+          "name": "4.9 Eliminar Registro de Publicación (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f1a2b3c4-d5e6-7a8b-9c0d-1e2f3a4b5c6d",
+                  "description": "UUID del registro de publicación a eliminar"
+                }
+              ]
+            },
+            "description": "Elimina un registro específico del historial de publicaciones."
+          }
+        },
+        {
+          "name": "4.10 Limpiar Todo el Historial de Publicaciones (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/publications/history/clear",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "publications", "history", "clear"]
+            },
+            "description": "Elimina todos los registros de auditoría de publicaciones del Tenant."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Schedules (Horarios Quartz CRUD)",
+      "description": "Programación de publicaciones automáticas mediante expresiones Cron y Quartz Scheduler",
+      "item": [
+        {
+          "name": "5.1 Listar Horarios Programados (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedules"]
+            },
+            "description": "Obtiene todos los cron schedules activos en Quartz para el Tenant."
+          }
+        },
+        {
+          "name": "5.2 Crear Horario Programado (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cronExpression\": \"0 0 9 * * ?\",\n  \"description\": \"Publicación diaria a las 09:00 AM\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedules"]
+            },
+            "description": "Registra un nuevo cron job en Quartz para ejecutar el pipeline automáticamente."
+          }
+        },
+        {
+          "name": "5.3 Eliminar Horario Programado (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "schedules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+                  "description": "UUID del schedule"
+                }
+              ]
+            },
+            "description": "Cancela y elimina un horario programado de Quartz."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Tenant & Dashboard (Perfil y Métricas)",
+      "description": "Configuración del System Prompt, Zona Horaria y Métricas del Dashboard",
+      "item": [
+        {
+          "name": "6.1 Obtener Perfil del Tenant (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tenant/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tenant", "profile"]
+            },
+            "description": "Retorna el System Prompt actual y la zona horaria del Tenant."
+          }
+        },
+        {
+          "name": "6.2 Actualizar System Prompt y Zona Horaria (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"systemPrompt\": \"Eres Deyvid Jair Chupillon Silva, Desarrollador Junior Frontend/Fullstack en formación, especializado en JavaScript, React Native y bases de datos Supabase y SQLite...\",\n  \"timezone\": \"America/Lima\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tenant/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tenant", "profile"]
+            },
+            "description": "Actualiza la voz y personalidad de la IA así como la zona horaria de publicación."
+          }
+        },
+        {
+          "name": "6.3 Métricas del Dashboard (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tenant/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "tenant", "dashboard"]
+            },
+            "description": "Obtiene estadísticas de publicaciones totales, exitosas, fallidas, horarios activos y estado del token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Topics (Banco de Temas y Research CRUD)",
+      "description": "Gestión del Banco de Temas de respaldo (Priority 3) y temas de investigación (Priority 2)",
+      "item": [
+        {
+          "name": "7.1 Listar Temas de Respaldo (Backup) (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/backup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "backup"]
+            },
+            "description": "Obtiene la lista de temas de respaldo registrados en el banco."
+          }
+        },
+        {
+          "name": "7.2 Agregar Tema de Respaldo (Backup) (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Patrones de Persistencia y Caché en Aplicaciones Móviles\",\n  \"description\": \"Estrategias para sincronizar SQLite con Supabase offline-first.\",\n  \"category\": \"Mobile Architecture\",\n  \"priority\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/backup",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "backup"]
+            },
+            "description": "Añade un nuevo tema al banco de respaldo para cuando no haya commits activos."
+          }
+        },
+        {
+          "name": "7.3 Eliminar Tema de Respaldo (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/backup/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "backup", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+                  "description": "UUID del tema de respaldo"
+                }
+              ]
+            },
+            "description": "Elimina un tema del banco de respaldo."
+          }
+        },
+        {
+          "name": "7.4 Listar Temas de Interés (Research) (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/interests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "interests"]
+            },
+            "description": "Obtiene los temas de investigación activa."
+          }
+        },
+        {
+          "name": "7.5 Agregar Tema de Interés (Research) (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"topicName\": \"Novedades de React Native y Nuevas Arquitecturas TurboModules\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/interests",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "interests"]
+            },
+            "description": "Añade un tema para el Modo Investigación (Priority 2)."
+          }
+        },
+        {
+          "name": "7.6 Eliminar Tema de Interés (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/topics/interests/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "topics", "interests", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "d2e3f4a5-6b7c-8d9e-0f1a-2b3c4d5e6f7a",
+                  "description": "UUID del tema de interés"
+                }
+              ]
+            },
+            "description": "Elimina un tema de interés de la lista."
+          }
+        }
+      ]
+    }
+  ]
+}

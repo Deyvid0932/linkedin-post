@@ -5,6 +5,7 @@ import com.deyvid.backend.entity.enums.PublicationStatus;
 import com.deyvid.backend.repository.*;
 import com.deyvid.backend.service.ai.ImageGeneratorService;
 import com.deyvid.backend.service.linkedin.LinkedInPublisherService;
+import com.deyvid.backend.service.webhook.WebhookDeliveryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +23,13 @@ public class ApprovedPublicationService {
     private final PublicationAttemptService attempts;
     private final ImageGeneratorService images;
     private final LinkedInPublisherService publisher;
+    private final WebhookDeliveryService webhookDeliveryService;
 
     public record Result(String outcome, int publishedCount, String message) {}
 
     @Transactional
     public Result publish(UUID tenantId, UUID requestedDraftId) {
-        // Serializes HTTP, Quartz and Actions executions for the same tenant, including across replicas.
+        // Serializes HTTP and Quartz executions for the same tenant, including across replicas.
         Tenant tenant = tenants.findByIdForUpdate(tenantId).orElseThrow(() -> new IllegalArgumentException("Cuenta no disponible"));
         if (!Boolean.TRUE.equals(tenant.getIsActive()) || Boolean.TRUE.equals(tenant.getIsEmergencyPaused())) {
             return new Result("PAUSED", 0, "La automatización está pausada");
@@ -67,6 +69,12 @@ public class ApprovedPublicationService {
             } catch (Exception e) {
                 attempts.finish(draft.getId(), account.getId(), "UNKNOWN", null);
                 complete = false;
+                webhookDeliveryService.dispatchUnknown(tenantId, UUID.randomUUID(), Map.of(
+                        "postId", draft.getId().toString(),
+                        "sourceMode", draft.getSourceMode() != null ? draft.getSourceMode().name() : "UNKNOWN",
+                        "account", Objects.toString(account.getEffectiveAuthorUrn(), ""),
+                        "outcome", "UNKNOWN"
+                ));
                 logService.createLog(tenant, draft.getSourceMode(), PublicationStatus.FAILED, account.getAccountType(), account.getEffectiveAuthorUrn(),
                         draft.getGeneratedText(), draft.getImageUrl(), null, draft.getSourceReference(),
                         "Revisa LinkedIn antes de reintentar: no se pudo confirmar el resultado del envío.", System.currentTimeMillis() - start, null, null);
@@ -75,6 +83,15 @@ public class ApprovedPublicationService {
             published++;
             logService.createLog(tenant, draft.getSourceMode(), PublicationStatus.SUCCESS, account.getAccountType(), account.getEffectiveAuthorUrn(),
                     draft.getGeneratedText(), draft.getImageUrl(), urn, draft.getSourceReference(), null, System.currentTimeMillis() - start, null, null);
+            webhookDeliveryService.dispatchPublished(tenantId, UUID.randomUUID(), Map.of(
+                    "postId", draft.getId().toString(),
+                    "linkedinPostUrn", Objects.toString(urn, ""),
+                    "sourceMode", draft.getSourceMode() != null ? draft.getSourceMode().name() : "UNKNOWN",
+                    "account", Objects.toString(account.getEffectiveAuthorUrn(), ""),
+                    "publishedAt", LocalDateTime.now(ZoneId.of(tenant.getTimezone())).toString(),
+                    "text", draft.getGeneratedText(),
+                    "imageUrl", Objects.toString(draft.getImageUrl(), "")
+            ));
         }
         if (complete) drafts.delete(draft);
         return new Result(complete ? "PUBLISHED" : "REVIEW_REQUIRED", published,

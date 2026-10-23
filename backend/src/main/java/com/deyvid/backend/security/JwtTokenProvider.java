@@ -80,4 +80,8 @@ public class JwtTokenProvider {
         Number claim = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().get("tokenVersion", Number.class);
         return (claim == null ? 0L : claim.longValue()) == version;
     }
+
+    public long getExpirationMs() {
+        return jwtExpirationMs;
+    }
 }

@@ -16,6 +16,10 @@ import { SwipeVersion, SwipeBatch, ImageAspectRatio } from '../../core/models/st
   templateUrl: './swipe-studio.component.html',
 })
 export class SwipeStudioComponent implements OnInit {
+  private readonly safeDefaultPrompt =
+    'Redacta publicaciones profesionales para LinkedIn en español. Usa únicamente los datos, experiencias y opiniones que aporte el usuario; no inventes logros, cargos ni información personal. Explica las ideas con claridad y termina con una pregunta o invitación pertinente cuando encaje.';
+  private readonly legacyIdentityPromptPrefix =
+    'Eres Deyvid Jair Chupillon Silva, Desarrollador Junior Frontend/Fullstack apasionado por Spring Boot, Angular y la arquitectura de software moderna.';
   private studioService = inject(StudioService);
   private route = inject(ActivatedRoute);
   private authService = inject(AuthService);
@@ -48,10 +52,7 @@ export class SwipeStudioComponent implements OnInit {
   // Selector de Modo de Generación: 'IDEAS' (Banco de Ideas), 'PROMPT' (Personalidad & System Prompt), 'GITHUB' (Repositorio)
   sourceMode = signal<'PROMPT' | 'GITHUB' | 'IDEAS'>('IDEAS');
   modeDropdownOpen = signal(false);
-  systemPrompt = signal<string>(
-    'Eres Deyvid Jair Chupillon Silva, Desarrollador Junior Frontend/Fullstack apasionado por Spring Boot, Angular y la arquitectura de software moderna. Genera posts con tono profesional, conciso, ejemplos técnicos claros y llamadas a la acción.',
-  );
-  tenantTimezone = signal<string>('America/Lima');
+  systemPrompt = signal<string>(this.safeDefaultPrompt);
   savingSystemPrompt = signal(false);
   isPromptDirty = signal(false);
 
@@ -73,9 +74,7 @@ export class SwipeStudioComponent implements OnInit {
   aspectRatio = signal<ImageAspectRatio>('16:9');
 
   // Headline editable del usuario
-  userHeadline = signal<string>(
-    'Senior Software Engineer | Spring Boot 4 & Angular 22 | Cloud & AI Systems',
-  );
+  userHeadline = signal<string>('');
 
   // Estado para drag & drop y carga de archivos locales
   isDragging = signal(false);
@@ -85,7 +84,7 @@ export class SwipeStudioComponent implements OnInit {
   private versionSeeds = signal<{ [versionId: string]: number }>({});
 
   userName = computed(
-    () => (this.authService.currentUserSignal() as UserProfile | null)?.name || 'Deyvid Dev',
+    () => (this.authService.currentUserSignal() as UserProfile | null)?.name || 'Tu nombre',
   );
 
   userInitials = computed(() => {
@@ -280,8 +279,12 @@ export class SwipeStudioComponent implements OnInit {
         this.currentIndex.set(typeof state.currentIndex === 'number' ? state.currentIndex : 0);
         if (state.postFormat) this.postFormat.set(state.postFormat);
         if (state.sourceMode) this.sourceMode.set(state.sourceMode);
-        if (state.systemPrompt) this.systemPrompt.set(state.systemPrompt);
-        if (state.userHeadline) this.userHeadline.set(state.userHeadline);
+        if (state.systemPrompt) {
+          this.systemPrompt.set(this.normalizeLegacyPrompt(state.systemPrompt));
+        }
+        if (state.userHeadline && !state.userHeadline.startsWith('Senior Software Engineer |')) {
+          this.userHeadline.set(state.userHeadline);
+        }
         return true;
       }
     } catch (e) {
@@ -315,14 +318,19 @@ export class SwipeStudioComponent implements OnInit {
     this.tenantService.getProfile().subscribe({
       next: (profile) => {
         if (profile?.systemPrompt) {
-          this.systemPrompt.set(profile.systemPrompt);
-        }
-        if (profile?.timezone) {
-          this.tenantTimezone.set(profile.timezone);
+          const prompt = this.normalizeLegacyPrompt(profile.systemPrompt);
+          this.systemPrompt.set(prompt);
+          if (prompt !== profile.systemPrompt) this.isPromptDirty.set(true);
         }
       },
       error: () => {},
     });
+  }
+
+  private normalizeLegacyPrompt(prompt: string): string {
+    if (!prompt.startsWith(this.legacyIdentityPromptPrefix)) return prompt;
+    const remainingInstructions = prompt.slice(this.legacyIdentityPromptPrefix.length).trim();
+    return [this.safeDefaultPrompt, remainingInstructions].filter(Boolean).join(' ');
   }
 
   onSystemPromptChange(newVal: string): void {
@@ -336,7 +344,6 @@ export class SwipeStudioComponent implements OnInit {
     this.tenantService
       .updateProfile({
         systemPrompt: this.systemPrompt(),
-        timezone: this.tenantTimezone(),
       })
       .subscribe({
         next: () => {

@@ -22,8 +22,12 @@ export class LoginComponent {
   showPassword = signal(false);
 
   constructor() {
+    const invitedEmail = this.route.snapshot.queryParamMap.get('email');
+    if (invitedEmail) this.form.controls.email.setValue(invitedEmail);
     if (this.route.snapshot.queryParamMap.get('passwordUpdated') === 'true') {
       this.successMessage.set('Contraseña actualizada. Inicia sesión con tu nueva contraseña.');
+    } else if (this.route.snapshot.queryParamMap.get('sessionsRevoked') === 'true') {
+      this.successMessage.set('Se cerraron todas las sesiones. Inicia sesión de nuevo.');
     }
   }
 

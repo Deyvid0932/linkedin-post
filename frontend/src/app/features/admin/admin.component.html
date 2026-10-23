@@ -1,0 +1,309 @@
+<div class="admin-page ui-page">
+  <header class="page-heading ui-heading">
+    <div>
+      <p class="eyebrow">AUTOPOST · CONTROL GLOBAL</p>
+      <h1 class="ui-title">Administración</h1>
+      <p class="ui-muted">Estado de las cuentas y actividad registrada en AutoPost.</p>
+    </div>
+    <button type="button" class="secondary-button" (click)="refreshCurrentSection()" [disabled]="isCurrentSectionLoading()">
+      {{ isCurrentSectionLoading() ? 'Actualizando…' : 'Actualizar' }}
+    </button>
+  </header>
+
+  <nav class="admin-section-nav" aria-label="Secciones de administración">
+    <button type="button" [class.active]="activeSection() === 'overview'" [attr.aria-current]="activeSection() === 'overview' ? 'page' : null" (click)="selectSection('overview')">Resumen</button>
+    <button type="button" [class.active]="activeSection() === 'users'" [attr.aria-current]="activeSection() === 'users' ? 'page' : null" (click)="selectSection('users')">Cuentas</button>
+    <button type="button" [class.active]="activeSection() === 'invitations'" [attr.aria-current]="activeSection() === 'invitations' ? 'page' : null" (click)="selectSection('invitations')">Invitaciones</button>
+    <button type="button" [class.active]="activeSection() === 'quotas'" [attr.aria-current]="activeSection() === 'quotas' ? 'page' : null" (click)="selectSection('quotas')">Cuotas y espacios</button>
+    <button type="button" [class.active]="activeSection() === 'audit'" [attr.aria-current]="activeSection() === 'audit' ? 'page' : null" (click)="selectSection('audit')">Auditoría</button>
+  </nav>
+
+  <app-admin-overview [hidden]="activeSection() !== 'overview'" />
+
+  @if (activeSection() === 'invitations') {
+  <section class="users-panel invitation-panel" aria-labelledby="admin-invitations-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="admin-invitations-title">Invitar a AutoPost</h2>
+        <p>Crea enlaces personales de un solo uso. Caducan en 72 horas y asignan una cuenta estándar con su propio espacio de trabajo.</p>
+      </div>
+    </div>
+    @if (invitationError()) { <div class="message error" role="alert"><span>{{ invitationError() }}</span><button type="button" (click)="loadInvitations(invitations()?.number || 0)">Reintentar</button></div> }
+    @if (invitationSuccess()) { <p class="quota-success" role="status">{{ invitationSuccess() }}</p> }
+    <form class="invite-form" (submit)="$event.preventDefault(); createInvitation()">
+      <label for="invite-email">Correo de la persona</label>
+      <div class="invite-controls">
+        <input id="invite-email" type="email" autocomplete="email" required maxlength="254" [value]="invitationEmail()" (input)="setInvitationEmail($any($event.target).value)" placeholder="nombre@correo.com" />
+        <button type="submit" class="secondary-button" [disabled]="savingInvitation() || !invitationEmail().trim()">{{ savingInvitation() ? 'Creando…' : 'Crear invitación' }}</button>
+      </div>
+      @if (createdInvitation(); as invite) {
+        <div class="invite-created">
+          <label for="invite-link">Enlace de invitación · vence {{ invite.expiresAt | date:'dd MMM yyyy, HH:mm' }}</label>
+          <div class="invite-controls">
+            <input id="invite-link" type="url" readonly [value]="invite.invitationUrl" (focus)="$any($event.target).select()" />
+            <button type="button" class="secondary-button" (click)="copyInvitationLink()">{{ invitationCopied() ? 'Copiado' : 'Copiar enlace' }}</button>
+          </div>
+          <small>El enlace se muestra solo ahora. Compártelo por un canal privado; AutoPost guarda únicamente su hash.</small>
+        </div>
+      }
+    </form>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Correo</th><th scope="col">Estado</th><th scope="col">Creada</th><th scope="col">Vence</th><th scope="col">Acciones</th></tr></thead>
+        <tbody>
+          @for (invitation of invitations()?.content || []; track invitation.id) {
+            <tr>
+              <td><strong>{{ invitation.email }}</strong></td>
+              <td><span class="status" [class.status--inactive]="invitation.status !== 'PENDING'"><i></i>{{ invitationStatusLabel(invitation.status) }}</span></td>
+              <td>{{ invitation.createdAt | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td>{{ invitation.expiresAt | date:'dd MMM yyyy, HH:mm' }}</td>
+              <td>@if (invitation.status === 'PENDING') { <button type="button" class="account-action" [disabled]="revokingInvitation() === invitation.id" (click)="revokeInvitation(invitation)">{{ revokingInvitation() === invitation.id ? 'Revocando…' : 'Revocar' }}</button> } @else { <span class="text-secondary">—</span> }</td>
+            </tr>
+          } @empty {
+            @if (!loadingInvitations()) { <tr><td class="empty-row" colspan="5">Todavía no hay invitaciones.</td></tr> }
+          }
+        </tbody>
+      </table>
+      @if (loadingInvitations()) { <p class="table-loading" role="status">Cargando invitaciones…</p> }
+    </div>
+    @if (invitations(); as page) {
+      <footer class="pagination" aria-label="Paginación de invitaciones">
+        <span>{{ page.totalElements | number }} invitaciones · Página {{ page.number + 1 }} de {{ page.totalPages || 1 }}</span>
+        <div>
+          <button type="button" (click)="loadInvitations(page.number - 1)" [disabled]="page.number <= 0 || loadingInvitations()">Anterior</button>
+          <button type="button" (click)="loadInvitations(page.number + 1)" [disabled]="page.number + 1 >= page.totalPages || loadingInvitations()">Siguiente</button>
+        </div>
+      </footer>
+    }
+  </section>
+  }
+
+  @if (activeSection() === 'quotas') {
+  <section class="users-panel quota-panel" aria-labelledby="admin-quota-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="admin-quota-title">Límites de solicitudes API</h2>
+        <p>Política global por IP y tipo de ruta, compartida entre instancias mediante PostgreSQL.</p>
+      </div>
+      @if (quotaPolicy(); as policy) { <span class="quota-updated">Actualizado {{ policy.updatedAt | date:'dd MMM yyyy, HH:mm' }}</span> }
+    </div>
+    @if (quotaError()) { <div class="message error" role="alert"><span>{{ quotaError() }}</span><button type="button" (click)="loadQuotaPolicy()">Reintentar</button></div> }
+    @if (quotaSuccess()) { <p class="quota-success" role="status">{{ quotaSuccess() }}</p> }
+    @if (loadingQuotas() && !quotaPolicy()) {
+      <p class="loading" role="status">Cargando límites…</p>
+    } @else if (quotaPolicy()) {
+      <form class="quota-form" (ngSubmit)="saveQuotaPolicy()">
+        <label>Autenticación
+          <span>Solicitudes / minuto · 1–120</span>
+          <input type="number" min="1" max="120" required [value]="quotaForm().authRequestsPerMinute" (input)="setQuota('authRequestsPerMinute', $any($event.target).value)" />
+        </label>
+        <label>Generación de IA
+          <span>Solicitudes / minuto · 1–120</span>
+          <input type="number" min="1" max="120" required [value]="quotaForm().aiRequestsPerMinute" (input)="setQuota('aiRequestsPerMinute', $any($event.target).value)" />
+        </label>
+        <label>Resto de la API
+          <span>Solicitudes / minuto · 1–600</span>
+          <input type="number" min="1" max="600" required [value]="quotaForm().apiRequestsPerMinute" (input)="setQuota('apiRequestsPerMinute', $any($event.target).value)" />
+        </label>
+        <button type="submit" class="secondary-button" [disabled]="savingQuotas() || loadingQuotas()">{{ savingQuotas() ? 'Guardando…' : 'Guardar límites' }}</button>
+      </form>
+      <p class="quota-note">El bucket se mantiene en PostgreSQL y comparte el límite entre instancias. Tras dos minutos sin solicitudes, sus contadores se eliminan. Si PostgreSQL no está disponible, AutoPost rechaza la petición con un error temporal en lugar de saltarse el límite.</p>
+    }
+  </section>
+
+  <section class="users-panel tenant-quota-panel" aria-labelledby="publication-policy-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="publication-policy-title">Política global de aprobación</h2>
+        <p>Controla si el pipeline puede publicar automáticamente en los espacios.</p>
+      </div>
+      @if (publicationApprovalPolicy(); as policy) {
+        <span class="status" [class.status--inactive]="!policy.approvalRequired"><i></i>{{ policy.approvalRequired ? 'Aprobación obligatoria' : 'Cada espacio elige' }}</span>
+      }
+    </div>
+    @if (publicationPolicyError()) {
+      <div class="message error" role="alert"><span>{{ publicationPolicyError() }}</span><button type="button" (click)="loadPublicationPolicy()">Reintentar</button></div>
+    }
+    @if (publicationPolicySuccess()) { <p class="quota-success" role="status">{{ publicationPolicySuccess() }}</p> }
+    @if (loadingPublicationPolicy() && !publicationApprovalPolicy()) {
+      <p class="loading" role="status">Cargando política global…</p>
+    } @else if (publicationApprovalPolicy(); as policy) {
+      <div class="quota-note">
+        <p>{{ policy.approvalRequired ? 'Los espacios conservarán su preferencia, pero el pipeline dejará el contenido en revisión y no lo publicará automáticamente.' : 'Cada espacio puede elegir entre aprobación y publicación automática.' }}</p>
+        @if (policy.updatedAt) { <small>Actualizado {{ policy.updatedAt | date:'dd MMM yyyy, HH:mm' }}</small> }
+      </div>
+      <div class="dialog-actions">
+        <button id="publication-policy-toggle" type="button" class="secondary-button" (click)="togglePublicationApprovalPolicy()" [disabled]="savingPublicationPolicy()">
+          {{ savingPublicationPolicy() ? 'Guardando…' : policy.approvalRequired ? 'Permitir elección por espacio' : 'Exigir aprobación global' }}
+        </button>
+      </div>
+    }
+  </section>
+
+  <section class="users-panel tenant-quota-panel" aria-labelledby="tenant-quota-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="tenant-quota-title">Límite de IA por espacio</h2>
+        <p>Cada límite se comparte en el espacio. Deja el valor vacío para heredar; añade una fecha para crear una excepción temporal en tu hora local.</p>
+      </div>
+    </div>
+    @if (tenantAiQuotaError()) {
+      <div class="message error quota-inline-error" role="alert"><span>{{ tenantAiQuotaError() }}</span><button type="button" (click)="loadTenantAiQuotas(tenantAiQuotas()?.number || 0)">Reintentar</button></div>
+    }
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Espacio de trabajo</th><th scope="col">Cuentas</th><th scope="col">Límite personalizado y vencimiento</th><th scope="col">Límite efectivo</th><th scope="col">Acción</th></tr></thead>
+        <tbody>
+          @for (quota of tenantAiQuotas()?.content || []; track quota.tenantId) {
+            <tr>
+              <td><strong>{{ quota.primaryEmail || 'Sin cuentas' }}</strong><small><code>{{ quota.tenantId }}</code></small></td>
+              <td>{{ quota.accountCount }}</td>
+              <td>
+                <label class="sr-only" [for]="'tenant-quota-' + quota.tenantId">Solicitudes de IA por minuto para {{ quota.primaryEmail || quota.tenantId }}</label>
+                <div class="user-quota-control">
+                  <input class="tenant-quota-input" [id]="'tenant-quota-' + quota.tenantId" type="number" min="1" max="120" [value]="tenantAiQuotaDrafts()[quota.tenantId] ?? (quota.overrideRequestsPerMinute ?? '')" (input)="setTenantAiQuotaDraft(quota.tenantId, $any($event.target).value)" placeholder="Global" />
+                  <label class="sr-only" [for]="'tenant-quota-expiry-' + quota.tenantId">Vencimiento del límite para {{ quota.primaryEmail || quota.tenantId }}</label>
+                  <input class="tenant-quota-input quota-expiry-input" [id]="'tenant-quota-expiry-' + quota.tenantId" type="datetime-local" [min]="minQuotaExpiry()" [value]="tenantQuotaExpiryValue(quota)" (input)="setTenantAiQuotaExpiryDraft(quota.tenantId, $any($event.target).value)" [attr.aria-describedby]="'tenant-quota-expiry-help-' + quota.tenantId" />
+                  <small [id]="'tenant-quota-expiry-help-' + quota.tenantId">{{ quota.overrideRequestsPerMinute === null ? 'Sin excepción' : quotaExpiryLabel(quota.overrideExpiresAt) }}</small>
+                </div>
+              </td>
+              <td>{{ quota.effectiveRequestsPerMinute }} solicitudes/min</td>
+              <td><button type="button" class="secondary-button" (click)="saveTenantAiQuota(quota)" [disabled]="savingTenantAiQuota() !== null || loadingTenantAiQuotas()">{{ savingTenantAiQuota() === quota.tenantId ? 'Guardando…' : 'Guardar' }}</button></td>
+            </tr>
+          } @empty {
+            @if (!loadingTenantAiQuotas()) { <tr><td class="empty-row" colspan="5">Aún no hay espacios registrados.</td></tr> }
+          }
+        </tbody>
+      </table>
+      @if (loadingTenantAiQuotas()) { <p class="table-loading" role="status">Cargando límites por espacio…</p> }
+    </div>
+    @if (tenantAiQuotas(); as page) {
+      <footer class="pagination" aria-label="Paginación de límites por espacio">
+        <span>{{ page.totalElements | number }} espacios · Página {{ page.number + 1 }} de {{ page.totalPages || 1 }}</span>
+        <div>
+          <button type="button" (click)="loadTenantAiQuotas(page.number - 1)" [disabled]="page.number <= 0 || loadingTenantAiQuotas()">Anterior</button>
+          <button type="button" (click)="loadTenantAiQuotas(page.number + 1)" [disabled]="page.number + 1 >= page.totalPages || loadingTenantAiQuotas()">Siguiente</button>
+        </div>
+      </footer>
+    }
+  </section>
+  }
+
+  @if (activeSection() === 'users') {
+  <section class="users-panel" aria-labelledby="admin-users-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="admin-users-title">Cuentas</h2>
+        <p>Gestiona permisos, estado y límites personales de IA. Deja el límite vacío para heredar; puedes definir un vencimiento en tu hora local.</p>
+      </div>
+      <label class="search-field">
+        <span class="sr-only">Buscar por nombre o correo</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input type="search" [value]="search()" (input)="onSearch($any($event.target).value)" placeholder="Buscar cuentas…" />
+      </label>
+    </div>
+
+    @if (usersError()) {
+      <div class="message error" role="alert"><span>{{ usersError() }}</span><button type="button" (click)="loadUsers(users()?.number || 0)">Reintentar</button></div>
+    }
+    @if (rolesSuccess()) { <p class="quota-success" role="status">{{ rolesSuccess() }}</p> }
+    @if (userAiQuotaSuccess()) { <p class="quota-success" role="status">{{ userAiQuotaSuccess() }}</p> }
+    @if (userAiQuotaError()) { <p class="message error quota-inline-error" role="alert">{{ userAiQuotaError() }}</p> }
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Usuario</th><th scope="col">Espacio</th><th scope="col">Rol</th><th scope="col">Estado</th><th scope="col">IA / min</th><th scope="col">Registro</th><th scope="col">Acciones</th></tr></thead>
+        <tbody>
+          @for (user of users()?.content || []; track user.id) {
+            <tr>
+              <td><strong>{{ user.name }}</strong><small>{{ user.email }}</small></td>
+              <td><code>{{ user.tenantId.slice(0, 8) }}</code></td>
+              <td><div class="role-list">@for (role of user.roles; track role) { <span>{{ formatRole(role) }}</span> }</div></td>
+              <td><span class="status" [class.status--inactive]="!user.active"><i></i>{{ user.active ? 'Activa' : 'Inactiva' }}</span></td>
+              <td><div class="user-quota-control"><label class="sr-only" [attr.for]="'user-ai-quota-' + user.id">Límite personal de IA para {{ user.email }} por minuto</label><input class="tenant-quota-input" type="number" min="1" max="120" [id]="'user-ai-quota-' + user.id" [value]="userAiQuotaDrafts()[user.id] ?? (user.aiRequestsPerMinute ?? '')" (input)="setUserAiQuotaDraft(user.id, $any($event.target).value)" placeholder="Heredar" /><label class="sr-only" [for]="'user-ai-quota-expiry-' + user.id">Vencimiento del límite personal para {{ user.email }}</label><input class="tenant-quota-input quota-expiry-input" type="datetime-local" [id]="'user-ai-quota-expiry-' + user.id" [min]="minQuotaExpiry()" [value]="userQuotaExpiryValue(user)" (input)="setUserAiQuotaExpiryDraft(user.id, $any($event.target).value)" /><small>Efectivo: {{ user.effectiveAiRequestsPerMinute }}/min · {{ user.aiRequestsPerMinute === null ? 'Heredado' : quotaExpiryLabel(user.aiRequestsPerMinuteExpiresAt) }}</small><button type="button" class="secondary-button" (click)="saveUserAiQuota(user)" [disabled]="savingUserAiQuota() !== null">{{ savingUserAiQuota() === user.id ? 'Guardando…' : 'Guardar' }}</button></div></td>
+              <td>{{ user.createdAt | date:'dd MMM yyyy' }}</td>
+              <td><div class="account-actions"><button type="button" class="secondary-button" (click)="requestRoleChange(user)">Permisos</button><button type="button" class="account-action" [class.account-action--enable]="!user.active" (click)="requestStatusChange(user)">{{ user.active ? 'Suspender' : 'Reactivar' }}</button></div></td>
+            </tr>
+          } @empty {
+            @if (!loadingUsers()) { <tr><td class="empty-row" colspan="7">No hay cuentas que coincidan con la búsqueda.</td></tr> }
+          }
+        </tbody>
+      </table>
+      @if (loadingUsers()) { <p class="table-loading" role="status">Actualizando lista…</p> }
+    </div>
+    @if (users(); as page) {
+      <footer class="pagination">
+        <span>{{ page.totalElements | number }} cuentas · Página {{ page.number + 1 }} de {{ page.totalPages || 1 }}</span>
+        <div>
+          <button type="button" (click)="loadUsers(page.number - 1)" [disabled]="page.number <= 0 || loadingUsers()">Anterior</button>
+          <button type="button" (click)="loadUsers(page.number + 1)" [disabled]="page.number + 1 >= page.totalPages || loadingUsers()">Siguiente</button>
+        </div>
+      </footer>
+    }
+  </section>
+  }
+
+  @if (activeSection() === 'audit') {
+  <section class="users-panel" aria-labelledby="admin-audit-title">
+    <div class="panel-heading">
+      <div>
+        <h2 id="admin-audit-title">Auditoría del sistema</h2>
+        <p>Eventos recientes de cuentas y operaciones registradas.</p>
+      </div>
+      <button type="button" class="secondary-button" (click)="loadAudit()" [disabled]="loadingAudit()">{{ loadingAudit() ? 'Actualizando…' : 'Actualizar' }}</button>
+    </div>
+    @if (auditError()) {
+      <div class="message error" role="alert"><span>{{ auditError() }}</span><button type="button" (click)="loadAudit()">Reintentar</button></div>
+    }
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Acción</th><th scope="col">Actor</th><th scope="col">Espacio</th><th scope="col">Fecha</th></tr></thead>
+        <tbody>
+          @for (event of auditEvents()?.content || []; track event.id) {
+            <tr><td><strong>{{ event.action }}</strong></td><td>{{ event.actor }}</td><td><code>{{ event.tenantId.slice(0, 8) }}</code></td><td>{{ event.createdAt | date:'dd MMM yyyy, HH:mm' }}</td></tr>
+          } @empty {
+            @if (!loadingAudit()) { <tr><td class="empty-row" colspan="4">Aún no hay eventos registrados.</td></tr> }
+          }
+        </tbody>
+      </table>
+      @if (loadingAudit()) { <p class="table-loading" role="status">Cargando auditoría…</p> }
+    </div>
+    @if (auditEvents(); as page) {
+      <footer class="pagination" aria-label="Paginación de auditoría">
+        <span>{{ page.totalElements | number }} eventos · Página {{ page.number + 1 }} de {{ page.totalPages || 1 }}</span>
+        <div>
+          <button type="button" (click)="loadAudit(page.number - 1)" [disabled]="page.number <= 0 || loadingAudit()">Anterior</button>
+          <button type="button" (click)="loadAudit(page.number + 1)" [disabled]="page.number + 1 >= page.totalPages || loadingAudit()">Siguiente</button>
+        </div>
+      </footer>
+    }
+  </section>
+  }
+
+  @if (pendingStatus(); as pending) {
+    <app-dialog [title]="pending.active ? 'Reactivar cuenta' : 'Suspender cuenta'" (closed)="pendingStatus.set(null)">
+      <p>La cuenta <strong>{{ pending.user.email }}</strong> {{ pending.active ? 'recuperará acceso a AutoPost.' : 'perderá acceso a AutoPost.' }} Sus datos no se eliminarán y se podrá reactivar después.</p>
+      @if (statusError()) { <p class="message error" role="alert">{{ statusError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" (click)="pendingStatus.set(null)" [disabled]="savingStatus()">Cancelar</button>
+        <button type="button" class="account-action" [class.account-action--enable]="pending.active" (click)="confirmStatusChange()" [disabled]="savingStatus()">{{ savingStatus() ? 'Guardando…' : pending.active ? 'Reactivar cuenta' : 'Suspender cuenta' }}</button>
+      </div>
+    </app-dialog>
+  }
+  @if (pendingRoles(); as pending) {
+    <app-dialog title="Permisos de la cuenta" (closed)="pendingRoles.set(null)">
+      <p>Selecciona los roles para <strong>{{ pending.user.email }}</strong>. Al guardar, se cerrarán sus sesiones activas.</p>
+      <fieldset class="role-options" [disabled]="savingRoles()">
+        <legend>Roles disponibles</legend>
+        <label><input type="checkbox" [checked]="pending.roles.has('ROLE_USER')" (change)="toggleRole('ROLE_USER', $any($event.target).checked)" /> Usuario</label>
+        <label><input type="checkbox" [checked]="pending.roles.has('ROLE_DESARROLLADOR')" (change)="toggleRole('ROLE_DESARROLLADOR', $any($event.target).checked)" /> Desarrollador</label>
+        <label><input type="checkbox" [checked]="pending.roles.has('ROLE_ADMIN')" (change)="toggleRole('ROLE_ADMIN', $any($event.target).checked)" /> Administrador</label>
+      </fieldset>
+      @if (!pending.roles.size) { <p class="message error" role="alert">La cuenta debe conservar al menos un rol.</p> }
+      @if (rolesError()) { <p class="message error" role="alert">{{ rolesError() }}</p> }
+      <div class="dialog-actions">
+        <button type="button" class="secondary-button" (click)="pendingRoles.set(null)" [disabled]="savingRoles()">Cancelar</button>
+        <button type="button" class="account-action account-action--enable" (click)="confirmRoleChange()" [disabled]="savingRoles() || !pending.roles.size">{{ savingRoles() ? 'Guardando…' : 'Guardar permisos' }}</button>
+      </div>
+    </app-dialog>
+  }
+</div>

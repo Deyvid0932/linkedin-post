@@ -1,5 +1,6 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, DestroyRef, OnInit, inject, signal, computed } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CredentialService } from '../../../core/services/credential.service';
 import {
@@ -7,25 +8,31 @@ import {
   LinkedInAccount,
   LinkedInAccountType,
 } from '../../../core/models/credential.model';
-import { DatePipe, NgClass } from '@angular/common';
+import { DialogComponent } from '../../../shared/components/dialog/dialog.component';
 
 @Component({
   selector: 'app-linkedin-settings',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, DatePipe, NgClass],
+  imports: [ReactiveFormsModule, FormsModule, RouterLink, DialogComponent],
   templateUrl: './linkedin-settings.component.html',
+  styleUrl: './linkedin-settings.component.css',
 })
 export class LinkedinSettingsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private credentialService = inject(CredentialService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   accounts = signal<LinkedInAccount[]>([]);
   loading = signal(false);
+  accountsLoadError = signal('');
   saving = signal(false);
   actionLoading = signal<string | null>(null);
   connectingOAuth = signal(false);
+  readonly preferencesId = signal<string | null>(null);
+  readonly preferencesAccount = computed(() => this.accounts().find(account => account.id === this.preferencesId()));
+  readonly accountToDisconnect = signal<LinkedInAccount | null>(null);
 
   showConnectModal = signal(false);
   showEditWarningModal = signal(false);
@@ -43,13 +50,13 @@ export class LinkedinSettingsComponent implements OnInit {
 
   accountForm = this.fb.group({
     accessToken: ['', [Validators.minLength(20)]],
-    displayName: [''],
-    authorUrn: [''],
+    displayName: ['', [Validators.required, Validators.maxLength(120)]],
+    authorUrn: ['', [Validators.required, Validators.pattern(/^(urn:li:organization:)?[0-9]+$/)]],
     maxPostsPerDay: [1, [Validators.min(1), Validators.max(10)]],
   });
 
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe((params) => {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const result = params.get('linkedin_oauth');
       if (!result) return;
       if (result === 'connected') {
@@ -89,7 +96,7 @@ export class LinkedinSettingsComponent implements OnInit {
       error: (err) => {
         this.connectingOAuth.set(false);
         this.errorMessage.set(
-          err?.error?.message ||
+          (err?.status === 424 ? 'La conexión con LinkedIn aún no está disponible. Contacta al administrador.' : err?.error?.message) ||
             'No pudimos iniciar la conexión. Revisa la configuración de LinkedIn.',
         );
       },
@@ -98,32 +105,45 @@ export class LinkedinSettingsComponent implements OnInit {
 
   loadAccounts(): void {
     this.loading.set(true);
+    this.accountsLoadError.set('');
     this.credentialService.getLinkedInAccounts().subscribe({
       next: (accs) => {
         this.accounts.set(accs || []);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.warn('Error cargando cuentas de LinkedIn:', err);
+      error: () => {
         this.loading.set(false);
+        this.accountsLoadError.set('No se pudo consultar el estado de LinkedIn. Reintenta para confirmar tus cuentas.');
       },
     });
   }
 
-  calcPercentage(days: number): number {
-    return Math.round(Math.min(100, Math.max(0, (days / 60) * 100)));
+  accountInitials(name: string): string {
+    return (name || 'Cuenta').split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
   }
 
-  openConnectModal(): void {
+  expirationLabel(account: LinkedInAccount): string {
+    if (!account.isValid || account.status === 'EXPIRED') return 'La autorización necesita renovarse.';
+    const days = Number.isFinite(account.daysRemaining) ? Math.max(0, Math.floor(account.daysRemaining)) : null;
+    let date = '';
+    if(account.tokenExpiresAt && Number.isFinite(Date.parse(account.tokenExpiresAt))) {
+      date = new Intl.DateTimeFormat('es', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(account.tokenExpiresAt));
+    }
+    return [days === null ? '' : days + ' días restantes', date ? 'Vence el ' + date : ''].filter(Boolean).join(' · ') || 'Sin fecha de vencimiento disponible';
+  }
+
+  openConnectModal(type: LinkedInAccountType = 'PERSON'): void {
     this.editingAccountId.set(null);
     this.accountToEdit.set(null);
-    this.selectedType.set('PERSON');
+    this.selectedType.set(type);
     this.useExistingToken.set(false);
-    this.accountForm.reset();
+    this.showToken.set(false);
+    this.accountForm.reset({ maxPostsPerDay: 1 });
     this.showConnectModal.set(true);
   }
 
   closeConnectModal(): void {
+    if (this.saving()) return;
     this.showConnectModal.set(false);
     this.editingAccountId.set(null);
     this.accountToEdit.set(null);
@@ -145,6 +165,7 @@ export class LinkedinSettingsComponent implements OnInit {
       displayName: acc.displayName,
       authorUrn: acc.authorUrn,
       accessToken: '',
+      maxPostsPerDay: acc.maxPostsPerDay || 1,
     });
     this.showConnectModal.set(true);
   }
@@ -186,15 +207,23 @@ export class LinkedinSettingsComponent implements OnInit {
   }
 
   disconnectAccount(acc: LinkedInAccount): void {
-    if (
-      !confirm(`¿Estás seguro de que deseas revocar y desconectar la cuenta '${acc.displayName}'?`)
-    )
-      return;
+    this.errorMessage.set(null);
+    this.accountToDisconnect.set(acc);
+  }
 
+  cancelDisconnect(): void {
+    if (!this.actionLoading()) this.accountToDisconnect.set(null);
+  }
+
+  confirmDisconnect(): void {
+    const acc = this.accountToDisconnect();
+    if (!acc || this.actionLoading()) return;
     this.actionLoading.set(acc.id);
     this.credentialService.deleteLinkedInAccount(acc.id).subscribe({
       next: () => {
         this.actionLoading.set(null);
+        this.accountToDisconnect.set(null);
+        if(this.preferencesId() === acc.id) this.preferencesId.set(null);
         this.successMessage.set(`Cuenta '${acc.displayName}' desconectada exitosamente.`);
         this.loadAccounts();
       },
@@ -206,6 +235,12 @@ export class LinkedinSettingsComponent implements OnInit {
   }
 
   submitAccount(): void {
+    if (this.saving()) return;
+    this.accountForm.markAllAsTouched();
+    if(this.accountForm.invalid || (!this.useExistingToken() && !this.accountForm.value.accessToken?.trim())) {
+      this.errorMessage.set('Revisa el nombre, el identificador y la credencial antes de guardar.');
+      return;
+    }
     const val = this.accountForm.value;
     const isOrg = this.selectedType() === 'ORGANIZATION';
 

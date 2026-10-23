@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -39,6 +40,17 @@ public class Tenant {
     @Column(name = "app_image_model", nullable = false, length = 80)
     @Builder.Default
       private String appImageModel = "qwen-image-2.1/text-to-image";
+
+    @Column(name = "app_text_model", nullable = false, length = 60)
+    @Builder.Default
+    private String appTextModel = "deepseek-flash";
+
+    /** Null means that this workspace inherits the platform AI request limit. */
+    @Column(name = "ai_requests_per_minute")
+    private Integer aiRequestsPerMinute;
+
+    @Column(name = "ai_requests_per_minute_expires_at")
+    private Instant aiRequestsPerMinuteExpiresAt;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default

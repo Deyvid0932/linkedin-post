@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +35,9 @@ public class User {
     @Column(name = "picture_url", columnDefinition = "TEXT")
     private String pictureUrl;
 
+    @Column(name = "accent_color", length = 16)
+    private String accentColor;
+
     @Column(name = "password_hash")
     private String passwordHash;
 
@@ -57,6 +61,13 @@ public class User {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
+
+    /** Null means that this account inherits the workspace or platform AI limit. */
+    @Column(name = "ai_requests_per_minute")
+    private Integer aiRequestsPerMinute;
+
+    @Column(name = "ai_requests_per_minute_expires_at")
+    private Instant aiRequestsPerMinuteExpiresAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

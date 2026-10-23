@@ -11,8 +11,6 @@ describe('AuthService', () => {
   let routerSpy: { navigate: ReturnType<typeof vi.fn> };
 
   const mockResponse: AuthResponse = {
-    token: 'jwt-test-token-12345',
-    type: 'Bearer',
     userId: 'user-1',
     tenantId: 'tenant-1',
     name: 'Deyvi Test',
@@ -22,6 +20,8 @@ describe('AuthService', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    localStorage.setItem('saas_auth_token', 'legacy-token');
+    localStorage.setItem('saas_auth_user', '{"userId":"legacy-user"}');
     routerSpy = { navigate: vi.fn() };
 
     TestBed.configureTestingModule({
@@ -42,14 +42,14 @@ describe('AuthService', () => {
     localStorage.clear();
   });
 
-  it('should be created and start unauthenticated if localstorage is empty', () => {
+  it('starts unauthenticated and removes credentials saved by older versions', () => {
     expect(service).toBeTruthy();
     expect(service.isAuthenticated()).toBe(false);
-    expect(service.getToken()).toBeNull();
     expect(service.currentUserSignal()).toBeNull();
+    expect(localStorage.getItem('saas_auth_token')).toBeNull();
   });
 
-  it('should login user and save session to localStorage and signals', () => {
+  it('should login user and keep only the user profile in memory', () => {
     const loginReq: LoginRequest = { email: 'test@example.com', password: 'Password123!' };
 
     service.login(loginReq).subscribe((res) => {
@@ -61,13 +61,13 @@ describe('AuthService', () => {
     expect(req.request.body).toEqual(loginReq);
     req.flush(mockResponse);
 
-    expect(service.getToken()).toBe(mockResponse.token);
     expect(service.isAuthenticated()).toBe(true);
     expect(service.currentUserSignal()?.name).toBe('Deyvi Test');
-    expect(localStorage.getItem('saas_auth_token')).toBe(mockResponse.token);
+    expect(localStorage.getItem('saas_auth_token')).toBeNull();
+    expect(localStorage.getItem('saas_auth_user')).toBeNull();
   });
 
-  it('should register user and save session to localStorage', () => {
+  it('should register user and set the authenticated state in memory', () => {
     const registerReq: RegisterRequest = {
       name: 'Deyvi Test',
       email: 'test@example.com',
@@ -82,20 +82,30 @@ describe('AuthService', () => {
     expect(req.request.method).toBe('POST');
     req.flush(mockResponse);
 
-    expect(service.getToken()).toBe(mockResponse.token);
     expect(service.isAuthenticated()).toBe(true);
   });
 
-  it('should logout user and clear localStorage and navigate to login', () => {
-    localStorage.setItem('saas_auth_token', 'initial-token');
-    service.tokenSignal.set('initial-token');
+  it('restores the browser session from the server cookie after a reload', async () => {
+    const restored = service.ensureSession();
+    let authenticated = false;
+    restored.subscribe((value) => (authenticated = value));
 
+    httpMock.expectOne('http://localhost:8080/api/v1/users/me').flush({
+      id: 'user-1', tenantId: 'tenant-1', name: 'Deyvi Test', email: 'test@example.com', roles: ['ROLE_USER'],
+    });
+
+    expect(authenticated).toBe(true);
+    expect(service.isAuthenticated()).toBe(true);
+    expect(service.currentUserSignal()?.email).toBe('test@example.com');
+  });
+
+  it('should logout user and navigate to login', () => {
     service.logout();
 
-    expect(service.getToken()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
     expect(service.currentUserSignal()).toBeNull();
     expect(localStorage.getItem('saas_auth_token')).toBeNull();
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/auth/login']);
+    httpMock.expectOne('http://localhost:8080/api/v1/auth/logout').flush(null, { status: 204, statusText: 'No Content' });
   });
 });

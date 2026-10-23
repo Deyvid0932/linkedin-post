@@ -1,0 +1,3 @@
+package com.deyvid.backend.dto.request;
+
+public record PublicationApprovalPolicyRequest(boolean approvalRequired) {}

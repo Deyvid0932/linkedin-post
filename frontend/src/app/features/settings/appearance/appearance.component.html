@@ -1,0 +1,111 @@
+<div class="appearance-page">
+  <header class="page-heading">
+    <div>
+      <h1>Preferencias</h1>
+      <p>Elige cómo quieres ver AutoPost.</p>
+    </div>
+  </header>
+
+  <section class="settings-card" aria-labelledby="theme-preference-title">
+    <div class="section-heading"><div><h2 id="theme-preference-title">Tema</h2><p>Se guarda en este navegador.</p></div></div>
+    <div class="theme-choices" role="group" aria-labelledby="theme-preference-title">
+      <button type="button" [attr.aria-pressed]="themeService.theme() === 'light'" (click)="themeService.setTheme('light')"><span class="theme-preview theme-preview--light" aria-hidden="true"><i></i><i></i><i></i></span><strong>Claro</strong><small>Superficies claras y texto oscuro.</small></button>
+      <button type="button" [attr.aria-pressed]="themeService.theme() === 'dark'" (click)="themeService.setTheme('dark')"><span class="theme-preview theme-preview--dark" aria-hidden="true"><i></i><i></i><i></i></span><strong>Oscuro</strong><small>Una interfaz oscura y cómoda.</small></button>
+    </div>
+  </section>
+
+  @if (success()) { <p class="notice success" role="status">{{ success() }}</p> }
+  @if (error()) { <p class="notice error" role="alert">{{ error() }}</p> }
+  @if (loading()) {
+    <section class="settings-card" role="status">Cargando opciones de apariencia…</section>
+  } @else if (loadFailed()) {
+    <section class="settings-card" role="alert" aria-labelledby="appearance-load-error-title">
+      <h2 id="appearance-load-error-title">No pudimos cargar tu apariencia</h2>
+      <p>Vuelve a intentarlo para conocer los colores que permite la administración.</p>
+      <div class="actions">
+        <button type="button" class="primary-button" (click)="load()">Reintentar</button>
+      </div>
+    </section>
+  } @else {
+    <section class="settings-card" aria-labelledby="your-accent-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="your-accent-title">Tu color de acento</h2>
+          <p>Se aplica a acciones, enlaces y selección. El modo claro u oscuro se mantiene aparte.</p>
+        </div>
+        <span class="selected-label">{{ selectedName() }}</span>
+      </div>
+
+      <div class="palette-grid" role="radiogroup" aria-labelledby="your-accent-title">
+        @for (option of options; track option.id) {
+          <button
+            type="button"
+            class="palette-option"
+            role="radio"
+            [attr.aria-checked]="selected() === option.id"
+            [attr.aria-label]="option.name"
+            [attr.data-palette]="option.id"
+            [attr.tabindex]="selected() === option.id ? 0 : -1"
+            [disabled]="!allowed().includes(option.id)"
+            [class.palette-option--selected]="selected() === option.id"
+            (click)="choose(option.id)"
+            (keydown)="handlePaletteKeydown($event, option.id)"
+          >
+            <span class="swatch" [style.backgroundColor]="option.hex" aria-hidden="true"></span>
+            <span>{{ option.name }}</span>
+            @if (!allowed().includes(option.id)) { <small>No disponible</small> }
+          </button>
+        }
+      </div>
+
+      <div class="actions">
+        <button type="button" class="primary-button" (click)="saveUserPreference()" [disabled]="savingUser()">
+          {{ savingUser() ? 'Guardando…' : 'Guardar mi apariencia' }}
+        </button>
+      </div>
+    </section>
+
+    @if (isAdmin()) {
+      <section class="settings-card admin-card" aria-labelledby="admin-palette-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ADMINISTRACIÓN DE AUTOPOST</p>
+            <h2 id="admin-palette-title">Paleta disponible para los usuarios</h2>
+            <p>Elige el color inicial de la plataforma y limita las opciones disponibles para todas las cuentas.</p>
+          </div>
+        </div>
+        <fieldset>
+          <legend>Colores permitidos</legend>
+          <p id="palette-policy-hint">Mantén al menos un color disponible para las cuentas.</p>
+          <div class="admin-palette-grid">
+            @for (option of options; track option.id) {
+              <label class="admin-option">
+                <input
+                  type="checkbox"
+                  [checked]="allowed().includes(option.id)"
+                  [disabled]="savingPolicy() || (allowed().length === 1 && allowed().includes(option.id))"
+                  aria-describedby="palette-policy-hint"
+                  (change)="toggleAllowed(option.id, $any($event.target).checked)"
+                />
+                <span class="swatch" [style.backgroundColor]="option.hex" aria-hidden="true"></span>
+                <span>{{ option.name }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+        <label class="default-field" for="default-accent">Color predeterminado de AutoPost
+          <select id="default-accent" [value]="defaultColor()" [disabled]="savingPolicy()" (change)="setDefault($any($event.target).value)">
+            @for (option of options; track option.id) {
+              @if (allowed().includes(option.id)) { <option [value]="option.id">{{ option.name }}</option> }
+            }
+          </select>
+        </label>
+        <div class="actions">
+          <button type="button" class="primary-button" (click)="savePolicy()" [disabled]="savingPolicy()">
+            {{ savingPolicy() ? 'Guardando…' : 'Guardar política global' }}
+          </button>
+        </div>
+      </section>
+    }
+  }
+</div>

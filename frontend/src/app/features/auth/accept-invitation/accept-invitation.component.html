@@ -1,0 +1,39 @@
+<main class="invitation-auth min-h-dvh bg-slate-50 transition-colors dark:bg-neutral-950 lg:grid lg:grid-cols-2">
+  <div class="fixed right-4 top-4 z-50 sm:right-6 sm:top-6"><app-theme-toggle variant="floating" /></div>
+  <section class="flex min-h-[calc(100dvh-220px)] items-center justify-center px-5 py-16 sm:px-8 lg:min-h-dvh lg:px-12 xl:px-20" aria-labelledby="invitation-title">
+    <div class="w-full max-w-md">
+      <a routerLink="/auth/login" class="mb-10 inline-flex items-center gap-3 rounded-lg focus-visible:outline-2" aria-label="AutoPost, inicio de sesión">
+        <span class="brand-mark">in</span>
+        <span><strong class="block text-sm font-bold text-slate-900 dark:text-white">AutoPost</strong><small class="text-xs text-slate-500 dark:text-neutral-400">Estudio editorial</small></span>
+      </a>
+      <p class="mb-2 text-xs font-semibold uppercase tracking-[.16em] text-[var(--accent)]">Invitación de cuenta</p>
+      @if (acceptedEmail()) {
+        <h1 id="invitation-title" class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Tu cuenta está lista</h1>
+        <p class="mt-3 text-sm text-slate-600 dark:text-neutral-400">Se creó la cuenta para <strong>{{ acceptedEmail() }}</strong>. Ya puedes entrar a AutoPost.</p>
+        <a class="ui-button ui-button--primary mt-7 w-full !min-h-12 !rounded-xl !text-sm" [routerLink]="['/auth/login']" [queryParams]="{ email: acceptedEmail() }">Ir al inicio de sesión</a>
+      } @else {
+        <h1 id="invitation-title" class="text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Acepta tu invitación</h1>
+        <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-neutral-400">Crea una contraseña para completar tu registro. Se asignará una cuenta estándar.</p>
+        @if (!validLink) {
+          <div class="mt-6 rounded-xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-300" role="alert">El enlace está incompleto. Pide a quien te invitó que genere uno nuevo.</div>
+        }
+        @if (errorMessage()) {
+          <div class="mt-6 rounded-xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm text-rose-700 dark:text-rose-300" role="alert">{{ errorMessage() }}</div>
+        }
+        @if (validLink) {
+          <form class="mt-8 space-y-5" [formGroup]="form" (ngSubmit)="submit()">
+            <div class="grid gap-2"><label for="invite-name" class="text-sm font-semibold text-slate-700 dark:text-neutral-300">Nombre</label><input id="invite-name" class="ui-input" formControlName="name" autocomplete="name" maxlength="100" /></div>
+            <div class="grid gap-2"><label for="invite-password" class="text-sm font-semibold text-slate-700 dark:text-neutral-300">Contraseña</label><div class="relative"><input id="invite-password" class="ui-input pr-12" formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="new-password" minlength="8" maxlength="128" /><button type="button" class="password-toggle" (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'">{{ showPassword() ? 'Ocultar' : 'Mostrar' }}</button></div><small class="text-xs text-slate-500 dark:text-neutral-400">Usa entre 8 y 128 caracteres.</small></div>
+            <button class="ui-button ui-button--primary w-full !min-h-12 !rounded-xl !text-sm" type="submit" [disabled]="form.invalid || loading()">{{ loading() ? 'Creando cuenta…' : 'Crear cuenta' }}</button>
+          </form>
+        }
+      }
+      <p class="mt-8 text-center text-sm text-slate-500 dark:text-neutral-400">¿Ya tienes cuenta? <a routerLink="/auth/login" class="font-semibold text-[var(--accent)] hover:underline">Inicia sesión</a></p>
+    </div>
+  </section>
+  <aside class="relative isolate hidden min-h-dvh overflow-hidden bg-slate-900 lg:block" aria-label="AutoPost, estudio de publicaciones">
+    <img src="/images/autopost-login-editorial.png" alt="Persona preparando una publicación en su estudio" class="absolute inset-0 size-full object-cover" />
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-950/70 via-slate-950/20 to-rose-950/40"></div>
+    <div class="relative flex min-h-dvh flex-col justify-end p-12 text-white xl:p-16"><span class="text-xs font-semibold uppercase tracking-[.18em] text-white/75">AutoPost · Estudio editorial</span><h2 class="mt-5 max-w-xl text-4xl font-bold leading-tight">Ideas claras, publicaciones listas.</h2><p class="mt-4 max-w-lg text-base leading-relaxed text-white/80">Organiza tus ideas y revisa cada publicación antes de compartirla.</p></div>
+  </aside>
+</main>

@@ -1,0 +1,107 @@
+<main class="ui-page ui-page--form ai-connections-page">
+  <header>
+    <p class="ui-meta">AJUSTES · INTELIGENCIA ARTIFICIAL</p>
+    <h1 class="ui-title">Proveedores de IA</h1>
+    <p class="ui-muted">Configura las claves que usa AutoPost para redactar publicaciones y generar imágenes.</p>
+  </header>
+
+  <section class="ui-card text-model-card" aria-labelledby="text-model-title">
+    <div>
+      <p class="ui-meta">MODELO DE REDACCIÓN</p>
+      <h2 id="text-model-title" class="ui-section-title mt-1">Elige el modelo de texto</h2>
+      <p class="ui-muted mt-1">Se usará al generar publicaciones y sugerencias. La clave de DeepSeek se configura abajo.</p>
+    </div>
+    @if (loadingTextModel()) {
+      <p class="ui-muted" role="status">Consultando configuración…</p>
+    } @else if (textModelLoadFailed()) {
+      <div role="alert" class="text-model-error">
+        <p>{{ textModelError() }}</p>
+        <button type="button" class="ui-button" (click)="loadTextModel()">Reintentar</button>
+      </div>
+    } @else {
+      <label for="text-model-select">Modelo</label>
+      <select id="text-model-select" class="ui-input" [value]="selectedTextModel()" (change)="chooseTextModel($any($event.target).value)">
+        @for (model of textModels; track model.id) {
+          <option [value]="model.id">{{ model.name }} · {{ model.detail }}</option>
+        }
+      </select>
+      <p class="ui-meta">La API de DeepSeek cobra según tokens de entrada y salida. El costo real depende del texto enviado y generado; no es una tarifa fija por post.</p>
+      @if (textModelError()) { <p role="alert" class="text-model-error">{{ textModelError() }}</p> }
+      @if (textModelMessage()) { <p role="status" class="ui-status ui-status--success">{{ textModelMessage() }}</p> }
+      <div class="text-model-actions">
+        <button type="button" class="ui-button ui-button--secondary" (click)="testTextProvider()"
+          [disabled]="loading() || loadingTextModel() || testingTextProvider() || !canTestTextProvider()">
+          {{ testingTextProvider() ? 'Probando conexión…' : 'Probar conexión de texto' }}
+        </button>
+        <button type="button" class="ui-button ui-button--primary" [disabled]="savingTextModel()" (click)="saveTextModel()">
+          {{ savingTextModel() ? 'Guardando…' : 'Guardar modelo' }}
+        </button>
+      </div>
+      <p class="ui-meta">La prueba genera una respuesta breve y consume cuota y tokens del proveedor. No guarda ni publica el resultado.</p>
+      @if (textProviderTestError()) { <p class="ui-alert" role="alert">{{ textProviderTestError() }}</p> }
+      @if (textProviderTestResult()) {
+        <div class="provider-test-result" role="status">
+          <strong>Conexión correcta · {{ selectedTextModel() }}</strong>
+          <p>{{ textProviderTestResult() }}</p>
+        </div>
+      }
+    }
+  </section>
+
+  @if (error() && !loadFailed()) { <p class="ui-alert" role="alert">{{ error() }}</p> }
+  @if (message()) { <p class="ui-status ui-status--success" role="status">{{ message() }}</p> }
+
+  <aside class="ai-security-note" aria-label="Protección de claves">
+    <span aria-hidden="true">🔒</span>
+    <div><strong>Claves protegidas</strong><p>Las claves se cifran en el servidor. Solo se muestra su estado; nunca se devuelven al navegador después de guardarlas.</p></div>
+  </aside>
+
+  @if (loading()) {
+    <section class="ui-card" role="status">Cargando conexiones de IA…</section>
+  } @else if (loadFailed()) {
+    <section class="ui-card" role="alert">Vuelve a intentarlo para consultar el estado de tus conexiones. <button class="ui-button ui-button--primary" type="button" (click)="load()">Reintentar</button></section>
+  } @else {
+    <div class="ai-provider-grid">
+      @for (provider of providers(); track provider.provider) {
+        <section class="ui-card ai-provider-card" [attr.aria-labelledby]="provider.provider + '-title'">
+          <div class="provider-heading">
+            <div><p class="ui-meta">{{ provider.provider === 'deepseek-text' ? 'REDACCIÓN' : 'IMÁGENES' }}</p><h2 [id]="provider.provider + '-title'">{{ provider.label }}</h2></div>
+            <span class="provider-status" [class.provider-status--connected]="provider.effectiveSource !== 'NONE'" [class.provider-status--empty]="provider.effectiveSource === 'NONE'">
+              <span class="status-dot" aria-hidden="true"></span>{{ provider.effectiveSource === 'NONE' ? 'Sin configurar' : 'Clave configurada' }}
+            </span>
+          </div>
+          <p class="provider-description">{{ statusLabel(provider) }}.</p>
+          @if (provider.provider === 'nanogpt-image') {
+            <p class="ui-meta">La clave se valida al generar una imagen; guardarla no confirma que el proveedor la haya aceptado.</p>
+          }
+          @if (provider.workspaceKeyConfigured) {
+            <p class="workspace-key-notice" role="status">Clave propia activa. Guardar otra la reemplazará.</p>
+          }
+          <label [for]="provider.provider + '-key'">{{ provider.workspaceKeyConfigured ? 'Reemplazar clave del espacio' : 'Clave API' }}</label>
+          <div class="key-input-wrap">
+            <input class="ui-input" [id]="provider.provider + '-key'" [type]="revealed()[provider.provider] ? 'text' : 'password'"
+              autocomplete="new-password" spellcheck="false" [value]="keys()[provider.provider] || ''"
+              (input)="updateKey(provider.provider, $any($event.target).value)"
+              placeholder="Pega aquí tu clave API" [attr.aria-describedby]="provider.provider + '-help'" />
+            <button type="button" class="reveal-button" (click)="toggleReveal(provider.provider)"
+              [attr.aria-label]="revealed()[provider.provider] ? 'Ocultar clave' : 'Mostrar clave'">
+              {{ revealed()[provider.provider] ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          <small [id]="provider.provider + '-help'" class="field-help">La clave no se conserva en el formulario después de guardarla.</small>
+          <div class="provider-actions">
+            @if (provider.workspaceKeyConfigured) {
+              <button class="ui-button ui-button--secondary" type="button" (click)="remove(provider.provider)" [disabled]="busyProvider() === provider.provider">
+                Quitar clave propia
+              </button>
+            }
+            <button class="ui-button ui-button--primary" type="button" (click)="save(provider.provider)"
+              [disabled]="busyProvider() === provider.provider || !(keys()[provider.provider] || '').trim()">
+              {{ busyProvider() === provider.provider ? 'Guardando…' : 'Guardar clave' }}
+            </button>
+          </div>
+        </section>
+      }
+    </div>
+  }
+</main>

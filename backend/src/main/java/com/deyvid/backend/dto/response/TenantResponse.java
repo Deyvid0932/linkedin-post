@@ -13,5 +13,7 @@ public record TenantResponse(
     LocalDateTime createdAt,
     String appApprovalMode,
     Integer appTargetCharacters,
-    String appImageModel
+    String appImageModel,
+    String appTextModel,
+    boolean platformApprovalRequired
 ) {}

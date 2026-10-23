@@ -1,12 +1,7 @@
 @if (advancedOpened()) {
   <div [hidden]="!advanced()" class="mx-auto max-w-7xl space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300">
-          Modo avanzado
-        </p>
-        <h1 class="text-2xl font-bold">Estudio de contenido</h1>
-      </div>
+      <div></div>
       <a
         routerLink="/compose"
         class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-neutral-700 dark:hover:bg-neutral-800"
@@ -16,16 +11,16 @@
     <app-swipe-studio />
   </div>
 }
-<div [hidden]="advanced()" class="composer-page">
-  <header class="page-heading">
+<main [hidden]="advanced()" class="composer-page ui-page ui-page--editor">
+  <header class="page-heading ui-heading">
     <div>
       <p class="eyebrow">TU ESPACIO EDITORIAL</p>
-      <h1>Una idea. Tu propia voz.</h1>
-      <p>Prepara contenido a tu ritmo y deja tus próximos posts listos.</p>
+      <h1 class="ui-title">Una idea. Tu propia voz.</h1>
+      <p class="ui-muted">Prepara contenido a tu ritmo y deja tus próximos posts listos.</p>
     </div>
     <div class="flex flex-wrap gap-2">
-      <a routerLink="/compose" [queryParams]="{ advanced: true }" class="secondary">Modo avanzado</a
-      ><button class="secondary" (click)="newDraft()" [disabled]="busy() || readingImage()">
+      <a routerLink="/compose" [queryParams]="{ advanced: true }" class="secondary ui-button">Modo avanzado</a
+      ><button class="secondary ui-button" (click)="newDraft()" [disabled]="busy() || readingImage()">
         ＋ Nuevo borrador
       </button>
     </div>
@@ -45,8 +40,8 @@
     <div class="notice" role="status">{{ readingImage() ? 'Cargando imagen…' : action() }}</div>
   }
   <div class="editor-grid">
-    <section class="editor-panel" aria-labelledby="editor-title">
-      <div class="panel-heading">
+    <section class="editor-panel ui-card" aria-labelledby="editor-title">
+      <div class="panel-heading ui-heading">
         <div>
           <p class="eyebrow">BORRADOR</p>
           <h2 id="editor-title">Dale forma a tu idea</h2>
@@ -149,14 +144,14 @@
           </details>
           <div class="ai-actions">
             <button
-              class="secondary"
+              class="secondary ui-button"
               type="button"
               (click)="generate(false)"
               [disabled]="form.invalid || !text().trim()"
             >
               Mejorar mi texto</button
             ><button
-              class="secondary"
+              class="secondary ui-button"
               type="button"
               (click)="generate(true)"
               [disabled]="form.invalid || !image()"
@@ -183,25 +178,25 @@
         </fieldset>
         <div class="save-actions">
           @if (queued()) {
-            <button class="secondary" type="button" (click)="unqueue()" [disabled]="busy()">
+            <button class="secondary ui-button" type="button" (click)="unqueue()" [disabled]="busy()">
               Retirar de la cola para editar
             </button>
           } @else {
             <button
-              class="secondary"
+              class="secondary ui-button"
               type="submit"
               [disabled]="busy() || readingImage() || form.invalid"
             >
               Guardar borrador</button
             ><button
-              class="secondary"
+              class="secondary ui-button"
               type="button"
               (click)="review()"
               [disabled]="busy() || form.invalid || !text().trim()"
             >
               Revisar contenido</button
             ><button
-              class="primary"
+              class="primary ui-button ui-button--primary"
               type="button"
               (click)="save(true)"
               [disabled]="
@@ -251,6 +246,77 @@
           Así se verá el contenido. El formato final puede variar en LinkedIn.
         </div>
       </article>
+      <section class="channel-variants ui-card" aria-labelledby="channel-variants-title">
+        <div class="preview-heading">
+          <div>
+            <span class="eyebrow">REUTILIZA TU IDEA</span>
+            <h2 id="channel-variants-title">Adaptar a otro canal</h2>
+          </div>
+          <span>Texto únicamente</span>
+        </div>
+        <p class="helper">
+          Genera una versión específica y guárdala junto al borrador. AutoPost publica actualmente solo en LinkedIn; las variantes para otros canales se conservan como texto y no se envían desde AutoPost.
+        </p>
+        <div class="channel-actions" aria-label="Canal para adaptar">
+          @for (channel of adaptationChannels; track channel.id) {
+            <button
+              class="secondary ui-button"
+              type="button"
+              (click)="adaptForChannel(channel.id)"
+              [disabled]="adaptationLoading() || busy() || queued() || !text().trim()"
+            >
+              {{ adaptationLoading() ? 'Generando…' : channel.label }}
+              <small>{{ channel.format }}</small>
+            </button>
+          }
+        </div>
+        @if (adaptationError()) {
+          <p class="notice error" role="alert">{{ adaptationError() }}</p>
+        }
+        @if (adaptationMessage()) {
+          <p class="notice success" role="status">{{ adaptationMessage() }}</p>
+        }
+        @if (adaptedContent(); as variant) {
+          <article class="adapted-preview" aria-label="Vista previa de variante generada">
+            <header>
+              <strong>{{ channelLabel(variant.channel) }}</strong>
+              <span>{{ adaptedText().length }} / {{ variant.recommendedCharacters }} caracteres objetivo</span>
+            </header>
+            <textarea
+              class="variant-editor"
+              [value]="adaptedText()"
+              (input)="editAdaptedText($event)"
+              [attr.maxlength]="variant.recommendedCharacters"
+              rows="6"
+              [attr.aria-label]="'Editar variante para ' + channelLabel(variant.channel)"
+            ></textarea>
+            <div class="channel-actions">
+              <button class="secondary ui-button" type="button" (click)="copyAdaptedContent()">Copiar texto</button>
+              <button
+                class="secondary ui-button"
+                type="button"
+                (click)="saveAdaptedVariant()"
+                [disabled]="variantSaving() || queued() || (variant.id ? !adaptedDirty() : !adaptedText().trim())"
+              >
+                {{ variantSaving() ? 'Guardando…' : variant.id ? adaptedDirty() ? 'Guardar cambios' : 'Cambios guardados' : 'Guardar con el borrador' }}
+              </button>
+            </div>
+          </article>
+        }
+        @if (variantsLoading()) {
+          <p class="helper" role="status">Cargando variantes guardadas…</p>
+        }
+        @if (savedVariants().length) {
+          <div class="saved-variants" aria-label="Variantes guardadas">
+            <h3>Variantes de este borrador</h3>
+            @for (variant of savedVariants(); track variant.id) {
+              <button class="secondary ui-button" type="button" (click)="viewSavedVariant(variant)">
+                {{ channelLabel(variant.channel) }} · {{ variant.characterCount }} caracteres
+              </button>
+            }
+          </div>
+        }
+      </section>
       <section class="automation-note">
         <span class="note-icon">↗</span>
         <div>
@@ -265,4 +331,4 @@
       </section>
     </aside>
   </div>
-</div>
+</main>

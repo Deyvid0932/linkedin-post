@@ -44,6 +44,7 @@ public class ContentPipelineService {
     private final NotificationService notificationService;
 
     private final com.deyvid.backend.service.ApprovedPublicationService approvedPublicationService;
+    private final com.deyvid.backend.service.PlatformPublicationPolicyService publicationPolicyService;
 
     public com.deyvid.backend.service.ApprovedPublicationService.Result executePipelineForTenant(UUID tenantId) {
         Tenant tenant = tenantRepository.findById(tenantId)
@@ -58,12 +59,13 @@ public class ContentPipelineService {
         String generated = contentGeneratorService.generateVersionWithApproach(
                 tenant, source, "COMPARATIVE_B2B", "CUSTOM_" + targetLength);
         ImageGeneratorService.ImageData image = imageGeneratorService.generateOrFetchImage(source, generated,
-                tenant.getAppImageModel());
+                tenant.getAppImageModel(), tenant);
 
         List<LinkedInCredential> targets = linkedInCredentialRepository.findByTenantIdAndIsEnabledTrue(tenantId);
         LinkedInCredential target = targets.stream().filter(a -> Boolean.TRUE.equals(a.getIsPrimary())).findFirst()
                 .orElse(targets.isEmpty() ? null : targets.get(0));
-        boolean automatic = "AUTOMATIC".equals(tenant.getAppApprovalMode());
+        var publicationPolicy = publicationPolicyService.resolve(tenant.getAppApprovalMode());
+        boolean automatic = publicationPolicy.automaticPublicationAllowed();
         boolean canAutoPublish = automatic && target != null;
         var draft = com.deyvid.backend.entity.DraftPreview.builder()
                 .tenant(tenant)
@@ -83,7 +85,9 @@ public class ContentPipelineService {
         var saved = draftPreviewRepository.save(draft);
 
         if (!automatic) return new com.deyvid.backend.service.ApprovedPublicationService.Result(
-                "REVIEW_REQUIRED", 0, "El contenido quedó guardado para revisión y aprobación.");
+                "REVIEW_REQUIRED", 0, publicationPolicy.approvalRequired()
+                        ? "La política global exige aprobación; el contenido quedó guardado para revisión."
+                        : "El contenido quedó guardado para revisión y aprobación.");
         if (target == null) return new com.deyvid.backend.service.ApprovedPublicationService.Result(
                 "NO_ACCOUNT", 0, "El contenido quedó guardado; conecta una cuenta de LinkedIn antes de publicar automáticamente.");
         return approvedPublicationService.publish(tenantId, saved.getId());

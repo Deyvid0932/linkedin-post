@@ -1,0 +1,53 @@
+<main class="ui-page ui-page--wide webhook-page">
+  <header class="webhook-heading">
+    <div><p class="ui-meta">AJUSTES · INTEGRACIONES</p><h1 class="ui-title">Auditoría y webhooks</h1>
+      <p class="ui-muted">Recibe eventos de publicación en tus sistemas y revisa el resultado de cada entrega.</p></div>
+  </header>
+
+  @if (error()) { <p class="ui-alert" role="alert">{{ error() }}</p> }
+  @if (message()) { <p class="ui-status ui-status--success" role="status">{{ message() }}</p> }
+
+  @if (oneTimeSecret()) {
+    <section class="secret-card" aria-labelledby="secret-heading">
+      <div><h2 id="secret-heading">Secreto de firma</h2><p>Guárdalo ahora en tu consumidor. AutoPost no volverá a mostrarlo.</p></div>
+      <code>{{ oneTimeSecret() }}</code>
+      <div class="secret-actions"><button class="ui-button ui-button--secondary" type="button" (click)="copySecret()">{{ secretCopied() ? 'Copiado' : 'Copiar secreto' }}</button><button class="ui-button ui-button--primary" type="button" (click)="dismissSecret()">Ya lo guardé</button></div>
+    </section>
+  }
+
+  <div class="webhook-grid">
+    <section class="ui-card create-card" aria-labelledby="create-webhook-heading">
+      <div><p class="ui-meta">NUEVO DESTINO</p><h2 id="create-webhook-heading">Crear webhook</h2><p class="ui-muted">Solo se aceptan URLs HTTPS públicas. Los redirects se rechazan.</p></div>
+      <label for="webhook-name">Nombre</label><input id="webhook-name" class="ui-input" maxlength="80" [value]="name()" (input)="setName($any($event.target).value)" placeholder="Mi automatización" />
+      <label for="webhook-url">URL HTTPS</label><input id="webhook-url" class="ui-input" type="url" maxlength="2048" [value]="targetUrl()" (input)="setUrl($any($event.target).value)" placeholder="https://ejemplo.com/webhooks/autopost" />
+      <fieldset><legend>Eventos a recibir</legend>
+        @for (event of eventOptions; track event.id) { <label class="event-option"><input type="checkbox" [checked]="selectedEvents().includes(event.id)" (change)="toggleEvent(event.id, $any($event.target).checked)" /><span><strong>{{ event.label }}</strong><small>{{ event.detail }}</small></span></label> }
+      </fieldset>
+      <button type="button" class="ui-button ui-button--primary align-self-end" (click)="create()" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Crear destino' }}</button>
+    </section>
+
+    <section class="ui-card destinations-card" aria-labelledby="destinations-heading">
+      <div class="section-title"><div><p class="ui-meta">CONFIGURACIÓN</p><h2 id="destinations-heading">Destinos conectados</h2></div><button type="button" class="ui-button ui-button--secondary" (click)="loadEndpoints()">Actualizar</button></div>
+      @if (loadingEndpoints()) { <p class="ui-muted" role="status">Cargando destinos…</p> }
+      @else if (!endpoints().length) { <div class="empty-state"><strong>Aún no hay destinos</strong><p>Crea un webhook para recibir actualizaciones de publicación.</p></div> }
+      @else { <div class="endpoint-list">@for (endpoint of endpoints(); track endpoint.id) {
+        <article class="endpoint-row"><div class="endpoint-main"><span class="endpoint-mark" aria-hidden="true">↗</span><div><strong>{{ endpoint.name }}</strong><small>{{ endpoint.targetHost }} · {{ endpoint.events.join(', ') }}</small></div><span class="endpoint-state" [class.is-active]="endpoint.active">{{ endpoint.active ? 'Activo' : 'Pausado' }}</span></div>
+          <div class="endpoint-actions"><button class="ui-button ui-button--secondary" type="button" (click)="test(endpoint)" [disabled]="busyId() === endpoint.id">Probar</button><button class="ui-button ui-button--secondary" type="button" (click)="toggleActive(endpoint)" [disabled]="busyId() === endpoint.id">{{ endpoint.active ? 'Pausar' : 'Activar' }}</button><button class="text-action text-action--danger" type="button" (click)="delete(endpoint)" [disabled]="busyId() === endpoint.id">Eliminar</button></div>
+        </article>
+      }</div> }
+    </section>
+  </div>
+
+  <section class="ui-card delivery-card" aria-labelledby="delivery-heading">
+    <div class="section-title"><div><p class="ui-meta">REGISTRO REAL</p><h2 id="delivery-heading">Entregas de eventos</h2></div><button type="button" class="ui-button ui-button--secondary" (click)="loadDeliveries(0)">Actualizar</button></div>
+    @if (loadingDeliveries()) { <p class="ui-muted" role="status">Cargando entregas…</p> }
+    @else if (!deliveries().length) { <div class="empty-state"><strong>Sin entregas todavía</strong><p>Las pruebas y los eventos confirmados aparecerán aquí con su resultado real.</p></div> }
+    @else { <div class="delivery-table-wrap"><table><thead><tr><th>Evento</th><th>Destino</th><th>Estado</th><th>Respuesta</th><th>Fecha</th><th>Acción</th></tr></thead><tbody>
+      @for (delivery of deliveries(); track delivery.id) { <tr><td><code>{{ delivery.eventType }}</code><small>{{ delivery.eventId }}</small></td><td>{{ delivery.endpointName }}</td><td><span class="delivery-status" [class.delivery-status--ok]="delivery.status === 'DELIVERED'" [class.delivery-status--failed]="delivery.status === 'FAILED'">{{ delivery.status }}</span><small>{{ delivery.attemptCount }} intento(s)</small></td><td>{{ delivery.httpStatus || '—' }}<small>{{ delivery.responseSummary || 'Sin detalle' }}</small></td><td>{{ delivery.createdAt | date:'short' }}</td><td><button class="text-action" type="button" (click)="retry(delivery)" [disabled]="delivery.status === 'DELIVERED' || busyId() === delivery.id">Reintentar</button></td></tr> }
+    </tbody></table></div>
+      <div class="pagination"><span>Página {{ page() + 1 }} de {{ totalPages() || 1 }}</span><div><button class="ui-button ui-button--secondary" type="button" (click)="loadDeliveries(page() - 1)" [disabled]="page() <= 0">Anterior</button><button class="ui-button ui-button--secondary" type="button" (click)="loadDeliveries(page() + 1)" [disabled]="page() + 1 >= totalPages()">Siguiente</button></div></div>
+    }
+  </section>
+
+  <aside class="signature-note"><strong>Verificación de firma</strong><p>Cada solicitud incluye <code>X-AutoPost-Signature: sha256=…</code>, una firma HMAC-SHA256 calculada sobre el cuerpo JSON exacto, además del identificador de evento para deduplicar.</p></aside>
+</main>

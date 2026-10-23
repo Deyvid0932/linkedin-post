@@ -96,8 +96,9 @@ class PublicationControllerOnDemandTest {
 
     @Test
     void testSwipeBatchLazyGeneratesOnlyVariantAAndCachesIt() {
-        when(contentGeneratorService.generateVersionWithApproach(any(), any(), eq("COMPARATIVE_B2B"), any()))
-                .thenReturn("Texto de la variante A");
+        when(contentGeneratorService.generateVersionWithUsage(any(), any(), eq("COMPARATIVE_B2B"), any()))
+                .thenReturn(new ContentGeneratorService.GeneratedContent(
+                        "Texto de la variante A", "deepseek-flash", 40, 24, 64));
 
         Authentication auth = mock(Authentication.class);
         ResponseEntity<SwipeBatchResponse> response = controller.generateSwipeBatch(
@@ -112,13 +113,16 @@ class PublicationControllerOnDemandTest {
         SwipeBatchResponse.SwipeVersionDto vC = response.getBody().versions().get(2);
 
         assertEquals("Texto de la variante A", vA.textoGenerado());
+        assertEquals(64, vA.tokensUsed());
+        assertNull(vA.costUsd());
+        assertEquals("deepseek-flash", vA.model());
         assertNull(vB.textoGenerado(), "Variante B debe ser null cuando lazy=true");
         assertNull(vC.textoGenerado(), "Variante C debe ser null cuando lazy=true");
 
         // Solo 1 llamada al servicio de IA
-        verify(contentGeneratorService, times(1)).generateVersionWithApproach(any(), any(), eq("COMPARATIVE_B2B"), any());
-        verify(contentGeneratorService, never()).generateVersionWithApproach(any(), any(), eq("STORYTELLER"), any());
-        verify(contentGeneratorService, never()).generateVersionWithApproach(any(), any(), eq("PROVOCATIVE"), any());
+        verify(contentGeneratorService, times(1)).generateVersionWithUsage(any(), any(), eq("COMPARATIVE_B2B"), any());
+        verify(contentGeneratorService, never()).generateVersionWithUsage(any(), any(), eq("STORYTELLER"), any());
+        verify(contentGeneratorService, never()).generateVersionWithUsage(any(), any(), eq("PROVOCATIVE"), any());
 
         // Debe haberse guardado en caché
         String cacheKeyA = GenerationCacheService.buildKey(
@@ -135,7 +139,7 @@ class PublicationControllerOnDemandTest {
                 testTenant.getId(), "RESEARCH", "Kafka vs RabbitMQ", "STORYTELLER", "MICRO"
         );
         SwipeBatchResponse.SwipeVersionDto preCached = new SwipeBatchResponse.SwipeVersionDto(
-                "id-123", "STORYTELLER", "Titulo Estructura", "Texto en Cache", "http://img.jpg", 250, 0.0009, 0.0
+                "id-123", "STORYTELLER", "Titulo Estructura", "Texto en Cache", "http://img.jpg", 250, null, null, "deepseek-flash"
         );
         generationCacheService.put(cacheKey, preCached);
 
@@ -148,13 +152,14 @@ class PublicationControllerOnDemandTest {
         assertEquals("Texto en Cache", result.getBody().textoGenerado());
 
         // Cero llamadas al servicio de IA por haber hit en caché
-        verify(contentGeneratorService, never()).generateVersionWithApproach(any(), any(), any(), any());
+        verify(contentGeneratorService, never()).generateVersionWithUsage(any(), any(), any(), any());
     }
 
     @Test
     void testSingleVersionGeneratesAndCachesWhenCacheMiss() {
-        when(contentGeneratorService.generateVersionWithApproach(any(), any(), eq("PROVOCATIVE"), eq("MICRO")))
-                .thenReturn("Texto Provocativo Nuevo");
+        when(contentGeneratorService.generateVersionWithUsage(any(), any(), eq("PROVOCATIVE"), eq("MICRO")))
+                .thenReturn(new ContentGeneratorService.GeneratedContent(
+                        "Texto Provocativo Nuevo", "deepseek-flash", 20, 15, 35));
 
         Authentication auth = mock(Authentication.class);
         ResponseEntity<SwipeBatchResponse.SwipeVersionDto> result = controller.generateSingleVersion(
@@ -163,7 +168,9 @@ class PublicationControllerOnDemandTest {
 
         assertNotNull(result.getBody());
         assertEquals("Texto Provocativo Nuevo", result.getBody().textoGenerado());
-        verify(contentGeneratorService, times(1)).generateVersionWithApproach(any(), any(), eq("PROVOCATIVE"), eq("MICRO"));
+        verify(contentGeneratorService, times(1)).generateVersionWithUsage(any(), any(), eq("PROVOCATIVE"), eq("MICRO"));
+        assertEquals(35, result.getBody().tokensUsed());
+        assertNull(result.getBody().costUsd());
 
         // Se debio guardar en cache
         String cacheKey = GenerationCacheService.buildKey(

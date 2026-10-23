@@ -1,0 +1,47 @@
+<a [routerLink]="[]" fragment="settings-content" queryParamsHandling="preserve" class="workspace-skip-link">Ir al contenido de Settings</a>
+<div class="settings-shell">
+  @if (menuOpen()) {
+    <button class="settings-backdrop" type="button" aria-label="Cerrar navegación de Settings" tabindex="-1" (click)="closeMenu()"></button>
+  }
+  <aside #navigation class="settings-sidebar" [class.settings-sidebar--open]="menuOpen()"
+    [attr.role]="menuOpen() ? 'dialog' : null" [attr.aria-modal]="menuOpen() ? 'true' : null"
+    aria-label="Navegación de Settings" (keydown)="trapFocus($event)">
+    <a class="settings-back" routerLink="/dashboard"><span aria-hidden="true">←</span> Settings</a>
+    <a class="settings-brand" routerLink="/dashboard"><span class="settings-brand-mark" aria-hidden="true">A</span> AutoPost</a>
+    <nav aria-label="Settings" id="settings-navigation">
+      @for (group of groups; track group.label) {
+        <section class="settings-nav-group">
+          <h2>{{ group.label }}</h2>
+          @for (link of group.links; track link.route) {
+            <a [routerLink]="link.route" routerLinkActive="settings-link--active" ariaCurrentWhenActive="page" class="settings-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="link.icon" /></svg>
+              {{ link.label }}
+            </a>
+          }
+        </section>
+      }
+      <section class="settings-advanced">
+        <button type="button" [attr.aria-expanded]="advancedOpen()" aria-controls="settings-advanced-links" (click)="advancedOpen.set(!advancedOpen())">Avanzado <span aria-hidden="true">{{ advancedOpen() ? '−' : '+' }}</span></button>
+        <div id="settings-advanced-links" [hidden]="!advancedOpen()">
+          @for (link of advanced; track link.route) {
+            <a class="settings-link" [routerLink]="link.route" routerLinkActive="settings-link--active" ariaCurrentWhenActive="page">{{ link.label }}</a>
+          }
+        </div>
+      </section>
+      @if (isAdmin()) {
+        <section class="settings-nav-group">
+          <h2>Administración</h2>
+          <a routerLink="/settings/admin" class="settings-link" routerLinkActive="settings-link--active" ariaCurrentWhenActive="page">Cuentas, cuotas y auditoría</a>
+        </section>
+      }
+    </nav>
+    <a class="settings-return" routerLink="/dashboard"><span aria-hidden="true">←</span> Volver a AutoPost</a>
+  </aside>
+  <div class="settings-workspace" [attr.inert]="menuOpen() ? '' : null">
+    <header class="settings-mobile-bar">
+      <a routerLink="/dashboard" aria-label="Volver a AutoPost">← AutoPost</a>
+      <button #trigger type="button" [attr.aria-expanded]="menuOpen()" aria-controls="settings-navigation" (click)="openMenu()">Settings <span aria-hidden="true">☰</span></button>
+    </header>
+    <main id="settings-content" tabindex="-1" class="settings-main"><router-outlet /></main>
+  </div>
+</div>

@@ -7,11 +7,11 @@
           d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
         />
       </svg>
-      <span>Conexión con GitHub</span>
+      <span>Repositorios de GitHub</span>
     </h1>
     <p class="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1">
-      Conecta tu Personal Access Token (PAT) y repositorios para automatizar posts a partir de tus
-      commits reales.
+      Usa commits recientes como contexto para crear contenido técnico. GitHub es una fuente de
+      contenido; la publicación en LinkedIn se configura y gestiona desde AutoPost.
     </p>
   </div>
 
@@ -441,7 +441,7 @@
                   <a
                     [href]="'https://github.com/' + r.repoOwner + '/' + r.repoName"
                     target="_blank"
-                    class="font-bold text-sm text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors inline-flex items-center gap-1.5 truncate max-w-full"
+                    class="font-bold text-sm text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors inline-flex items-center gap-1.5 truncate max-w-full"
                     [title]="r.repoOwner + '/' + r.repoName"
                   >
                     <span class="truncate">{{ r.repoOwner }}/{{ r.repoName }}</span>
@@ -464,7 +464,7 @@
                   >
                     <span>Último commit:</span>
                     <code
-                      class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-neutral-800 font-mono font-bold text-blue-600 dark:text-blue-400"
+                      class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-neutral-800 font-mono font-bold text-indigo-600 dark:text-indigo-400"
                     >
                       {{ r.lastCommitSha ? (r.lastCommitSha | slice: 0 : 7) : 'HEAD' }}
                     </code>
@@ -490,7 +490,7 @@
 
                 <button
                   (click)="generatePostFromRepo(r)"
-                  class="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap flex-shrink-0 active:scale-95"
+                  class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap flex-shrink-0 active:scale-95"
                 >
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -540,92 +540,6 @@
                   </button>
                 </div>
               </div>
-            </div>
-            <div
-              class="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3 dark:border-neutral-800 dark:bg-neutral-900/60"
-            >
-              <div class="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 class="text-sm font-semibold">Cuenta de LinkedIn para Actions</h3>
-                  <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
-                    AutoPost sincroniza el token cifrado con el entorno production. Vincular no
-                    activa publicaciones.
-                  </p>
-                </div>
-                @if (binding(r.id); as link) {
-                  <span
-                    class="rounded-full px-2.5 py-1 text-xs font-semibold"
-                    [class]="
-                      link.status === 'SYNCED'
-                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
-                        : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
-                    "
-                    >{{
-                      link.status === 'SYNCED'
-                        ? 'Credencial sincronizada'
-                        : 'Sincronización pendiente'
-                    }}</span
-                  >
-                }
-              </div>
-              @if (binding(r.id); as link) {
-                <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm">
-                  <span
-                    >{{ link.accountName }}
-                    @if (link.lastSyncedAt) {
-                      <span class="text-xs text-slate-500"
-                        >· {{ link.lastSyncedAt | date: 'dd/MM/yyyy HH:mm' }}</span
-                      >
-                    }
-                  </span>
-                  <div class="flex items-center gap-3">
-                    @if (link.status !== 'SYNCED') {
-                      <span class="text-xs text-amber-800 dark:text-amber-200">{{
-                        bindingErrorText(link.errorCode)
-                      }}</span
-                      ><button
-                        type="button"
-                        class="text-xs font-semibold underline"
-                        [disabled]="bindingBusy() === r.id"
-                        (click)="retryBinding(r.id)"
-                      >
-                        Reintentar
-                      </button>
-                    }
-                    <button
-                      type="button"
-                      class="text-xs text-rose-700 underline dark:text-rose-300"
-                      [disabled]="bindingBusy() === r.id"
-                      (click)="disconnectBinding(r.id)"
-                    >
-                      Desvincular y pausar
-                    </button>
-                  </div>
-                </div>
-              } @else {
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <label class="sr-only" [for]="'linkedin-account-' + r.id"
-                    >Cuenta LinkedIn de publicación</label
-                  ><select
-                    class="ui-input min-w-56 flex-1"
-                    [id]="'linkedin-account-' + r.id"
-                    [value]="accountChoice(r.id)"
-                    (change)="setAccountChoice(r.id, $any($event.target).value)"
-                  >
-                    <option value="">Selecciona un perfil personal</option>
-                    @for (account of personalAccounts(); track account.id) {
-                      <option [value]="account.id">{{ account.displayName }}</option>
-                    }</select
-                  ><button
-                    type="button"
-                    class="ui-button ui-button--primary"
-                    [disabled]="!accountChoice(r.id) || bindingBusy() === r.id"
-                    (click)="saveBinding(r.id)"
-                  >
-                    {{ bindingBusy() === r.id ? 'Sincronizando…' : 'Vincular y sincronizar' }}
-                  </button>
-                </div>
-              }
             </div>
           }
         </div>

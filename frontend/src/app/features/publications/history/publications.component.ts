@@ -16,9 +16,6 @@ import { HistoryFilters, PublicationService } from '../../../core/services/publi
 import { ContentDraftService } from '../../../core/services/content-draft.service';
 import { PublicationLog } from '../../../core/models/publication.model';
 import { DialogComponent } from '../../../shared/components/dialog/dialog.component';
-import { CredentialService } from '../../../core/services/credential.service';
-import { GitHubAutomationService } from '../../../core/services/github-automation.service';
-import { GitHubRepo } from '../../../core/models/credential.model';
 @Component({
   selector: 'app-publications',
   standalone: true,
@@ -30,8 +27,6 @@ export class PublicationsComponent implements OnInit {
   private readonly drafts = inject(ContentDraftService);
   private readonly router = inject(Router);
   private readonly destroy = inject(DestroyRef);
-  private readonly credentials = inject(CredentialService);
-  private readonly githubAutomation = inject(GitHubAutomationService);
   private readonly requests = new Subject<void>();
   private readonly searchChanges = new Subject<void>();
   readonly search = signal('');
@@ -50,11 +45,6 @@ export class PublicationsComponent implements OnInit {
     kind: 'clear' | 'delete' | 'retry' | 'republish' | 'publish';
     post?: PublicationLog;
   } | null>(null);
-  readonly historyView = signal<'APP' | 'ACTIONS'>('APP');
-  readonly actionsHistory = signal<Record<string, unknown>[]>([]);
-  readonly actionsLoading = signal(false);
-  readonly actionRepositoryId = signal('');
-  readonly actionRepositories = signal<GitHubRepo[]>([]);
   readonly origins = [
     { value: undefined, label: 'Todos' },
     { value: 'PROJECT' as const, label: 'GitHub' },
@@ -94,40 +84,6 @@ export class PublicationsComponent implements OnInit {
           this.total.set(result.totalElements);
         }
       });
-  }
-  setHistoryView(view: 'APP' | 'ACTIONS'): void {
-    this.historyView.set(view);
-    if (view === 'ACTIONS' && !this.actionRepositoryId()) this.loadActionHistory();
-  }
-  loadActionHistory(): void {
-    this.actionsLoading.set(true);
-    this.credentials
-      .getMonitoredRepos()
-      .pipe(
-        switchMap((repos) => {
-          const active = repos.filter((r) => r.isActive);
-          this.actionRepositories.set(active);
-          const repo = active.find((r) => r.id === this.actionRepositoryId()) || active[0];
-          if (!repo) {
-            this.actionRepositoryId.set('');
-            return of([] as Record<string, unknown>[]);
-          }
-          this.actionRepositoryId.set(repo.id);
-          return this.githubAutomation.history(repo.id);
-        }),
-        finalize(() => this.actionsLoading.set(false)),
-      )
-      .subscribe({
-        next: (items) => this.actionsHistory.set(items),
-        error: () => {
-          this.actionsHistory.set([]);
-          this.error.set('No pudimos leer el historial del repositorio conectado.');
-        },
-      });
-  }
-  selectActionRepository(repositoryId: string): void {
-    this.actionRepositoryId.set(repositoryId);
-    this.loadActionHistory();
   }
   setSearch(value: string): void {
     this.search.set(value);

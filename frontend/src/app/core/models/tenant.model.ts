@@ -9,6 +9,8 @@ export interface TenantResponse {
   appApprovalMode?: 'REQUIRE_APPROVAL' | 'AUTOMATIC';
   appTargetCharacters?: number;
   appImageModel?: string;
+  appTextModel?: 'deepseek-flash' | 'deepseek-v4-pro';
+  platformApprovalRequired?: boolean;
 }
 
 export interface TenantProfileRequest {
@@ -17,6 +19,7 @@ export interface TenantProfileRequest {
   appApprovalMode?: 'REQUIRE_APPROVAL' | 'AUTOMATIC';
   appTargetCharacters?: number;
   appImageModel?: string;
+  appTextModel?: 'deepseek-flash' | 'deepseek-v4-pro';
 }
 
 export interface DashboardStats {
@@ -26,4 +29,18 @@ export interface DashboardStats {
   activeSchedules: number;
   linkedInConnected: boolean;
   linkedInDaysRemaining: number;
+}
+
+export type AccentColor = 'red' | 'blue' | 'green' | 'yellow';
+
+export interface AppearanceSettings {
+  userAccentColor: AccentColor;
+  defaultAccentColor: AccentColor;
+  allowedAccentColors: AccentColor[];
+  administrator: boolean;
+}
+
+export interface TenantAppearancePolicyRequest {
+  defaultAccentColor: AccentColor;
+  allowedAccentColors: AccentColor[];
 }

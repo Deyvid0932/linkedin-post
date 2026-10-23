@@ -59,7 +59,8 @@ public class DraftPreviewService {
 
         ContentSource source = customSource != null ? customSource : contentPipelineService.previewPipelineSource(tenantId);
         String postText = contentGeneratorService.generatePostContent(tenant, source);
-        ImageGeneratorService.ImageData imageData = imageGeneratorService.generateOrFetchImage(source, postText);
+        ImageGeneratorService.ImageData imageData = imageGeneratorService.generateOrFetchImage(
+                source, postText, tenant.getAppImageModel(), tenant);
 
         DraftPreview preview = draftPreviewRepository.findFirstByTenantIdAndIsPreviewTrueAndIsQueuedFalseOrderByUpdatedAtDesc(tenantId)
                 .orElseGet(() -> DraftPreview.builder().tenant(tenant).isPreview(true).sourceMode(SourceMode.PROJECT).build());

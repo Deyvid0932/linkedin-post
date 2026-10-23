@@ -6,6 +6,8 @@ import com.deyvid.backend.exception.AiNotConfiguredException;
 import com.deyvid.backend.exception.AiServiceException;
 import com.deyvid.backend.repository.FeedbackIaRepository;
 import com.deyvid.backend.service.linkedin.ContentSource;
+import com.deyvid.backend.service.TenantAiCredentialService;
+import com.deyvid.backend.service.TenantAiQuotaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +16,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,16 @@ public class ContentGeneratorService {
     private final WebClient genericWebClient;
     private final FeedbackIaRepository feedbackIaRepository;
     private final VectorStoreService vectorStoreService;
+    private final TenantAiCredentialService tenantAiCredentialService;
+    private final TenantAiQuotaService tenantAiQuotaService;
+    private final AiUsageEventService aiUsageEventService;
+
+    public record GeneratedContent(
+            String text,
+            String model,
+            Integer inputTokens,
+            Integer outputTokens,
+            Integer totalTokens) {}
 
     @Value("${spring.ai.openai.base-url:${LLM_BASE_URL:https://api.deepseek.com}}")
     private String baseUrl;
@@ -36,16 +45,48 @@ public class ContentGeneratorService {
     @Value("${DEEPSEEK_API_KEY:${LLM_API_KEY:${spring.ai.openai.api-key:}}}")
     private String configuredApiKey;
 
-    @Value("${spring.ai.openai.chat.options.model:${LLM_MODEL:deepseek-chat}}")
+    @Value("${spring.ai.openai.chat.options.model:${LLM_MODEL:deepseek-flash}}")
     private String modelName;
 
     public ContentGeneratorService(
             @Qualifier("genericWebClient") WebClient genericWebClient,
             FeedbackIaRepository feedbackIaRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) VectorStoreService vectorStoreService) {
+        this(genericWebClient, feedbackIaRepository, vectorStoreService, null, null);
+    }
+
+    public ContentGeneratorService(
+            @Qualifier("genericWebClient") WebClient genericWebClient,
+            FeedbackIaRepository feedbackIaRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) VectorStoreService vectorStoreService,
+            TenantAiCredentialService tenantAiCredentialService) {
+        this(genericWebClient, feedbackIaRepository, vectorStoreService, tenantAiCredentialService, null, null);
+    }
+
+    public ContentGeneratorService(
+            @Qualifier("genericWebClient") WebClient genericWebClient,
+            FeedbackIaRepository feedbackIaRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) VectorStoreService vectorStoreService,
+            TenantAiCredentialService tenantAiCredentialService,
+            TenantAiQuotaService tenantAiQuotaService) {
+        this(genericWebClient, feedbackIaRepository, vectorStoreService, tenantAiCredentialService,
+                tenantAiQuotaService, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ContentGeneratorService(
+            @Qualifier("genericWebClient") WebClient genericWebClient,
+            FeedbackIaRepository feedbackIaRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) VectorStoreService vectorStoreService,
+            TenantAiCredentialService tenantAiCredentialService,
+            TenantAiQuotaService tenantAiQuotaService,
+            AiUsageEventService aiUsageEventService) {
         this.genericWebClient = genericWebClient;
         this.feedbackIaRepository = feedbackIaRepository;
         this.vectorStoreService = vectorStoreService;
+        this.tenantAiCredentialService = tenantAiCredentialService;
+        this.tenantAiQuotaService = tenantAiQuotaService;
+        this.aiUsageEventService = aiUsageEventService;
     }
 
     public String generatePostContent(Tenant tenant, ContentSource source) {
@@ -57,22 +98,36 @@ public class ContentGeneratorService {
     }
 
     public String generateVersionWithApproach(Tenant tenant, ContentSource source, String approach, String postLength) {
-        if (!isApiKeyConfigured()) {
+        return generateVersionWithUsage(tenant, source, approach, postLength).text();
+    }
+
+    public GeneratedContent generateVersionWithUsage(Tenant tenant, ContentSource source, String approach, String postLength) {
+        if (!isApiKeyConfigured(tenant)) {
             throw new AiNotConfiguredException("Configura tu API Key en Ajustes para generar contenido");
         }
         if (source == null || ((source.rawContent() == null || source.rawContent().isBlank())
                 && (source.title() == null || source.title().isBlank()))) {
             throw new AiNotConfiguredException("No hay tema ni prompt para generar contenido");
         }
+        if (tenantAiQuotaService != null) tenantAiQuotaService.consume(tenant);
 
         String effectiveLength = (postLength != null && !postLength.isBlank()) ? postLength.trim().toUpperCase() : "MICRO";
 
+        String selectedModel = resolveModelName(tenant);
         log.info("Generando versión {} [{}] para modo {} sobre tema: '{}' | Proveedor LLM: {}",
-                approach, effectiveLength, source.mode() != null ? source.mode() : "GENERAL", source.title(), modelName);
+                approach, effectiveLength, source.mode() != null ? source.mode() : "GENERAL", source.title(), selectedModel);
 
-        String aiResult = callLlmApi(tenant, source, approach, effectiveLength);
-        if (aiResult != null && !aiResult.isBlank()) {
-            return aiResult;
+        GeneratedContent generated = callLlmApi(tenant, source, approach, effectiveLength);
+        if (generated != null && generated.text() != null && !generated.text().isBlank()) {
+            if (aiUsageEventService != null && generated.totalTokens() != null) {
+                try {
+                    aiUsageEventService.recordTextGeneration(tenant, providerName(), generated.model(),
+                            generated.inputTokens(), generated.outputTokens(), generated.totalTokens());
+                } catch (Exception e) {
+                    log.warn("No se pudo registrar el uso reportado por el proveedor: {}", e.getMessage());
+                }
+            }
+            return generated;
         }
 
         throw new AiServiceException("AI_GENERATION_FAILED", "No se pudo generar contenido con el proveedor de IA");
@@ -83,32 +138,34 @@ public class ContentGeneratorService {
     }
 
     public Flux<String> streamVersionWithApproach(Tenant tenant, ContentSource source, String approach, String postLength) {
-        if (!isApiKeyConfigured()) {
+        if (!isApiKeyConfigured(tenant)) {
             return Flux.error(new AiNotConfiguredException("Configura tu API Key en Ajustes para generar contenido"));
         }
         if (source == null || ((source.rawContent() == null || source.rawContent().isBlank())
                 && (source.title() == null || source.title().isBlank()))) {
             return Flux.error(new AiNotConfiguredException("No hay tema ni prompt para generar contenido"));
         }
+        if (tenantAiQuotaService != null) tenantAiQuotaService.consume(tenant);
 
         String effectiveLength = (postLength != null && !postLength.isBlank()) ? postLength.trim().toUpperCase() : "MICRO";
         boolean isMicro = isMicro(effectiveLength);
         int maxTokens = isMicro ? 450 : Math.min(1800, Math.max(700, targetCharacters(effectiveLength) * 2));
+        String selectedModel = resolveModelName(tenant);
 
         log.info("Iniciando Streaming SSE para versión {} [{}] | Proveedor LLM: {} | max_tokens: {}",
-                approach, effectiveLength, modelName, maxTokens);
+                approach, effectiveLength, selectedModel, maxTokens);
 
         try {
             String endpoint = baseUrl.contains("deepseek")
                     ? "https://api.deepseek.com/chat/completions"
                     : (baseUrl.endsWith("/") ? baseUrl + "chat/completions" : baseUrl + "/v1/chat/completions");
 
-            String effectiveKey = getEffectiveApiKey();
+            String effectiveKey = getEffectiveApiKey(tenant);
             String finalSystemPrompt = buildFinalSystemPrompt(tenant, source, effectiveLength);
             String userPrompt = buildUserPrompt(source, approach, effectiveLength);
 
             Map<String, Object> requestBody = Map.of(
-                    "model", modelName,
+                    "model", selectedModel,
                     "messages", List.of(
                             Map.of("role", "system", "content", finalSystemPrompt),
                             Map.of("role", "user", "content", userPrompt)
@@ -214,6 +271,30 @@ public class ContentGeneratorService {
                 && !key.startsWith("sk-tu-");
     }
 
+    private String resolveModelName(Tenant tenant) {
+        String selected = tenant == null || tenant.getAppTextModel() == null
+                ? modelName
+                : tenant.getAppTextModel();
+        return DeepSeekTextModels.normalize(selected);
+    }
+
+    private boolean isApiKeyConfigured(Tenant tenant) {
+        if (tenantAiCredentialService != null && tenant != null && tenant.getId() != null
+                && tenantAiCredentialService.hasApiKey(tenant.getId(), TenantAiCredentialService.Provider.DEEPSEEK_TEXT)) {
+            return true;
+        }
+        return isApiKeyConfigured();
+    }
+
+    private String getEffectiveApiKey(Tenant tenant) {
+        if (tenantAiCredentialService != null && tenant != null && tenant.getId() != null) {
+            String workspaceKey = tenantAiCredentialService.getApiKey(
+                    tenant.getId(), TenantAiCredentialService.Provider.DEEPSEEK_TEXT);
+            if (workspaceKey != null && !workspaceKey.isBlank()) return workspaceKey;
+        }
+        return getEffectiveApiKey();
+    }
+
     private String getEffectiveApiKey() {
         if (configuredApiKey != null && !configuredApiKey.isBlank() && !isMockKey(configuredApiKey)) {
             return configuredApiKey.trim();
@@ -231,35 +312,6 @@ public class ContentGeneratorService {
             return envVar.trim();
         }
 
-        String fromFile = readKeyFromEnvFile();
-        if (fromFile != null && !fromFile.isBlank() && !isMockKey(fromFile)) {
-            return fromFile.trim();
-        }
-
-        return null;
-    }
-
-    private String readKeyFromEnvFile() {
-        String userDir = System.getProperty("user.dir");
-        String[] paths = {".env", "backend/.env", "../.env", userDir + "/.env", userDir + "/backend/.env"};
-        for (String p : paths) {
-            File f = new File(p);
-            if (f.exists() && f.isFile()) {
-                try {
-                    List<String> lines = Files.readAllLines(f.toPath(), StandardCharsets.UTF_8);
-                    for (String line : lines) {
-                        String t = line.trim();
-                        if (t.startsWith("DEEPSEEK_API_KEY=")) {
-                            String v = t.substring("DEEPSEEK_API_KEY=".length()).trim();
-                            if (v.startsWith("\"") && v.endsWith("\"") && v.length() >= 2) v = v.substring(1, v.length() - 1);
-                            if (v.startsWith("'") && v.endsWith("'") && v.length() >= 2) v = v.substring(1, v.length() - 1);
-                            return v;
-                        }
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
         return null;
     }
 
@@ -352,24 +404,25 @@ public class ContentGeneratorService {
             """, approachInstruction, mode, title, rawContent, referenceUrl, title);
     }
 
-    private String callLlmApi(Tenant tenant, ContentSource source, String approach, String postLength) {
+    private GeneratedContent callLlmApi(Tenant tenant, ContentSource source, String approach, String postLength) {
         boolean isMicro = isMicro(postLength);
         int targetCharacters = targetCharacters(postLength);
         int maxTokens = isMicro ? 450 : Math.min(1800, Math.max(700, targetCharacters * 2));
 
         String finalSystemPrompt = buildFinalSystemPrompt(tenant, source, postLength);
         String userPrompt = buildUserPrompt(source, approach, postLength);
-        String effectiveKey = getEffectiveApiKey();
+        String effectiveKey = getEffectiveApiKey(tenant);
+        String selectedModel = resolveModelName(tenant);
 
         try {
             String endpoint = baseUrl.contains("deepseek")
                     ? "https://api.deepseek.com/chat/completions"
                     : (baseUrl.endsWith("/") ? baseUrl + "chat/completions" : baseUrl + "/v1/chat/completions");
 
-            log.info("📡 Conectando con API de DeepSeek en: {} | Modelo: {} | max_tokens: {}...", endpoint, modelName, maxTokens);
+            log.info("📡 Conectando con API de DeepSeek en: {} | Modelo: {} | max_tokens: {}...", endpoint, selectedModel, maxTokens);
 
             Map<String, Object> requestBody = Map.of(
-                    "model", modelName,
+                    "model", selectedModel,
                     "messages", List.of(
                             Map.of("role", "system", "content", finalSystemPrompt),
                             Map.of("role", "user", "content", userPrompt)
@@ -404,7 +457,19 @@ public class ContentGeneratorService {
                     }
                     log.info("✅ Respuesta de DeepSeek generada exitosamente ({} caracteres)",
                             generatedContent != null ? generatedContent.length() : 0);
-                    return generatedContent;
+                    Map<String, Object> usage = asMap(response.get("usage"));
+                    Integer inputTokens = usage == null ? null : integerValue(usage.get("prompt_tokens"));
+                    Integer outputTokens = usage == null ? null : integerValue(usage.get("completion_tokens"));
+                    Integer totalTokens = usage == null ? null : integerValue(usage.get("total_tokens"));
+                    if (totalTokens == null && inputTokens != null && outputTokens != null) {
+                        long calculatedTotal = (long) inputTokens + outputTokens;
+                        if (calculatedTotal <= Integer.MAX_VALUE) totalTokens = (int) calculatedTotal;
+                    }
+                    Object responseModel = response.get("model");
+                    String usedModel = responseModel instanceof String value && !value.isBlank()
+                            ? value : selectedModel;
+                    return new GeneratedContent(generatedContent, usedModel,
+                            inputTokens, outputTokens, totalTokens);
                 }
             }
         } catch (WebClientResponseException e) {
@@ -417,7 +482,7 @@ public class ContentGeneratorService {
             }
             throw new AiServiceException("AI_GENERATION_FAILED", "Error de comunicación con DeepSeek API: " + e.getStatusCode().value(), e);
         } catch (Exception e) {
-            log.error("❌ Error llamando a la API de DeepSeek ({}): {}", modelName, e.getMessage(), e);
+            log.error("❌ Error llamando a la API de DeepSeek ({}): {}", selectedModel, e.getMessage(), e);
             if (e instanceof AiServiceException ase) {
                 throw ase;
             }
@@ -425,6 +490,25 @@ public class ContentGeneratorService {
         }
 
         return null;
+    }
+
+    private String providerName() {
+        return baseUrl != null && baseUrl.toLowerCase().contains("deepseek") ? "DEEPSEEK" : "OPENAI_COMPATIBLE";
+    }
+
+    private Map<String, Object> asMap(Object value) {
+        if (!(value instanceof Map<?, ?> source)) return null;
+        java.util.HashMap<String, Object> result = new java.util.HashMap<>();
+        source.forEach((key, item) -> {
+            if (key instanceof String stringKey) result.put(stringKey, item);
+        });
+        return result;
+    }
+
+    private Integer integerValue(Object value) {
+        if (!(value instanceof Number number)) return null;
+        long result = number.longValue();
+        return result < 0 || result > Integer.MAX_VALUE ? null : (int) result;
     }
 
     public static String truncateAtSentenceBoundary(String text, int limit) {

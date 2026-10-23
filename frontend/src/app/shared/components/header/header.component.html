@@ -1,24 +1,65 @@
-<header
-  class="app-topbar sticky top-0 z-30 flex h-16 items-center justify-between gap-3 px-4 sm:px-7"
->
-  <div class="flex min-w-0 items-center gap-3"></div>
-  <div class="flex min-w-0 items-center gap-3">
-    <button
-      class="app-automation-chip"
-      (click)="state.enabled() === null ? state.load() : state.toggle()"
-      [disabled]="state.loading() || state.busy()"
-      [attr.aria-pressed]="state.enabled()"
-      [title]="state.explanation"
-    >
-      <span
-        class="app-automation-dot"
-        [class.app-automation-dot--active]="state.enabled() === true"
-        aria-hidden="true"
-      ></span
-      >{{ state.loading() ? 'Consultando backend…' : state.label() }}</button
-    ><app-theme-toggle />
-  </div>
+<header class="app-topbar app-topbar--compact">
+  <span class="app-topbar-context">AutoPost</span>
+  <button #searchTrigger type="button" class="app-search-trigger" aria-haspopup="dialog" [attr.aria-expanded]="searchOpen()" aria-label="Buscar secciones y acciones" (click)="openSearch()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg><span>Buscar</span><kbd>Ctrl K</kbd>
+  </button>
 </header>
-@if (state.error()) {
-  <p role="alert" class="ui-alert">{{ state.error() }}</p>
-}
+<dialog
+  #searchDialog
+  id="app-search-dialog"
+  class="app-search-dialog"
+  aria-label="Buscar secciones y acciones"
+  (cancel)="onDialogCancel($event)"
+  (click)="onDialogClick($event)"
+>
+  <div class="app-search-panel">
+    <label class="app-search-field">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <circle cx="10.8" cy="10.8" r="6.8" />
+        <path d="m16 16 4.5 4.5" />
+      </svg>
+      <span class="sr-only">Buscar una sección o acción</span>
+      <input
+        #searchInput
+        type="search"
+        role="combobox"
+        autocomplete="off"
+        placeholder="Buscar una sección o acción…"
+        aria-autocomplete="list"
+        aria-expanded="true"
+        aria-controls="app-search-results"
+        [attr.aria-activedescendant]="results().length ? 'app-search-result-' + activeCommand() : null"
+        [value]="searchQuery()"
+        (input)="updateSearch($any($event.target).value)"
+        (keydown)="handleSearchKeydown($event)"
+      />
+      <kbd>ESC</kbd>
+    </label>
+
+    <div id="app-search-results" class="app-search-results" role="listbox" aria-label="Resultados de navegación">
+      @for (command of results(); track command.route; let index = $index) {
+        <button
+          type="button"
+          role="option"
+          [id]="'app-search-result-' + index"
+          class="app-search-result"
+          [class.app-search-result--active]="activeCommand() === index"
+          [attr.aria-selected]="activeCommand() === index"
+          (mouseenter)="activeCommand.set(index)"
+          (click)="navigate(command)"
+        >
+          <span class="app-search-result-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path [attr.d]="command.icon" />
+            </svg>
+          </span>
+          <span class="app-search-result-copy"><strong>{{ command.label }}</strong><small>{{ command.hint }}</small></span>
+          <span class="app-search-result-group">{{ command.group }}</span>
+        </button>
+      } @empty {
+        <p class="app-search-empty" role="status">No hay secciones o acciones que coincidan.</p>
+      }
+    </div>
+    <footer class="app-search-footer"><span><kbd>↑</kbd><kbd>↓</kbd> para moverte</span><span><kbd>Enter</kbd> para abrir</span></footer>
+  </div>
+</dialog>

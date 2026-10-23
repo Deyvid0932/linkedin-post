@@ -1,128 +1,37 @@
 <aside class="app-sidebar">
   <a routerLink="/dashboard" class="app-brand" (click)="onNavClick()">
-    <span class="app-brand-mark" aria-hidden="true">A</span>
-    <span class="min-w-0"><strong>AutoPost</strong><small>Estudio editorial</small></span>
+    <span class="app-brand-mark" aria-hidden="true">A</span><strong>AutoPost</strong>
   </a>
-
-  <a routerLink="/compose" (click)="onNavClick()" class="app-new-post"
-    ><svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <path
-        d="M10 4v12M4 10h12"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-      /></svg
-    >Nueva publicación</a
-  >
-
+  <a routerLink="/compose" (click)="onNavClick()" class="app-new-post">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>Nueva publicación
+  </a>
   <nav id="primary-navigation" aria-label="Navegación principal" class="app-nav">
-    @for (group of groups; track group.title) {
-      <section class="app-nav-group" [attr.aria-label]="group.title || 'Navegación principal'">
-        @if (group.title) {
-          <h2>{{ group.title }}</h2>
-        }
-        <div class="app-nav-links">
-          @for (link of group.links; track link.route) {
-            <a
-              [routerLink]="link.route"
-              (click)="onNavClick()"
-              routerLinkActive="app-nav-link--active"
-              [routerLinkActiveOptions]="{ exact: true }"
-              ariaCurrentWhenActive="page"
-              class="app-nav-link"
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-              >
-                <path [attr.d]="icons[link.route]" />
-              </svg>
-              <span class="truncate">{{ link.label }}</span>
-            </a>
-          }
-        </div>
-      </section>
+    @for(link of links; track link.route) {
+      <a [routerLink]="link.route" (click)="onNavClick()" [class.app-nav-link--active]="isActive(link.route)" [attr.aria-current]="isActive(link.route) ? 'page' : null" class="app-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="link.icon" /></svg>{{ link.label }}
+      </a>
     }
-  </nav>
-
-  <footer class="app-sidebar-footer">
-    <a routerLink="/how-it-works" (click)="onNavClick()" class="app-help-link"
-      ><svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.7"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path [attr.d]="icons['/how-it-works']" /></svg
-      >Ayuda</a
-    >
-    <details
-      id="profile-menu"
-      #profileMenu
-      class="relative"
-      (keydown.escape)="closeProfileMenu($event)"
-    >
-      <summary
-        class="app-profile-trigger"
-        [attr.aria-expanded]="profileOpen()"
-        aria-controls="profile-options"
-        aria-label="Abrir opciones de perfil"
-        (click)="profileOpen.set(!profileOpen())"
-      >
-        <span class="app-avatar">{{ initials() }}</span>
-        <span class="app-profile-copy"
-          ><strong>{{ user()?.name || 'Mi perfil' }}</strong
-          ><small>{{ user()?.email || 'Cuenta' }}</small></span
-        >
-        <svg
-          class="app-profile-chevron"
-          [class.rotate-180]="profileOpen()"
-          viewBox="0 0 20 20"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="m5 7.5 5 5 5-5"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </summary>
-      <div id="profile-options" class="app-profile-menu" aria-label="Opciones de cuenta">
-        <a
-          routerLink="/profile"
-          (click)="selectProfileAction($event)"
-          class="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:bg-neutral-800"
-          >Perfil</a
-        >
-        <a
-          routerLink="/profile/security"
-          (click)="selectProfileAction($event)"
-          class="rounded-lg px-3 py-2.5 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:hover:bg-neutral-800"
-          >Seguridad</a
-        >
-        <button
-          type="button"
-          (click)="logout($event)"
-          class="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-indigo-600 dark:text-rose-300 dark:hover:bg-rose-950/40"
-        >
-          Cerrar sesión
-        </button>
+    <section class="app-channel-shortcuts" aria-label="Canales">
+      <h2>Canales</h2>
+      <div>
+        <a routerLink="/settings/channels" (click)="onNavClick()" class="app-channel-icon app-channel-icon--linkedin" aria-label="Gestionar LinkedIn" title="LinkedIn">in</a>
+        <a routerLink="/settings/channels" (click)="onNavClick()" class="app-channel-add" aria-label="Conectar un canal" title="Conectar un canal">+</a>
       </div>
-    </details>
+    </section>
+  </nav>
+  <footer class="app-sidebar-footer">
+    <button type="button" class="app-profile-trigger" [attr.aria-expanded]="profileOpen()" aria-controls="profile-options" (click)="toggleProfileMenu()">
+      <span class="app-avatar" aria-hidden="true">{{ initials() }}</span>
+      <span class="app-profile-copy"><strong>{{ user()?.name || 'Mi cuenta' }}</strong><small>Mi espacio</small></span>
+      <svg class="app-profile-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path [attr.d]="profileOpen() ? 'm5 12.5 5-5 5 5' : 'm7.5 5 5 5-5 5'" /></svg>
+    </button>
+    @if(profileOpen()) {
+      <div id="profile-options" class="app-profile-menu" aria-label="Opciones de cuenta">
+        <div class="app-profile-menu-heading"><strong>{{ user()?.name || 'Mi cuenta' }}</strong><span>{{ user()?.email }}</span></div>
+        <a routerLink="/settings/profile" (click)="onNavClick()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 7h16M4 17h16M8 4v6M16 14v6" /></svg>Settings</a>
+        <a routerLink="/how-it-works" (click)="onNavClick()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M9 8a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 4v.1" /></svg>Help</a>
+        <button type="button" (click)="logout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 4H4v16h5m-1-8h13m-5-5 5 5-5 5" /></svg>Log out</button>
+      </div>
+    }
   </footer>
 </aside>

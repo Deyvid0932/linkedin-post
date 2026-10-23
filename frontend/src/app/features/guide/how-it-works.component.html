@@ -95,8 +95,9 @@
           </p>
         </div>
         <p class="text-sm text-slate-500 dark:text-neutral-400">
-          El backend requiere un servidor activo. La cola enviada a GitHub Actions puede ejecutarse
-          con tu PC apagada.
+          El backend de AutoPost ejecuta los horarios y debe permanecer activo. GitHub Actions no
+          participa en la publicación; para publicar con tu equipo apagado, despliega AutoPost en un
+          servidor.
         </p>
       </li>
     </ol>
@@ -250,9 +251,8 @@
           >
         </summary>
         <p class="mt-3 max-w-3xl text-sm text-slate-600 dark:text-neutral-300">
-          El control del header pausa únicamente la publicación del backend. Para detener la cola de
-          GitHub Actions, cambia PUBLISH_ENABLED a false en GitHub. Ambos mecanismos son
-          independientes; guardar una cola no confirma que se haya publicado.
+          Usa la pausa de emergencia de AutoPost. Mientras el backend esté pausado o detenido, no se
+          procesarán los horarios. Revisa el historial para confirmar el resultado de cada intento.
         </p>
       </details>
     </div>

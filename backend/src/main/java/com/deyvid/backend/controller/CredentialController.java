@@ -10,12 +10,10 @@ import com.deyvid.backend.entity.User;
 import com.deyvid.backend.entity.enums.LinkedInAccountType;
 import com.deyvid.backend.entity.enums.PublicationStatus;
 import com.deyvid.backend.repository.GitHubCredentialRepository;
-import com.deyvid.backend.repository.GitHubRepositoryRepo;
 import com.deyvid.backend.repository.LinkedInCredentialRepository;
 import com.deyvid.backend.security.AuthHelper;
 import com.deyvid.backend.service.AuditLogService;
 import com.deyvid.backend.service.EncryptionService;
-import com.deyvid.backend.service.GitHubLinkedInBindingService;
 import com.deyvid.backend.service.linkedin.LinkedInPublisherService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -43,20 +41,16 @@ public class CredentialController {
     private final LinkedInPublisherService linkedInPublisherService;
     private final WebClient gitHubWebClient;
     private final com.deyvid.backend.repository.PublicationLogRepository publicationLogRepository;
-    private final GitHubLinkedInBindingService githubBindings;
 
     public CredentialController(
             AuthHelper authHelper,
             LinkedInCredentialRepository linkedInCredentialRepository,
             GitHubCredentialRepository gitHubCredentialRepository,
-            GitHubRepositoryRepo gitHubRepositoryRepo,
             EncryptionService encryptionService,
             AuditLogService auditLogService,
             LinkedInPublisherService linkedInPublisherService,
             com.deyvid.backend.repository.PublicationLogRepository publicationLogRepository,
-            GitHubLinkedInBindingService githubBindings,
-            @Qualifier("gitHubWebClient") WebClient gitHubWebClient,
-            @Qualifier("genericWebClient") WebClient genericWebClient) {
+            @Qualifier("gitHubWebClient") WebClient gitHubWebClient) {
         this.authHelper = authHelper;
         this.linkedInCredentialRepository = linkedInCredentialRepository;
         this.gitHubCredentialRepository = gitHubCredentialRepository;
@@ -64,7 +58,6 @@ public class CredentialController {
         this.auditLogService = auditLogService;
         this.linkedInPublisherService = linkedInPublisherService;
         this.publicationLogRepository = publicationLogRepository;
-        this.githubBindings = githubBindings;
         this.gitHubWebClient = gitHubWebClient;
     }
 
@@ -211,7 +204,6 @@ public class CredentialController {
         }
 
         boolean nextVal = !Boolean.TRUE.equals(cred.getIsEnabled());
-        if (!nextVal) githubBindings.pauseAccount(cred.getId());
         cred.setIsEnabled(nextVal);
 
         if (!nextVal && Boolean.TRUE.equals(cred.getIsPrimary())) {
@@ -323,7 +315,6 @@ public class CredentialController {
         }
 
         boolean wasPrimary = Boolean.TRUE.equals(cred.getIsPrimary());
-        githubBindings.disconnectAccount(cred.getId());
         linkedInCredentialRepository.delete(cred);
 
         if (wasPrimary) {
@@ -456,7 +447,6 @@ public class CredentialController {
         List<LinkedInCredential> accounts = linkedInCredentialRepository.findByTenantIdOrderByCreatedAtAsc(user.getTenant().getId());
 
         if (!accounts.isEmpty()) {
-            for (LinkedInCredential account : accounts) githubBindings.disconnectAccount(account.getId());
             linkedInCredentialRepository.deleteAll(accounts);
             auditLogService.recordAction(user.getTenant(), user.getEmail(), "REVOKE_LINKEDIN", "Todas las cuentas de LinkedIn fueron eliminadas y revocadas");
         }
@@ -542,7 +532,6 @@ public class CredentialController {
     @Transactional
     public ResponseEntity<Map<String, Object>> deleteGitHubCredential(Authentication auth) {
         User user = authHelper.getCurrentUser(auth);
-        githubBindings.disconnectTenant(user.getTenant().getId());
         gitHubCredentialRepository.findByTenantId(user.getTenant().getId())
                 .ifPresent(gitHubCredentialRepository::delete);
 
@@ -555,7 +544,6 @@ public class CredentialController {
     public ResponseEntity<Map<String, Object>> revokeAllCredentials(Authentication auth) {
         User user = authHelper.getCurrentUser(auth);
         List<LinkedInCredential> accounts = linkedInCredentialRepository.findByTenantIdOrderByCreatedAtAsc(user.getTenant().getId());
-        for (LinkedInCredential account : accounts) githubBindings.disconnectAccount(account.getId());
         linkedInCredentialRepository.deleteAll(accounts);
 
         gitHubCredentialRepository.findByTenantId(user.getTenant().getId())

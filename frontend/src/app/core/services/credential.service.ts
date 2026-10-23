@@ -18,7 +18,6 @@ export class CredentialService {
 
   constructor(private http: HttpClient) {}
 
-  // --- LINKEDIN MULTI-ACCOUNT ---
 
   getLinkedInAccounts(): Observable<LinkedInAccount[]> {
     return this.http.get<LinkedInAccount[]>(`${this.API_URL}/credentials/linkedin/accounts`);

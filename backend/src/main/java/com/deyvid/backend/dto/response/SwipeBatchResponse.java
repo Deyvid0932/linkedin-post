@@ -14,8 +14,9 @@ public record SwipeBatchResponse(
         String tituloEstructura,
         String textoGenerado,
         String imageUrl,
-        int tokensUsed,
-        double costUsd,
-        double percentMonthlyCredit
+        Integer tokensUsed,
+        Double costUsd,
+        Double percentMonthlyCredit,
+        String model
     ) {}
 }

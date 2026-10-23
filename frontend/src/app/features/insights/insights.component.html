@@ -1,0 +1,245 @@
+<div class="insights-page ui-page">
+  <header class="page-heading ui-heading">
+    <div>
+      <p class="eyebrow">ANALIZAR</p>
+      <h1 class="ui-title">Rendimiento</h1>
+      <p class="ui-muted">Resultados confirmados · {{ periodLabel() }} · según la fecha de registro</p>
+    </div>
+    <div class="heading-actions">
+      <label class="period-filter">
+        <span>Periodo</span>
+        <select class="ui-input" aria-label="Periodo del informe" [value]="selectedDays() ?? 'all'" (change)="changePeriod($any($event.target).value)">
+          <option value="7">Últimos 7 días</option>
+          <option value="30">Últimos 30 días</option>
+          <option value="90">Últimos 90 días</option>
+          <option value="all">Todo el historial</option>
+        </select>
+      </label>
+      <button type="button" class="refresh-button ui-button export-button" (click)="exportCsv()" [disabled]="!report() || loading()">
+        Exportar CSV
+      </button>
+      <button type="button" class="refresh-button ui-button" (click)="load()" [disabled]="loading()">
+        {{ loading() ? 'Actualizando…' : 'Actualizar' }}
+      </button>
+    </div>
+  </header>
+
+  @if (exportMessage()) { <p class="export-message" role="status">{{ exportMessage() }}</p> }
+
+  @if (error()) {
+    <section class="notice notice--error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="load()">Reintentar</button>
+    </section>
+  }
+  @if (loading() && !report()) {
+    <p class="loading" role="status">Consultando resultados guardados…</p>
+  } @else if (report(); as data) {
+    <section class="metric-grid" aria-label="Resultados y uso registrados">
+      <article class="metric-card ui-card"><span>Publicaciones confirmadas</span><strong>{{ data.successfulPostsCount | number }}</strong><small>Registradas como exitosas</small></article>
+      <article class="metric-card ui-card"><span>Fallos registrados</span><strong>{{ data.failedPostsCount | number }}</strong><small>Revisa el historial para ver detalles</small></article>
+      <article class="metric-card ui-card"><span>Tasa de éxito</span><strong>{{ data.successRatePercentage === null ? '—' : (data.successRatePercentage | number:'1.0-1') + '%' }}</strong><small>@if (data.successRatePercentage === null) { Sin intentos para calcular la tasa } @else { {{ data.successfulPostsCount + data.failedPostsCount }} intentos registrados }</small></article>
+      <article class="metric-card ui-card"><span>Tokens reportados</span><strong>{{ data.recordedTokens | number }}</strong><small>Entrada {{ data.inputTokens | number }} · salida {{ data.outputTokens | number }}</small></article>
+    </section>
+
+    @if (data.bestObservedDay !== 'Sin datos' && data.bestObservedHour !== 'Sin datos') {
+      <section class="pattern-card ui-card">
+        <div>
+          <p class="eyebrow">PATRÓN OBSERVADO</p>
+          <h2>{{ data.bestObservedDay }} · {{ data.bestObservedHour }}</h2>
+          <p>Es el día y la hora con más publicaciones confirmadas en tus registros, según la zona horaria configurada.</p>
+        </div>
+        <a routerLink="/settings/schedule">Revisar programación <span aria-hidden="true">→</span></a>
+      </section>
+    } @else {
+      <section class="empty-pattern ui-card">
+        @if (data.successfulPostsCount > 0) {
+          <h2>Faltan fechas de publicación confirmadas</h2>
+          <p>Hay publicaciones exitosas, pero no tienen una fecha de publicación confirmada. AutoPost no usa la fecha de creación del registro para inferir sus días u horas.</p>
+          <p>{{ data.publicationsWithPublishedAtCount | number }} publicaciones con fecha confirmada de {{ data.successfulPostsCount | number }} exitosas.</p>
+        } @else {
+          <h2>Aún no hay un patrón confirmado</h2>
+          <p>Cuando AutoPost registre publicaciones exitosas, aparecerán aquí sus días y horas. No se generan recomendaciones con datos vacíos.</p>
+        }
+        <a routerLink="/compose">Preparar una publicación</a>
+      </section>
+    }
+
+    @if (data.successfulPostsCount > 0) {
+      <section class="suggestion-card ui-card" aria-labelledby="suggestion-title">
+        <header>
+          <div>
+            <p class="eyebrow">SUGERENCIA BAJO DEMANDA</p>
+            <h2 id="suggestion-title">Sugerencia editorial basada en tu historial</h2>
+            <p>Cuando la solicites, AutoPost enviará hasta cinco publicaciones confirmadas recientes a tu proveedor de IA para proponer un ángulo nuevo. No se guarda ni se publica hasta que decidas conservarla como borrador.</p>
+          </div>
+      <button type="button" class="refresh-button ui-button" (click)="generateSuggestion()" [disabled]="suggestionLoading() || suggestionSaving()">
+            {{ suggestionLoading() ? 'Generando…' : suggestion() ? 'Probar otra idea' : 'Generar sugerencia' }}
+          </button>
+        </header>
+        @if (suggestionError()) {
+          <p class="notice notice--error" role="alert">{{ suggestionError() }}</p>
+        }
+        @if (suggestion(); as idea) {
+          <article class="suggestion-result">
+            <h3>{{ idea.title }}</h3>
+            <p class="suggestion-copy">{{ idea.text }}</p>
+            <p class="suggestion-rationale">{{ idea.rationale }}</p>
+            <button type="button" class="save-suggestion" (click)="saveSuggestionAsDraft()" [disabled]="suggestionSaving() || suggestionLoading()">
+              {{ suggestionSaving() ? 'Guardando…' : 'Guardar como borrador y revisar' }}
+            </button>
+          </article>
+        }
+        @if (suggestionMessage()) {
+          <p class="suggestion-message" role="status">{{ suggestionMessage() }}</p>
+        }
+      </section>
+    }
+
+    <section class="charts-grid" aria-label="Distribución de publicaciones">
+      <article class="chart-card ui-card">
+        <header><div><h2>Por hora</h2><p>Solo fechas de publicación confirmadas · hora local del espacio</p></div><span>{{ data.publicationsWithPublishedAtCount | number }} de {{ data.successfulPostsCount | number }}</span></header>
+        @if (data.publicationsWithPublishedAtCount > 0) {
+          <div class="hour-chart" role="img" aria-label="Distribución por hora de publicaciones con fecha confirmada">
+            @for (hour of hours; track hour) {
+              <div class="hour-column" [attr.title]="hourLabel(hour)" [attr.aria-label]="hourLabel(hour)">
+                <span class="hour-value">{{ hourCount(hour) || '' }}</span>
+                <span class="bar-track"><i [style.height.%]="barHeight(hourCount(hour), maxHourCount())"></i></span>
+                @if (hour % 3 === 0) { <small>{{ hour < 10 ? '0' : '' }}{{ hour }}</small> } @else { <small aria-hidden="true">&nbsp;</small> }
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="chart-empty">Aún no hay fechas de publicación confirmadas para calcular esta distribución.</p>
+        }
+      </article>
+
+      <article class="chart-card days-card ui-card">
+        <header><div><h2>Por día</h2><p>Solo fechas de publicación confirmadas</p></div><span>{{ data.publicationsWithPublishedAtCount | number }} de {{ data.successfulPostsCount | number }}</span></header>
+        @if (data.publicationsWithPublishedAtCount > 0) {
+          <div class="day-chart">
+            @for (day of days; track day.key) {
+              <div class="day-row">
+                <span>{{ day.label }}</span>
+                <div class="day-track"><i [style.width.%]="barHeight(dayCount(day.key), maxDayCount())"></i></div>
+                <strong>{{ dayCount(day.key) }}</strong>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="chart-empty">Sin fecha confirmada, no se asigna un día usando la hora de creación del registro.</p>
+        }
+      </article>
+    </section>
+
+    <section class="chart-card ui-card" aria-labelledby="source-distribution-title">
+      <header>
+        <div>
+          <h2 id="source-distribution-title">Publicaciones confirmadas por origen</h2>
+          <p>Origen editorial registrado por AutoPost · no representa redes sociales distintas</p>
+        </div>
+      </header>
+      @if (data.successfulPostsCount > 0 && sourceEntries().length) {
+        <div class="day-chart">
+          @for (entry of sourceEntries(); track entry[0]) {
+            <div class="day-row source-row">
+              <span>{{ sourceLabel(entry[0]) }}</span>
+              <div class="day-track" role="img" [attr.aria-label]="sourceLabel(entry[0]) + ': ' + entry[1] + ' publicaciones confirmadas'">
+                <i [style.width.%]="barHeight(entry[1], maxSourceCount())"></i>
+              </div>
+              <strong>{{ entry[1] }}</strong>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="model-empty">No hay publicaciones confirmadas por origen en este periodo.</p>
+      }
+    </section>
+
+    <section class="chart-card model-card ui-card" aria-labelledby="models-title">
+      <header><div><h2 id="models-title">Consumo por modelo</h2><p>Tokens reportados en los registros de generación</p></div></header>
+      @if (modelEntries().length) {
+        <div class="model-list">
+          @for (entry of modelEntries(); track entry[0]) {
+            <div class="model-row">
+              <span>{{ entry[0] }}</span>
+              <div class="day-track"><i [style.width.%]="barHeight(entry[1], maxModelTokens())"></i></div>
+              <strong>{{ entry[1] | number }}</strong>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="model-empty">AutoPost aún no tiene tokens asociados a un modelo en tus registros.</p>
+      }
+    </section>
+
+    <section class="chart-card ui-card" aria-labelledby="daily-usage-title">
+      <header>
+        <div>
+          <h2 id="daily-usage-title">Consumo diario de texto</h2>
+          <p>Tokens informados por el proveedor · hasta 14 fechas del periodo · zona local del espacio</p>
+        </div>
+      </header>
+      @if (dailyTokenEntries().length) {
+        <div class="tokens-day-chart">
+          @for (entry of dailyTokenEntries(); track entry[0]) {
+            <div class="tokens-day-row">
+              <span>{{ usageDayLabel(entry[0]) }}</span>
+              <div class="usage-track" role="img" [attr.aria-label]="usageDayLabel(entry[0]) + ': ' + entry[1] + ' tokens reportados'">
+                <i [style.width.%]="barHeight(entry[1], maxDailyTokens())"></i>
+              </div>
+              <strong>{{ entry[1] | number }}</strong>
+            </div>
+          }
+        </div>
+      } @else {
+        <p class="model-empty">No hay consumo diario de texto reportado para este periodo.</p>
+      }
+    </section>
+
+    <section class="chart-card ui-card" aria-labelledby="recent-posts-title">
+      <header>
+        <div>
+          <h2 id="recent-posts-title">Publicaciones confirmadas recientes</h2>
+          <p>Últimos registros exitosos del historial · no dependen del periodo del gráfico</p>
+        </div>
+        <a routerLink="/publications" class="font-semibold text-[var(--accent-text)] hover:underline">Ver historial</a>
+      </header>
+      @if (recentPostsError()) {
+        <div class="notice notice--error" role="alert">
+          <span>{{ recentPostsError() }}</span>
+          <button type="button" (click)="loadRecentPosts()">Reintentar</button>
+        </div>
+      }
+      @if (recentPostsLoading() && !recentPosts().length) {
+        <p class="loading" role="status">Cargando publicaciones confirmadas…</p>
+      } @else if (recentPosts().length) {
+        <div class="grid divide-y divide-slate-200 dark:divide-neutral-800">
+          @for (post of recentPosts(); track post.id) {
+            <article class="flex min-w-0 flex-wrap items-start gap-3 py-4 first:pt-0 last:pb-0">
+              <div class="min-w-0 flex-1">
+                <p class="line-clamp-3 whitespace-pre-wrap text-sm leading-relaxed">{{ post.generatedText }}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-secondary)]">
+                  <span>{{ sourceLabel(post.sourceMode) }}</span>
+                  <span aria-hidden="true">·</span>
+                  @if (post.publishedAt) {
+                    <span>Publicada {{ post.publishedAt | date: 'dd MMM yyyy, HH:mm' }}</span>
+                  } @else {
+                    <span>Éxito confirmado · fecha de publicación no disponible</span>
+                  }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      } @else if (!recentPostsError()) {
+        <div class="model-empty">
+          Todavía no hay publicaciones confirmadas para mostrar.
+          <a routerLink="/compose" class="ml-1 font-semibold text-[var(--accent-text)] hover:underline">Preparar una publicación</a>
+        </div>
+      }
+    </section>
+
+    <p class="data-boundary">El periodo usa la fecha de creación del registro. La distribución por hora y día solo incluye publicaciones con fecha de publicación confirmada; no se infiere desde la fecha de creación y se muestra en la zona horaria del espacio. LinkedIn no ha proporcionado impresiones, alcance, clics ni comentarios; tampoco se estima el costo sin tarifas verificadas del proveedor.</p>
+  }
+</div>

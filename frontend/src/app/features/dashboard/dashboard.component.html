@@ -1,194 +1,73 @@
 <div class="dashboard-home">
-  <header class="dashboard-heading">
-    <div>
-      <p class="dashboard-eyebrow">Tu espacio de publicación</p>
-      <h1>Hola, {{ firstName() }}</h1>
-      <p class="dashboard-subtitle">Prepara tus ideas y mantén tus publicaciones en marcha.</p>
-    </div>
-    <a routerLink="/compose" class="dashboard-create"
-      ><svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path
-          d="M10 4v12M4 10h12"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-        /></svg
-      >Nueva publicación</a
-    >
-  </header>
-
-  @if (error()) {
-    <div role="alert" class="dashboard-alert">
-      {{ error() }} <button type="button" (click)="load()">Reintentar</button>
-    </div>
-  }
-  @if (loading()) {
-    <p role="status" class="dashboard-loading">Cargando tus publicaciones…</p>
-  }
-
-  @if (stats() && (!stats()!.linkedInConnected || !hasContent() || !hasSchedule())) {
-    <section class="dashboard-setup" aria-labelledby="setup-heading">
-      <div class="dashboard-section-heading">
-        <div>
-          <p class="dashboard-eyebrow">Primeros pasos</p>
-          <h2 id="setup-heading">Deja listo tu espacio</h2>
-        </div>
-      </div>
-      <div class="dashboard-setup-grid">
-        <a
-          routerLink="/settings/linkedin"
-          class="dashboard-step"
-          [class.dashboard-step--done]="stats()?.linkedInConnected"
-        >
-          <span class="dashboard-step-mark">{{ stats()?.linkedInConnected ? '✓' : '1' }}</span>
-          <span
-            ><strong>{{
-              stats()?.linkedInConnected ? 'LinkedIn conectado' : 'Conecta LinkedIn'
-            }}</strong
-            ><small>{{
-              stats()?.linkedInConnected
-                ? 'La cuenta está lista para publicar.'
-                : 'Autoriza tu cuenta para preparar publicaciones.'
-            }}</small></span
-          >
-          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
-        </a>
-        <a routerLink="/compose" class="dashboard-step" [class.dashboard-step--done]="hasContent()">
-          <span class="dashboard-step-mark">{{ hasContent() ? '✓' : '2' }}</span>
-          <span
-            ><strong>{{
-              hasContent() ? 'Tu contenido ya está en marcha' : 'Crea tu primera publicación'
-            }}</strong
-            ><small>{{
-              hasContent()
-                ? 'Puedes seguir escribiendo o revisar la cola.'
-                : 'Escribe desde cero o parte de una idea.'
-            }}</small></span
-          >
-          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
-        </a>
-        <a
-          routerLink="/settings/schedule"
-          class="dashboard-step"
-          [class.dashboard-step--done]="hasSchedule()"
-        >
-          <span class="dashboard-step-mark">{{ hasSchedule() ? '✓' : '3' }}</span>
-          <span
-            ><strong>{{ hasSchedule() ? 'Horario configurado' : 'Configura tu ritmo' }}</strong
-            ><small>{{
-              hasSchedule()
-                ? 'Revisa cuándo trabaja cada automatización.'
-                : 'Define los horarios de AutoPost y GitHub Actions.'
-            }}</small></span
-          >
-          <span class="dashboard-step-arrow" aria-hidden="true">↗</span>
-        </a>
-      </div>
-    </section>
-  }
-
+  <header class="dashboard-heading"><div><h1>Hola, {{ firstName() }}</h1><p class="dashboard-subtitle">Tus ideas, listas para compartir.</p></div><a routerLink="/compose" class="dashboard-create">+ Nueva publicación</a></header>
+  @if(error()) { <div role="alert" class="dashboard-alert">{{ error() }} <button type="button" (click)="load()" [disabled]="loading()">Reintentar</button></div> }
+  @if(loading()) { <p role="status" class="dashboard-loading">Cargando tus publicaciones…</p> }
+  <div class="dashboard-connection">
+    @if(stats(); as account) { <span class="dashboard-connection-state" [class.dashboard-connection-state--ready]="account.linkedInConnected"><i aria-hidden="true"></i>{{ account.linkedInConnected ? 'LinkedIn conectado' : 'Conecta tu primer canal' }}</span> }
+    @else { <span class="ui-muted">{{ loading() ? 'Consultando tu conexión…' : 'Estado de conexión no disponible' }}</span> }
+    <a routerLink="/settings/channels" class="dashboard-text-link">Ver canales →</a>
+  </div>
+  <section class="dashboard-metrics" aria-label="Resumen de contenido">
+    <a class="dashboard-metric" routerLink="/insights"><strong>{{ metricValue(metrics().published) }}</strong><span>Publicadas</span></a>
+    <a class="dashboard-metric" routerLink="/queue"><strong>{{ metricValue(metrics().queued) }}</strong><span>En cola</span></a>
+    <a class="dashboard-metric" routerLink="/topics"><strong>{{ metricValue(metrics().ideas) }}</strong><span>Ideas</span></a>
+    <a class="dashboard-metric" routerLink="/library"><strong>{{ metricValue(metrics().drafts) }}</strong><span>Borradores</span></a>
+  </section>
   <div class="dashboard-columns">
     <section class="dashboard-panel dashboard-up-next" aria-labelledby="next-publication-title">
-      <div class="dashboard-section-heading">
-        <div>
-          <p class="dashboard-eyebrow">Publicación</p>
-          <h2 id="next-publication-title">En cola</h2>
-        </div>
-        <a routerLink="/queue" class="dashboard-text-link"
-          >Ver cola <span aria-hidden="true">→</span></a
-        >
-      </div>
-      @if (queueError()) {
-        <div class="dashboard-empty">
-          <p>No pudimos consultar la cola</p>
-          <small>Comprueba el backend e inténtalo otra vez.</small
-          ><button type="button" class="dashboard-secondary-action" (click)="load()">
-            Reintentar
-          </button>
-        </div>
-      } @else if (queue()[0]; as next) {
-        <article class="dashboard-queue-item">
-          <span class="dashboard-status-dot" aria-hidden="true"></span>
-          <div class="min-w-0">
-            <p>{{ next.generatedText || 'Publicación aprobada' }}</p>
-            <small>Lista para el proceso de publicación · Sin fecha asignada</small>
-          </div>
-        </article>
-        <a routerLink="/compose" class="dashboard-secondary-action">Preparar otra</a>
-      } @else if (loading()) {
-        <div class="dashboard-empty">
-          <span class="dashboard-empty-icon" aria-hidden="true">◷</span>
-          <p>Buscando contenido en cola…</p>
-        </div>
-      } @else {
-        <div class="dashboard-empty">
-          <span class="dashboard-empty-icon" aria-hidden="true">◷</span>
-          <p>No hay publicaciones pendientes</p>
-          <small>Cuando apruebes una publicación, aparecerá aquí.</small
-          ><a routerLink="/compose" class="dashboard-secondary-action">Crear publicación</a>
-        </div>
+      <div class="dashboard-section-heading"><h2 id="next-publication-title">Próximas publicaciones</h2><a routerLink="/calendar" class="dashboard-text-link">Ver calendario →</a></div>
+      @if(queueError()) { <div class="dashboard-empty"><p>No pudimos consultar la cola.</p><button class="dashboard-secondary-action" type="button" (click)="load()" [disabled]="loading()">Reintentar</button></div> }
+      @else {
+        @for(post of queue().slice(0,3); track post.id) {
+          <article class="dashboard-content-row">
+            @if(post.imageUrl) { <img class="dashboard-thumbnail" [src]="post.imageUrl" alt="" loading="lazy" /> }
+            @else { <span class="dashboard-content-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h10l4 4v14H5ZM14 3v5h5M8 12h8M8 16h6" /></svg></span> }
+            <div class="min-w-0 flex-1"><p>{{ post.generatedText || 'Publicación aprobada' }}</p><small>LinkedIn · Sin fecha individual asignada</small></div><span class="dashboard-status">En cola</span>
+          </article>
+        }
+        @if(!draftsError() && savedDrafts()[0]; as draft) {
+          <article class="dashboard-content-row"><span class="dashboard-content-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m16 3 5 5-12 12H4v-5ZM13 6l5 5" /></svg></span><div class="min-w-0 flex-1"><p>{{ draft.title || draft.text || 'Borrador sin título' }}</p><small>Borrador · Sin aprobar</small></div><a routerLink="/compose" [queryParams]="{ draft: draft.id }" class="dashboard-text-link">Continuar</a></article>
+        }
+        @if(!queue().length && !savedDrafts().length && !loading()) {
+          <div class="dashboard-empty"><p>Tu próxima publicación empieza con una idea.</p><small>Redacta, revisa y aprueba cuando esté lista.</small><a routerLink="/compose" class="dashboard-secondary-action">Crear publicación</a></div>
+        }
+        @if(queue().length) { <a routerLink="/queue" class="dashboard-text-link dashboard-panel-footer">Ver toda la cola →</a> }
       }
     </section>
-
-    <section class="dashboard-panel" aria-labelledby="recent-activity-title">
-      <div class="dashboard-section-heading">
-        <div>
-          <p class="dashboard-eyebrow">Tu actividad</p>
-          <h2 id="recent-activity-title">Publicaciones recientes</h2>
-        </div>
-        <a routerLink="/publications" class="dashboard-text-link"
-          >Ver historial <span aria-hidden="true">→</span></a
-        >
-      </div>
-      @if (recentError()) {
-        <div class="dashboard-empty">
-          <p>No pudimos cargar la actividad</p>
-          <small>Vuelve a intentarlo en unos segundos.</small
-          ><button type="button" class="dashboard-secondary-action" (click)="load()">
-            Reintentar
-          </button>
-        </div>
-      } @else if (!recent().length && !loading()) {
-        <div class="dashboard-empty">
-          <span class="dashboard-empty-icon" aria-hidden="true">▤</span>
-          <p>Aún no tienes actividad</p>
-          <small>Los borradores y resultados aparecerán aquí.</small>
-        </div>
-      }
-      @for (post of recent(); track post.id) {
-        <article class="dashboard-activity-row">
-          <span class="dashboard-activity-icon" aria-hidden="true">▤</span>
-          <div class="min-w-0 flex-1">
-            <p>{{ post.generatedText || post.sourceReference || 'Publicación' }}</p>
-            @if (post.publishedAt) {
-              <small>Publicado {{ post.publishedAt | date: 'dd MMM yyyy' }}</small>
-            } @else {
-              <small>Creado {{ post.createdAt | date: 'dd MMM yyyy' }}</small>
-            }
+    <div class="dashboard-side">
+      <section class="dashboard-panel" aria-labelledby="your-week-title">
+        <div class="dashboard-section-heading"><h2 id="your-week-title">Tu ritmo de publicación</h2></div>
+        @if(scheduleError()) { <p class="ui-meta">No pudimos cargar los horarios.</p><button type="button" class="dashboard-text-link" (click)="load()" [disabled]="loading()">Reintentar</button> }
+        @else {
+          <div class="dashboard-week" aria-label="Días con horarios recurrentes">
+            @for(day of weekDays; track day; let index = $index) { <div [class.dashboard-week--active]="activeDays().has(index)"><span>{{ index === 2 ? 'X' : day[0] }}</span><i aria-hidden="true"></i><span class="sr-only">{{ day }}: {{ activeDays().has(index) ? 'con horario recurrente' : 'sin horario reconocido' }}</span></div> }
           </div>
-          <span
-            class="dashboard-status"
-            [class.dashboard-status--success]="post.status === 'SUCCESS'"
-            [class.dashboard-status--error]="post.status === 'FAILED'"
-            >{{ statusLabel(post.status) }}</span
-          >
-        </article>
-      }
-    </section>
-  </div>
-
-  <section class="dashboard-automation" aria-label="Estado de automatización">
-    <span
-      class="dashboard-automation-indicator"
-      [class.dashboard-automation-indicator--active]="automation.enabled() === true"
-      aria-hidden="true"
-    ></span>
-    <div>
-      <strong>{{ automation.label() }}</strong>
-      <p>{{ automation.explanation }}</p>
+          <p class="ui-meta dashboard-week-note">{{ timezone() || 'Zona horaria no disponible' }}</p>
+          @if(!activeDays().size && !customSchedules() && !loading()) { <p class="ui-meta">Todavía no tienes horarios activos.</p> }
+          @if(customSchedules()) { <p class="ui-meta">Hay {{ customSchedules() }} horarios personalizados. Revísalos en Settings.</p> }
+          <a routerLink="/settings/schedule" class="dashboard-text-link">Gestionar horarios →</a>
+        }
+      </section>
+      <a routerLink="/library" class="dashboard-review">
+        <span class="dashboard-content-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h14v18H5ZM8 8h8M8 12h8M8 16h5" /></svg></span>
+        <span><strong>Pendiente de revisión</strong><small>{{ metricValue(metrics().drafts) }} {{ metrics().drafts === 1 ? 'borrador' : 'borradores' }}</small></span><span aria-hidden="true">→</span>
+      </a>
     </div>
-    <a routerLink="/settings/schedule" class="dashboard-text-link"
-      >Administrar horarios <span aria-hidden="true">→</span></a
-    >
+  </div>
+  <section aria-labelledby="continue-creating-title"><div class="dashboard-section-heading"><h2 id="continue-creating-title">Continúa creando</h2></div>
+    <div class="dashboard-shortcuts">
+      <a routerLink="/compose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m16 3 5 5-12 12H4v-5ZM13 6l5 5" /></svg><strong>Escribe una publicación</strong><p>Comparte algo que aprendiste o empieza con una imagen.</p><span aria-hidden="true">→</span></a>
+      <a routerLink="/topics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M9 18h6M9 21h6M8 14a6 6 0 1 1 8 0l-1 2H9Z" /></svg><strong>Encuentra tu próxima idea</strong><p>Explora temas y guarda los que quieras desarrollar.</p><span aria-hidden="true">→</span></a>
+      <a routerLink="/library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 3h10l4 4v14H5ZM14 3v5h5M8 12h8M8 16h6" /></svg><strong>Retoma un borrador</strong><p>Tu contenido guardado, listo para seguir trabajando.</p><span aria-hidden="true">→</span></a>
+    </div>
   </section>
+  <section class="dashboard-panel" aria-labelledby="recent-activity-title">
+    <div class="dashboard-section-heading"><h2 id="recent-activity-title">Actividad reciente</h2><a routerLink="/publications" class="dashboard-text-link">Ver historial →</a></div>
+    @if(recentError()) { <p class="ui-meta">No pudimos cargar la actividad.</p><button type="button" class="dashboard-text-link" (click)="load()" [disabled]="loading()">Reintentar</button> }
+    @else {
+      @for(post of recent(); track post.id) { <article class="dashboard-activity-row"><div class="min-w-0 flex-1"><p>{{ post.generatedText || post.sourceReference || 'Publicación' }}</p>@if(post.publishedAt) { <small>Publicado {{ post.publishedAt | date:'dd MMM yyyy' }}</small> } @else { <small>Creado {{ post.createdAt | date:'dd MMM yyyy' }}</small> }</div><span class="dashboard-status" [class.dashboard-status--success]="post.status === 'SUCCESS'" [class.dashboard-status--error]="post.status === 'FAILED'">{{ statusLabel(post.status) }}</span></article> }
+      @if(!recent().length && !loading()) { <p class="ui-meta">Tus resultados de publicación aparecerán aquí.</p> }
+    }
+  </section>
+  <div class="dashboard-automation"><span class="dashboard-automation-indicator" [class.dashboard-automation-indicator--active]="automation.enabled() === true" aria-hidden="true"></span><div><strong>{{ automation.label() }}</strong><p>Los envíos programados requieren que el servidor esté disponible.</p></div><a routerLink="/settings/schedule" class="dashboard-text-link">Settings →</a></div>
 </div>

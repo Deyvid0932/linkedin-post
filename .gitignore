@@ -5,7 +5,6 @@
 
 # Backend Build & Dependencies
 backend/target/
-backend/.mvn/wrapper/maven-wrapper.jar
 
 # Frontend Dependencies & Build
 frontend/node_modules/
@@ -20,6 +19,7 @@ frontend/.vitest-tmp/
 .DS_Store
 Thumbs.db
 .agents
+.codex
 
 # Python & Virtual Environments (Vital para el script)
 __pycache__/
@@ -34,8 +34,8 @@ ENV/
 **/.env
 **/.env.*
 !/.env.example
-
-postman_collection.json
+!**/.env.example
+!**/.env.*.example
 
 # Local database and secret backups
 backups/

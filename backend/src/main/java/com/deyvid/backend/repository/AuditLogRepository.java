@@ -11,4 +11,7 @@ import java.util.UUID;
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     Page<AuditLog> findByTenantIdOrderByCreatedAtDesc(UUID tenantId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"tenant"})
+    Page<AuditLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

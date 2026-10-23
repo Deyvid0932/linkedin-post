@@ -1,0 +1,315 @@
+    @if (error()) {
+      <section class="message error" role="alert"><span>{{ error() }}</span><button type="button" (click)="load()">Reintentar</button></section>
+    }
+    @if (loading() && !overview()) {
+      <p class="loading" role="status">Cargando datos del espacio…</p>
+    } @else if (overview(); as data) {
+      @if (loading()) {
+        <p class="overview-refresh" role="status" aria-live="polite">
+          Actualizando el periodo. Se muestran los datos cargados de los últimos {{ data.periodDays }} días.
+        </p>
+      }
+      <section class="stats-grid" aria-label="Resumen de uso y seguridad de AutoPost">
+        <article class="stat-card stat-card--accounts ui-card">
+          <div class="stat-card-heading">
+            <span>Cuentas activas</span>
+            <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          </div>
+          <strong>{{ data.activeUsers | number }}</strong>
+          <small>de {{ data.totalUsers | number }} cuentas · {{ data.totalWorkspaces | number }} espacios</small>
+          @let activeRate = activeAccountPercentage(data.activeUsers, data.totalUsers);
+          @if (activeRate !== null) {
+            <div class="stat-progress" role="progressbar" aria-label="Proporción de cuentas activas" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="activeRate" [attr.aria-valuetext]="(activeRate | number:'1.0-1') + '% de cuentas activas'"><span [style.width.%]="activeRate"></span></div>
+            <small class="stat-detail stat-detail--accent">{{ activeRate | number:'1.0-1' }}% de cuentas activas</small>
+          } @else { <small class="stat-detail">Sin cuentas para calcular el porcentaje</small> }
+        </article>
+        <article class="stat-card stat-card--requests ui-card">
+          <div class="stat-card-heading">
+            <span>Solicitudes API hoy</span>
+            <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 5-7"/><path d="M16 6h3v3"/></svg></span>
+          </div>
+          @if (data.apiRequestMetricsStartedOn) {
+            <strong>{{ data.apiRequestsToday | number }}</strong>
+            <small>{{ data.successfulApiRequestsToday | number }} correctas · 3xx {{ data.redirectedApiRequestsToday | number }} · 4xx {{ data.clientErrorApiRequestsToday | number }} · 5xx {{ data.serverErrorApiRequestsToday | number }}</small>
+            <small class="stat-detail">Registro desde {{ data.apiRequestMetricsStartedOn }}</small>
+          } @else {
+            <strong aria-label="Métrica aún no disponible">—</strong>
+            <small>El registro de solicitudes todavía no está inicializado.</small>
+          }
+        </article>
+        <article class="stat-card stat-card--tokens ui-card">
+          <div class="stat-card-heading">
+            <span>Tokens informados</span>
+            <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16m4-12H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H8"/></svg></span>
+          </div>
+          <strong>{{ data.recordedTokensInPeriod | number }}</strong>
+          <small>Texto · últimos {{ data.periodDays }} días · {{ data.reportedTextRequestsInPeriod | number }} solicitudes reportadas</small>
+          <small class="stat-detail">Solo uso informado por el proveedor</small>
+        </article>
+        <article class="stat-card stat-card--failures ui-card">
+          <div class="stat-card-heading">
+            <span>Respuestas HTTP 429</span>
+            <span class="stat-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v4m0 3h.01"/></svg></span>
+          </div>
+          <strong>{{ data.http429ResponsesInPeriod | number }}</strong>
+          <small>Últimos {{ data.periodDays }} días · límites de AutoPost y proveedores</small>
+          <small class="stat-detail stat-detail--danger">Es una señal de límite, no evidencia automática de ataque</small>
+        </article>
+      </section>
+      <div class="trends-toolbar">
+        <div>
+          <h2>Tendencias del sistema</h2>
+          <p>Actividad diaria en hora de Lima · el periodo aplica a estas tendencias</p>
+        </div>
+        <div class="period-picker" role="group" aria-label="Periodo de las métricas">
+          @for (days of periods; track days) {
+            <button type="button" [attr.aria-pressed]="periodDays() === days" (click)="setPeriod(days)">{{ days }} días</button>
+          }
+        </div>
+      </div>
+      <div class="admin-trends" [attr.aria-busy]="loading()" [style.--admin-period-days]="data.periodDays">
+      <section class="usage-panel throttle-panel ui-card" aria-labelledby="admin-throttle-title">
+        <header class="usage-heading">
+          <div>
+            <h2 id="admin-throttle-title">Tendencia de respuestas HTTP 429</h2>
+            <p>Por día, últimos {{ data.periodDays }} días · AutoPost y proveedores</p>
+          </div>
+          @let throttleTotals = throttleTrendTotals(data.dailyHttp429Responses || []);
+          <div class="usage-summary" role="group" aria-label="Resumen de respuestas HTTP 429">
+            <strong>{{ data.http429ResponsesInPeriod | number }}</strong>
+            <span>
+              <small>respuestas registradas</small>
+              <span class="response-breakdown" role="group" aria-label="Desglose por tipo de ruta">
+                <span>Autenticación <b>{{ throttleTotals.auth | number }}</b></span>
+                <span>IA <b>{{ throttleTotals.ai | number }}</b></span>
+                <span>API <b>{{ throttleTotals.api | number }}</b></span>
+              </span>
+            </span>
+          </div>
+        </header>
+        @if (hasTrackedHttp429(data.dailyHttp429Responses)) {
+          @if (data.http429ResponsesInPeriod > 0) {
+            <div class="throttle-legend" aria-hidden="true">
+              <span><i class="throttle-auth"></i>Autenticación</span>
+              <span><i class="throttle-ai"></i>IA</span>
+              <span><i class="throttle-api"></i>API</span>
+            </div>
+            <div class="throttle-chart" role="img" [attr.aria-label]="throttleTrendLabel(data.dailyHttp429Responses)">
+              @for (entry of data.dailyHttp429Responses; track entry.date) {
+                <div class="throttle-day" [class.throttle-day--untracked]="!entry.tracked"
+                  [title]="entry.tracked ? (entry.date + ': ' + entry.auth + ' autenticación, ' + entry.ai + ' IA, ' + entry.api + ' API') : (entry.date + ': sin registro antes de ' + (data.http429MetricsStartedOn || 'iniciar la medición'))">
+                  @if (entry.tracked) {
+                    <div class="throttle-stack">
+                      <span class="throttle-auth" [style.height.%]="throttleBarHeight(entry.auth, data.dailyHttp429Responses)"></span>
+                      <span class="throttle-ai" [style.height.%]="throttleBarHeight(entry.ai, data.dailyHttp429Responses)"></span>
+                      <span class="throttle-api" [style.height.%]="throttleBarHeight(entry.api, data.dailyHttp429Responses)"></span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+            <div class="throttle-axis" aria-hidden="true">
+              <span>{{ usageDayLabel(data.dailyHttp429Responses[0].date) }}</span>
+              <span>{{ usageDayLabel(data.dailyHttp429Responses[data.dailyHttp429Responses.length - 1].date) }}</span>
+            </div>
+            <ul class="sr-only">
+              @for (entry of data.dailyHttp429Responses; track entry.date) {
+                @if (entry.tracked) {
+                  <li>{{ entry.date }}: {{ entry.auth }} de autenticación, {{ entry.ai }} de IA y {{ entry.api }} de API.</li>
+                } @else {
+                  <li>{{ entry.date }}: sin registro disponible.</li>
+                }
+              }
+            </ul>
+        } @else {
+          <p class="throttle-empty" role="status">No se registraron respuestas HTTP 429 en los días observados del periodo.</p>
+          }
+        } @else {
+          <p class="throttle-empty" role="status">No hay días observados aún. La métrica comenzó el {{ data.http429MetricsStartedOn || 'día de su inicialización' }}.</p>
+        }
+        <p class="usage-note">El conteo incluye límites de AutoPost y respuestas de proveedores; por sí solo no demuestra un ataque.</p>
+      </section>
+      <section class="usage-panel api-request-panel ui-card" aria-labelledby="admin-api-request-title">
+        @let apiRequestTotals = apiRequestTrendTotals(data.dailyApiRequests || []);
+        <header class="usage-heading">
+          <div>
+            <h2 id="admin-api-request-title">Solicitudes API</h2>
+            <p>Respuestas agrupadas por clase · últimos {{ data.periodDays }} días · hora de Lima</p>
+          </div>
+          <div class="usage-summary" role="group" aria-label="Resumen de solicitudes API">
+            <strong>{{ (apiRequestTotals.successful + apiRequestTotals.redirects + apiRequestTotals.clientErrors + apiRequestTotals.serverErrors) | number }}</strong>
+            <span>
+              <small>respuestas registradas</small>
+              <span class="api-request-breakdown" role="group" aria-label="{{ apiRequestTotals.successful }} respuestas correctas, {{ apiRequestTotals.redirects }} respuestas 3xx, {{ apiRequestTotals.clientErrors }} respuestas 4xx, {{ apiRequestTotals.serverErrors }} respuestas 5xx">
+                <span>{{ apiRequestTotals.successful | number }} correctas</span>
+                <span>3xx {{ apiRequestTotals.redirects | number }}</span>
+                <span>4xx {{ apiRequestTotals.clientErrors | number }}</span>
+                <span>5xx {{ apiRequestTotals.serverErrors | number }}</span>
+              </span>
+            </span>
+          </div>
+        </header>
+        @if (hasTrackedApiRequests(data.dailyApiRequests)) {
+          <div class="api-request-legend" aria-hidden="true">
+            <span><i class="api-request-bar--success"></i>Correctas</span>
+            <span><i class="api-request-bar--redirect"></i>Redirecciones</span>
+            <span><i class="api-request-bar--client-error"></i>Errores 4xx</span>
+            <span><i class="api-request-bar--server-error"></i>Errores 5xx</span>
+          </div>
+          <div class="api-request-bars" role="img" [attr.aria-label]="apiRequestTrendLabel(data.dailyApiRequests)">
+            @for (day of data.dailyApiRequests; track day.date) {
+              <div class="api-request-day" [class.api-request-day--untracked]="!day.tracked"
+                [title]="day.tracked ? (usageDayLabel(day.date) + ': ' + (day.successful + day.redirects + day.clientErrors + day.serverErrors | number) + ' respuestas') : (day.date + ': sin registro antes de habilitar esta métrica')" aria-hidden="true">
+                @if (day.tracked) {
+                  @if (day.successful + day.redirects + day.clientErrors + day.serverErrors === 0) {
+                    <span class="api-request-bar--empty" style="height:2px"></span>
+                  } @else {
+                    <span class="api-request-bar--success" [style.height.%]="apiRequestBarHeight(day.successful, data.dailyApiRequests)"></span>
+                    <span class="api-request-bar--redirect" [style.height.%]="apiRequestBarHeight(day.redirects, data.dailyApiRequests)"></span>
+                    <span class="api-request-bar--client-error" [style.height.%]="apiRequestBarHeight(day.clientErrors, data.dailyApiRequests)"></span>
+                    <span class="api-request-bar--server-error" [style.height.%]="apiRequestBarHeight(day.serverErrors, data.dailyApiRequests)"></span>
+                  }
+                }
+              </div>
+            }
+          </div>
+          <div class="usage-axis" aria-hidden="true"><span>Hace {{ data.periodDays - 1 }} días</span><span>Hoy</span></div>
+          <ul class="sr-only">
+            @for (day of data.dailyApiRequests; track day.date) {
+              @if (day.tracked) { <li>{{ day.date }}: {{ day.successful }} correctas, {{ day.redirects }} respuestas 3xx, {{ day.clientErrors }} respuestas 4xx y {{ day.serverErrors }} respuestas 5xx.</li> }
+            }
+          </ul>
+        } @else {
+          <p class="usage-empty">Esta métrica aún no tiene días observados. Se registrará desde {{ data.apiRequestMetricsStartedOn || 'que se habilite en el servidor' }}.</p>
+        }
+        <p class="usage-note">Se guarda solo el día, grupo general de ruta y clase de respuesta; no se conserva la ruta completa, parámetros, IP ni cuenta.</p>
+      </section>
+      <section class="usage-panel ui-card" aria-labelledby="admin-usage-title">
+        <header class="usage-heading">
+          <div>
+            <h2 id="admin-usage-title">Uso de IA</h2>
+            <p>Tokens de texto informados por los proveedores · últimos {{ data.periodDays }} días · hora de Lima</p>
+          </div>
+          <div class="usage-summary" role="group" aria-label="Resumen de uso de IA informado por proveedores">
+            <strong>{{ data.recordedTokensInPeriod | number }}</strong>
+            <span>
+              <small>tokens informados</small>
+              <small>{{ data.reportedTextRequestsInPeriod | number }} solicitudes con tokens reportados</small>
+              <small>{{ data.successfulImageGenerationsInPeriod | number }} imágenes generadas correctamente con NanoGPT</small>
+            </span>
+          </div>
+        </header>
+        @if (hasTrackedTextUsage(data.dailyReportedTextTokens)) {
+          <div class="usage-bars" role="img" [attr.aria-label]="'Tokens reportados diariamente durante los últimos ' + data.periodDays + ' días. Total: ' + data.recordedTokensInPeriod">
+            @for (day of data.dailyReportedTextTokens ?? []; track day.date) {
+              <span class="usage-bar" [class.usage-bar--empty]="day.tracked && day.tokens === 0" [class.usage-bar--untracked]="!day.tracked" [style.height.%]="usageBarHeight(day.tokens, data.dailyReportedTextTokens)" [title]="usageDayLabel(day.date) + ': ' + (day.tracked ? (day.tokens | number) + ' tokens reportados' : 'sin registro')" aria-hidden="true"></span>
+            }
+          </div>
+          <div class="usage-axis" aria-hidden="true"><span>Hace {{ data.periodDays - 1 }} días</span><span>Hoy</span></div>
+          <ul class="sr-only">
+            @for (day of data.dailyReportedTextTokens ?? []; track day.date) {
+              <li>{{ day.date }}: {{ day.tracked ? (day.tokens | number) + ' tokens reportados' : 'sin registro de métricas' }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="usage-empty">Todavía no hay solicitudes con tokens reportados para iniciar esta métrica.</p>
+        }
+        <h3 class="image-usage-title">Generaciones de imagen con NanoGPT</h3>
+        @if (hasTrackedImageGenerations(data.dailyImageGenerations)) {
+          <div class="usage-bars" role="img" [attr.aria-label]="'Generaciones de imagen NanoGPT registradas cada día. Total: ' + data.successfulImageGenerationsInPeriod">
+            @for (day of data.dailyImageGenerations ?? []; track day.date) {
+              <span
+                class="usage-bar"
+                [class.usage-bar--empty]="day.tracked && day.successfulGenerations === 0"
+                [class.usage-bar--untracked]="!day.tracked"
+                [style.height.%]="imageUsageBarHeight(day.successfulGenerations, data.dailyImageGenerations)"
+                [title]="usageDayLabel(day.date) + ': ' + (day.tracked ? (day.successfulGenerations | number) + ' imágenes' : 'sin registro')"
+                aria-hidden="true"></span>
+            }
+          </div>
+          <div class="usage-axis" aria-hidden="true"><span>Hace {{ data.periodDays - 1 }} días</span><span>Hoy</span></div>
+          <ul class="sr-only">
+            @for (day of data.dailyImageGenerations ?? []; track day.date) {
+              <li>{{ day.date }}: {{ day.tracked ? day.successfulGenerations + ' imágenes registradas' : 'sin registro de métricas' }}</li>
+            }
+          </ul>
+        } @else {
+          <p class="usage-empty">Aún no hay días registrados. El conteo comienza con la primera generación exitosa.</p>
+        }
+        <p class="usage-note">El histórico de imágenes empieza el {{ data.imageMetricsStartedOn || 'día de la primera generación registrada' }}. No se estiman tokens ni costos, y no se incluyen generaciones anteriores al registro.</p>
+        <p class="usage-note">El registro de tokens empieza el {{ data.textMetricsStartedOn || 'día de la primera solicitud que informó tokens' }}. Los días anteriores aparecen como sin registro; desde esa fecha, cero significa que no se informaron tokens ese día, no que el proveedor no tuvo uso. AutoPost no estima costos.</p>
+      </section>
+      <section class="usage-panel publication-panel ui-card" aria-labelledby="admin-publication-trend-title">
+        @let publicationTotals = publicationTrendTotals(data.dailyPublicationOutcomes ?? []);
+        <header class="usage-heading">
+          <div>
+            <h2 id="admin-publication-trend-title">Resultados de publicación</h2>
+            <p>Confirmadas y fallidas · últimos {{ data.periodDays }} días · hora de Lima</p>
+          </div>
+          <div class="publication-legend">
+            <span><i class="publication-legend-success"></i><strong>{{ publicationTotals.published | number }}</strong> confirmadas</span>
+            <span><i class="publication-legend-failed"></i><strong>{{ publicationTotals.failed | number }}</strong> fallidas</span>
+          </div>
+          <p class="publication-history">Histórico completo: {{ data.publishedPosts | number }} confirmadas · {{ data.failedPosts | number }} fallidas
+            @let historicalFailureRate = failedPublicationPercentage(data.failedPosts, data.publishedPosts);
+            @if (historicalFailureRate !== null) { · {{ historicalFailureRate | number:'1.0-1' }}% de resultados fallidos }
+          </p>
+        </header>
+        @if (publicationTotals.published + publicationTotals.failed > 0) {
+          <div class="publication-bars" role="img" [attr.aria-label]="publicationTrendLabel(data.dailyPublicationOutcomes ?? [])">
+            @for (day of data.dailyPublicationOutcomes ?? []; track day.date) {
+              <div class="publication-day" [title]="usageDayLabel(day.date) + ': ' + (day.published | number) + ' confirmadas, ' + (day.failed | number) + ' fallidas'" aria-hidden="true">
+                <span class="publication-bar publication-bar--published" [class.publication-bar--empty]="day.published === 0" [style.height.%]="publicationBarHeight(day.published, data.dailyPublicationOutcomes)"></span>
+                <span class="publication-bar publication-bar--failed" [class.publication-bar--empty]="day.failed === 0" [style.height.%]="publicationBarHeight(day.failed, data.dailyPublicationOutcomes)"></span>
+              </div>
+            }
+          </div>
+          <div class="usage-axis" aria-hidden="true"><span>Hace {{ data.periodDays - 1 }} días</span><span>Hoy</span></div>
+          <ul class="sr-only">
+            @for (day of data.dailyPublicationOutcomes ?? []; track day.date) {
+              <li>{{ day.date }}: {{ day.published | number }} confirmadas, {{ day.failed | number }} fallidas</li>
+            }
+          </ul>
+        } @else {
+          <p class="usage-empty" role="status">No se registraron publicaciones confirmadas ni fallidas en los últimos {{ data.periodDays }} días.</p>
+        }
+        <p class="usage-note">El gráfico cuenta únicamente registros confirmados o fallidos por el backend; no incluye borradores ni publicaciones sin resultado.</p>
+      </section>
+      </div>
+      <section class="model-usage-panel ui-card" aria-labelledby="admin-model-usage-title">
+        <div class="panel-heading">
+          <div>
+            <h2 id="admin-model-usage-title">Uso por proveedor y modelo</h2>
+            <p>Hasta 12 grupos con mayor uso · últimos {{ data.periodDays }} días · solo tokens informados por el proveedor</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Proveedor</th>
+                <th scope="col">Modelo</th>
+                <th scope="col">Solicitudes</th>
+                <th scope="col">Entrada</th>
+                <th scope="col">Salida</th>
+                <th scope="col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (usage of data.textUsageByModel ?? []; track usage.provider + ':' + usage.model) {
+                <tr>
+                  <td>{{ usage.provider }}</td>
+                  <td><strong>{{ usage.model }}</strong></td>
+                  <td>{{ usage.requestCount | number }}</td>
+                  <td>{{ usage.inputTokens | number }}</td>
+                  <td>{{ usage.outputTokens | number }}</td>
+                  <td><strong>{{ usage.totalTokens | number }}</strong></td>
+                </tr>
+              } @empty {
+                <tr><td class="empty-row" colspan="6">No hay registros de tokens por modelo en este periodo.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }

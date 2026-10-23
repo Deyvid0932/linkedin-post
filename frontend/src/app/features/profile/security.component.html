@@ -1,86 +1,79 @@
-<main class="ui-page ui-page--form">
+<div class="ui-page ui-page--form">
   <header>
-    <p class="ui-meta">CUENTA</p>
     <h1 class="ui-title">Seguridad y acceso</h1>
-    <p class="ui-muted mt-2">
-      Administra el acceso a AutoPost y revisa tus conexiones de publicación.
-    </p>
-    <nav
-      class="mt-5 flex gap-2 border-b border-slate-200 pb-2 dark:border-neutral-800"
-      aria-label="Secciones de cuenta"
-    >
-      <a
-        routerLink="/profile"
-        class="rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-        >Perfil</a
-      >
-      <a
-        routerLink="/profile/security"
-        aria-current="page"
-        class="rounded-md bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
-        >Seguridad y acceso</a
-      >
-    </nav>
+    <p class="ui-muted mt-2">Gestiona tu contraseña y las sesiones de tu cuenta.</p>
   </header>
 
+  <app-password-change />
+
   <section class="ui-card">
-    <div class="flex items-start justify-between gap-4">
+    <div class="flex flex-wrap items-start justify-between gap-4">
       <div>
-        <h2 class="ui-section-title">Sesión actual</h2>
-        <p class="ui-muted mt-1">Esta sesión está autenticada en AutoPost.</p>
+        <p class="ui-meta">ACCESO A AUTOPOST</p>
+        <h2 class="ui-section-title mt-1">Sesiones</h2>
+        <p class="ui-muted mt-1">Controla el acceso a tu cuenta desde tus dispositivos.</p>
       </div>
-      <span class="ui-status ui-status--success">Activa</span>
+      <span class="ui-status ui-status--success">Sesión actual activa</span>
     </div>
-    <div class="mt-5 rounded-lg border border-slate-200 p-4 dark:border-neutral-800">
-      <strong class="block text-sm">{{ user()?.email }}</strong
-      ><span class="ui-meta">Inicio de sesión con correo y contraseña</span>
-      <p class="ui-meta mt-3">
-        La aplicación no consulta una lista de dispositivos ni ofrece revocación remota de otras
-        sesiones.
-      </p>
+
+    <dl class="mt-5 grid gap-4 rounded-lg border border-slate-200 p-4 sm:grid-cols-2 dark:border-neutral-800">
+      <div>
+        <dt class="ui-meta">Cuenta</dt>
+        <dd class="mt-1 text-sm font-medium">{{ user()?.email }}</dd>
+      </div>
+      <div>
+        <dt class="ui-meta">Acceso</dt>
+        <dd class="mt-1 flex flex-wrap gap-2">
+          @for (role of user()?.roles ?? []; track role) {
+            <span class="ui-status">{{ roleLabel(role) }}</span>
+          }
+        </dd>
+      </div>
+    </dl>
+
+    <div class="mt-5 flex flex-wrap gap-3">
+      <button type="button" class="ui-button" (click)="logout()">Cerrar esta sesión</button>
     </div>
-    <div class="mt-4 flex flex-wrap gap-3">
-      <a routerLink="/profile" fragment="password" class="ui-button">Cambiar contraseña</a
-      ><button type="button" class="ui-button" (click)="logout()">Cerrar esta sesión</button>
+
+    <div class="mt-5 border-t border-slate-100 pt-5 dark:border-neutral-800">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold">Cerrar todas las sesiones</h3>
+          <p class="ui-muted mt-1">Cierra el acceso en todos tus dispositivos. También se cerrará esta sesión.</p>
+        </div>
+        @if (!confirmingRevoke()) {
+          <button type="button" class="ui-button" (click)="requestRevoke()">Cerrar todas las sesiones</button>
+        }
+      </div>
+
+      @if (confirmingRevoke()) {
+        <form class="mt-4 max-w-xl space-y-3" (ngSubmit)="revokeSessions()">
+          <label for="revoke-password" class="block text-sm font-medium">Confirma tu contraseña actual</label>
+          <div class="flex gap-2">
+            <input
+              id="revoke-password"
+              name="currentPassword"
+              class="ui-input min-w-0 flex-1"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              required
+              [ngModel]="currentPassword()"
+              (ngModelChange)="currentPassword.set($event)"
+            />
+            <button type="button" class="ui-button" [attr.aria-pressed]="showPassword()" (click)="showPassword.set(!showPassword())">
+              {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+            </button>
+          </div>
+          @if (error()) { <p role="alert" class="text-sm text-rose-700 dark:text-rose-300">{{ error() }}</p> }
+          <div class="flex flex-wrap gap-2">
+            <button type="submit" class="ui-button ui-button--primary" [disabled]="revoking()">
+              {{ revoking() ? 'Cerrando sesiones…' : 'Confirmar y cerrar todas' }}
+            </button>
+            <button type="button" class="ui-button" [disabled]="revoking()" (click)="cancelRevoke()">Cancelar</button>
+          </div>
+        </form>
+      }
     </div>
   </section>
 
-  <section class="ui-card">
-    <h2 class="ui-section-title">Passkeys</h2>
-    <p class="ui-muted mt-1">
-      Inicia sesión con una llave de acceso del dispositivo, sin contraseña.
-    </p>
-    <div class="mt-4 rounded-lg border border-dashed border-slate-300 p-4 dark:border-neutral-700">
-      <strong class="block text-sm">No disponible todavía</strong>
-      <p class="ui-meta mt-1">AutoPost aún no permite registrar passkeys.</p>
-    </div>
-  </section>
-
-  <section class="ui-card">
-    <h2 class="ui-section-title">Conexiones de publicación</h2>
-    <p class="ui-muted mt-1">Gestiona los servicios que AutoPost usa para preparar contenido.</p>
-    <div class="mt-4 divide-y divide-slate-100 dark:divide-neutral-800">
-      <a
-        routerLink="/settings/linkedin"
-        class="flex min-h-16 items-center justify-between gap-4 py-3"
-        ><span
-          ><strong class="block text-sm">LinkedIn</strong
-          ><span class="ui-meta">Cuentas y permisos de publicación</span></span
-        ><span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300"
-          >Ver conexión →</span
-        ></a
-      >
-      <a routerLink="/settings/github" class="flex min-h-16 items-center justify-between gap-4 py-3"
-        ><span
-          ><strong class="block text-sm">GitHub</strong
-          ><span class="ui-meta">Token y repositorios supervisados</span></span
-        ><span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300"
-          >Ver conexión →</span
-        ></a
-      >
-    </div>
-    <p class="ui-meta mt-3">
-      Estas conexiones no son una lista de aplicaciones OAuth autorizadas para entrar en tu cuenta.
-    </p>
-  </section>
-</main>
+</div>

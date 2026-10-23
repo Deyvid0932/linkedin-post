@@ -40,7 +40,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -131,23 +130,35 @@ public class PublicationController {
 
     @PostMapping("/estimate-tokens")
     public ResponseEntity<TokenEstimateResponse> estimateTokens(Authentication auth, @RequestBody TokenEstimateRequest req) {
-        int promptLen = (req != null && req.prompt() != null) ? req.prompt().length() : 300;
-        int topicLen = (req != null && req.topic() != null) ? req.topic().length() : 100;
-        int batches = (req != null && req.batchCount() != null && req.batchCount() > 0) ? req.batchCount() : 3;
+        User user = authHelper.getCurrentUser(auth);
+        int inputCharacters = length(req == null ? null : req.text())
+                + length(req == null ? null : req.prompt())
+                + length(req == null ? null : req.topic());
+        inputCharacters = Math.min(inputCharacters, 20_000);
+        int batches = req == null || req.batchCount() == null ? 1 : Math.max(1, Math.min(5, req.batchCount()));
+        int targetCharacters = req == null || req.targetCharacters() == null
+                ? 1_200 : Math.max(100, Math.min(3_000, req.targetCharacters()));
 
-        int estimatedPromptTokens = (int) Math.ceil((promptLen + topicLen + 200) / 3.5);
-        int estimatedCompletionTokens = 450 * batches;
-        int totalTokens = (estimatedPromptTokens * batches) + estimatedCompletionTokens;
-        double costUsd = (totalTokens / 1000.0) * 0.0014;
+        int estimatedPromptTokens = (int) Math.ceil(inputCharacters / 3.5);
+        int estimatedCompletionTokens = (int) Math.ceil(targetCharacters / 3.5) * batches;
+        int totalTokens = (estimatedPromptTokens + (int) Math.ceil(targetCharacters / 3.5)) * batches;
+        Tenant tenant = getUserTenant(user);
+        String selectedModel = tenant == null || tenant.getAppTextModel() == null
+                ? "Modelo configurado en el servidor" : tenant.getAppTextModel();
 
         return ResponseEntity.ok(new TokenEstimateResponse(
                 estimatedPromptTokens,
                 estimatedCompletionTokens,
                 totalTokens,
-                costUsd,
-                98500,
-                "deepseek-chat"
+                null,
+                null,
+                selectedModel,
+                "Estimación orientativa de tokens; el proveedor no confirma aquí la tarifa ni el saldo disponible."
         ));
+    }
+
+    private int length(String value) {
+        return value == null ? 0 : value.length();
     }
 
     @GetMapping("/sample-preview")
@@ -313,20 +324,19 @@ public class PublicationController {
         Tenant tenant = getUserTenant(user);
         ContentSource source = resolveContentSource(user, sourceType, mode, customTopic);
 
-        long startAll = System.currentTimeMillis();
-
         if (lazy) {
             // Optimización de tokens: Generar únicamente Variante A de inmediato
-            long startA = System.currentTimeMillis();
-            String versionAText = contentGeneratorService.generateVersionWithApproach(tenant, source, "COMPARATIVE_B2B", postLength);
-            long durA = Math.max(1L, System.currentTimeMillis() - startA);
+            ContentGeneratorService.GeneratedContent generatedA = contentGeneratorService.generateVersionWithUsage(
+                    tenant, source, "COMPARATIVE_B2B", postLength);
+            String versionAText = generatedA.text();
 
-            ImageGeneratorService.ImageData imgData = imageGeneratorService.generateOrFetchImage(source, versionAText);
+            ImageGeneratorService.ImageData imgData = imageGeneratorService.generateOrFetchImage(
+                    source, versionAText, tenant.getAppImageModel(), tenant);
             String batchImageUrl = imgData != null ? imgData.imageUrl() : null;
 
             SwipeBatchResponse.SwipeVersionDto vA = new SwipeBatchResponse.SwipeVersionDto(
                     UUID.randomUUID().toString(), "COMPARATIVE_B2B", "1. Consultoría B2B (Comparativa VS)",
-                    versionAText, batchImageUrl, Math.max(200, versionAText.length() / 4), 0.0009, (double) durA
+                    versionAText, batchImageUrl, generatedA.totalTokens(), null, null, generatedA.model()
             );
 
             if (tenant != null && tenant.getId() != null) {
@@ -343,11 +353,11 @@ public class PublicationController {
             // Versiones B y C disponibles para generar bajo demanda (0 tokens gastados inicialmente)
             SwipeBatchResponse.SwipeVersionDto vB = new SwipeBatchResponse.SwipeVersionDto(
                     UUID.randomUUID().toString(), "STORYTELLER", "2. Storytelling / Aprendizaje",
-                    null, batchImageUrl, 0, 0.0, 0.0
+                    null, batchImageUrl, null, null, null, null
             );
             SwipeBatchResponse.SwipeVersionDto vC = new SwipeBatchResponse.SwipeVersionDto(
                     UUID.randomUUID().toString(), "PROVOCATIVE", "3. Pregunta & Debate Comunitario",
-                    null, batchImageUrl, 0, 0.0, 0.0
+                    null, batchImageUrl, null, null, null, null
             );
 
             return ResponseEntity.ok(new SwipeBatchResponse(
@@ -359,38 +369,39 @@ public class PublicationController {
         }
 
         // Si lazy == false, generar las 3 variantes en paralelo
-        CompletableFuture<String> futureA = CompletableFuture.supplyAsync(() ->
-                contentGeneratorService.generateVersionWithApproach(tenant, source, "COMPARATIVE_B2B", postLength));
+        CompletableFuture<ContentGeneratorService.GeneratedContent> futureA = CompletableFuture.supplyAsync(() ->
+                contentGeneratorService.generateVersionWithUsage(tenant, source, "COMPARATIVE_B2B", postLength));
 
-        CompletableFuture<String> futureB = CompletableFuture.supplyAsync(() ->
-                contentGeneratorService.generateVersionWithApproach(tenant, source, "STORYTELLER", postLength));
+        CompletableFuture<ContentGeneratorService.GeneratedContent> futureB = CompletableFuture.supplyAsync(() ->
+                contentGeneratorService.generateVersionWithUsage(tenant, source, "STORYTELLER", postLength));
 
-        CompletableFuture<String> futureC = CompletableFuture.supplyAsync(() ->
-                contentGeneratorService.generateVersionWithApproach(tenant, source, "PROVOCATIVE", postLength));
+        CompletableFuture<ContentGeneratorService.GeneratedContent> futureC = CompletableFuture.supplyAsync(() ->
+                contentGeneratorService.generateVersionWithUsage(tenant, source, "PROVOCATIVE", postLength));
 
         CompletableFuture<ImageGeneratorService.ImageData> futureImg = CompletableFuture.supplyAsync(() ->
-                imageGeneratorService.generateOrFetchImage(source, source.title()));
+                imageGeneratorService.generateOrFetchImage(source, source.title(), tenant.getAppImageModel(), tenant));
 
-        String versionAText = futureA.join();
-        String versionBText = futureB.join();
-        String versionCText = futureC.join();
+        ContentGeneratorService.GeneratedContent generatedA = futureA.join();
+        ContentGeneratorService.GeneratedContent generatedB = futureB.join();
+        ContentGeneratorService.GeneratedContent generatedC = futureC.join();
+        String versionAText = generatedA.text();
+        String versionBText = generatedB.text();
+        String versionCText = generatedC.text();
         ImageGeneratorService.ImageData imgData = futureImg.join();
 
-        long totalDur = Math.max(1L, System.currentTimeMillis() - startAll);
-        double singleDur = (double) totalDur / 3.0;
         String batchImageUrl = imgData != null ? imgData.imageUrl() : null;
 
         SwipeBatchResponse.SwipeVersionDto vA = new SwipeBatchResponse.SwipeVersionDto(
                 UUID.randomUUID().toString(), "COMPARATIVE_B2B", "1. Consultoría B2B (Comparativa VS)",
-                versionAText, batchImageUrl, Math.max(200, versionAText.length() / 4), 0.0009, singleDur
+                versionAText, batchImageUrl, generatedA.totalTokens(), null, null, generatedA.model()
         );
         SwipeBatchResponse.SwipeVersionDto vB = new SwipeBatchResponse.SwipeVersionDto(
                 UUID.randomUUID().toString(), "STORYTELLER", "2. Storytelling / Aprendizaje",
-                versionBText, batchImageUrl, Math.max(200, versionBText.length() / 4), 0.0009, singleDur
+                versionBText, batchImageUrl, generatedB.totalTokens(), null, null, generatedB.model()
         );
         SwipeBatchResponse.SwipeVersionDto vC = new SwipeBatchResponse.SwipeVersionDto(
                 UUID.randomUUID().toString(), "PROVOCATIVE", "3. Pregunta & Debate Comunitario",
-                versionCText, batchImageUrl, Math.max(200, versionCText.length() / 4), 0.0009, singleDur
+                versionCText, batchImageUrl, generatedC.totalTokens(), null, null, generatedC.model()
         );
 
         if (tenant != null && tenant.getId() != null) {
@@ -436,9 +447,9 @@ public class PublicationController {
             }
         }
 
-        long start = System.currentTimeMillis();
-        String text = contentGeneratorService.generateVersionWithApproach(tenant, source, approach, postLength);
-        long dur = Math.max(1L, System.currentTimeMillis() - start);
+        ContentGeneratorService.GeneratedContent generated = contentGeneratorService.generateVersionWithUsage(
+                tenant, source, approach, postLength);
+        String text = generated.text();
 
         String structureTitle = switch (approach) {
             case "STORYTELLER" -> "2. Storytelling / Aprendizaje";
@@ -446,12 +457,13 @@ public class PublicationController {
             default -> "1. Consultoría B2B (Comparativa VS)";
         };
 
-        ImageGeneratorService.ImageData imgData = imageGeneratorService.generateOrFetchImage(source, text);
+        ImageGeneratorService.ImageData imgData = imageGeneratorService.generateOrFetchImage(
+                source, text, tenant.getAppImageModel(), tenant);
         String imageUrl = imgData != null ? imgData.imageUrl() : null;
 
         SwipeBatchResponse.SwipeVersionDto resultDto = new SwipeBatchResponse.SwipeVersionDto(
                 UUID.randomUUID().toString(), approach, structureTitle,
-                text, imageUrl, Math.max(200, text.length() / 4), 0.0009, (double) dur
+                text, imageUrl, generated.totalTokens(), null, null, generated.model()
         );
 
         if (cacheKey != null) {
@@ -567,7 +579,8 @@ public class PublicationController {
                 tokenFlux
         ).concatWith(reactor.core.publisher.Mono.fromSupplier(() -> {
             String fullText = fullTextBuilder.toString();
-            ImageGeneratorService.ImageData imageData = imageGeneratorService.generateOrFetchImage(finalSource, fullText);
+            ImageGeneratorService.ImageData imageData = imageGeneratorService.generateOrFetchImage(
+                    finalSource, fullText, tenant.getAppImageModel(), tenant);
             
             // Persistir borrador
             draftPreviewService.updateDraft(user.getTenant().getId(), fullText, imageData.imageUrl());
@@ -595,9 +608,12 @@ public class PublicationController {
     }
 
     @GetMapping("/search-image")
-    public ResponseEntity<Map<String, String>> searchImage(@RequestParam(defaultValue = "data analytics dashboard") String query) {
+    public ResponseEntity<Map<String, String>> searchImage(
+            @RequestParam(defaultValue = "data analytics dashboard") String query, Authentication auth) {
+        Tenant tenant = getUserTenant(authHelper.getCurrentUser(auth));
         ImageGeneratorService.ImageData img = imageGeneratorService.generateOrFetchImage(
-                new ContentSource(SourceMode.RESEARCH, query, query, null, null), query
+                new ContentSource(SourceMode.RESEARCH, query, query, null, null), query,
+                tenant != null ? tenant.getAppImageModel() : null, tenant
         );
         return ResponseEntity.ok(Map.of("imageUrl", img.imageUrl()));
     }
@@ -626,8 +642,9 @@ public class PublicationController {
                 .puntajeUsuario(req.puntajeUsuario() != null ? req.puntajeUsuario() : 0)
                 .estructuraUsada(req.estructuraUsada() != null ? req.estructuraUsada() : "DEFAULT")
                 .sourceMode(parsedMode)
-                .llmTokensUsed(req.tokensUsed() != null ? req.tokensUsed() : 500)
-                .costUsd(req.costUsd() != null ? BigDecimal.valueOf(req.costUsd()) : BigDecimal.valueOf(0.0007))
+                // Client-supplied estimates are not authoritative usage or billing data.
+                .llmTokensUsed(null)
+                .costUsd(null)
                 .build();
 
         FeedbackIa saved = feedbackIaRepository.save(feedback);

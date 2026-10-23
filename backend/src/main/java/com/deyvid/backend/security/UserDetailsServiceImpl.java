@@ -11,17 +11,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
     public static class Principal extends org.springframework.security.core.userdetails.User {
         private final long tokenVersion;
+        private final UUID userId;
+        private final UUID tenantId;
+        private final Integer aiRequestsPerMinute;
+        private final Instant aiRequestsPerMinuteExpiresAt;
         public Principal(User user, List<SimpleGrantedAuthority> authorities) {
             super(user.getEmail(), user.getPasswordHash() != null ? user.getPasswordHash() : "", user.getIsActive(), true, true, true, authorities);
             this.tokenVersion = user.getTokenVersion();
+            this.userId = user.getId();
+            this.tenantId = user.getTenant() != null ? user.getTenant().getId() : null;
+            this.aiRequestsPerMinute = user.getAiRequestsPerMinute();
+            this.aiRequestsPerMinuteExpiresAt = user.getAiRequestsPerMinuteExpiresAt();
         }
         public long getTokenVersion() { return tokenVersion; }
+        public UUID getUserId() { return userId; }
+        public UUID getTenantId() { return tenantId; }
+        public Integer getAiRequestsPerMinute() { return aiRequestsPerMinute; }
+        public Instant getAiRequestsPerMinuteExpiresAt() { return aiRequestsPerMinuteExpiresAt; }
     }
 
     private final UserRepository userRepository;

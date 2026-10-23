@@ -41,7 +41,6 @@ public class LinkedInOAuthService {
     private final AuthHelper auth;
     private final EncryptionService encryption;
     private final AuditLogService audit;
-    private final GitHubLinkedInBindingService githubBindings;
     private final JsonMapper json = JsonMapper.builder().build();
     private final WebClient http = WebClient.builder().build();
 
@@ -114,7 +113,6 @@ public class LinkedInOAuthService {
             credential.setIsEnabled(true);
             if (primary) credential.setIsPrimary(true);
             LinkedInCredential saved = credentials.save(credential);
-            githubBindings.syncConnectedAccount(saved.getId());
             audit.recordAction(user.getTenant(), user.getEmail(), "LINKEDIN_OAUTH_CONNECTED", "Perfil personal conectado por autorización OAuth");
             return "connected";
         } catch (Exception e) {

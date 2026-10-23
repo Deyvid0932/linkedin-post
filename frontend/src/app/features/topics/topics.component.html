@@ -4,15 +4,23 @@
       <p class="ui-meta">CONTENIDO · RESPALDO EDITORIAL</p>
       <h1 class="ui-title">
         Banco de ideas
-        <span class="ui-meta align-middle font-normal">{{ topics().length }} ideas</span>
+        <span class="ui-meta align-middle font-normal" aria-live="polite">
+          @if (topicsLoading()) {
+            Cargando…
+          } @else if (topicsLoadFailed()) {
+            No disponible
+          } @else {
+            {{ topics().length }} ideas
+          }
+        </span>
       </h1>
       <p class="ui-muted mt-2">
-        Elige qué tema investigar cuando no haya commits recientes en GitHub y organiza su
-        prioridad.
+        Organiza temas para tus publicaciones, explora nichos y guarda solo las ideas que quieras
+        desarrollar.
       </p>
     </div>
     <div class="ui-actions">
-      @if (topics().length) {
+      @if (activeMode() === 'bank' && topics().length) {
         <button
           type="button"
           class="ui-button"
@@ -22,15 +30,41 @@
           Vaciar banco
         </button>
       }
-      <button
-        type="button"
-        class="ui-button ui-button--primary"
-        (click)="isInputExpanded.set(!isInputExpanded())"
-      >
-        {{ isInputExpanded() ? 'Cerrar formulario' : 'Agregar ideas' }}
-      </button>
+      @if (activeMode() === 'bank') {
+        <button
+          type="button"
+          class="ui-button ui-button--primary"
+          (click)="isInputExpanded.set(!isInputExpanded())"
+        >
+          {{ isInputExpanded() ? 'Cerrar formulario' : 'Agregar ideas' }}
+        </button>
+      }
     </div>
   </header>
+
+  <nav class="flex flex-wrap gap-2 border-b border-slate-200 pb-3 dark:border-neutral-800" aria-label="Secciones de ideas">
+    <button
+      type="button"
+      class="ui-button"
+      [attr.aria-pressed]="activeMode() === 'bank'"
+      [disabled]="showClearAllModal() || !!topicToDelete()"
+      (click)="activeMode.set('bank')"
+    >
+      Banco de ideas
+      @if (!topicsLoading() && !topicsLoadFailed()) {
+        <span class="ui-meta">{{ topics().length }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      class="ui-button"
+      [attr.aria-pressed]="activeMode() === 'explore'"
+      [disabled]="showClearAllModal() || !!topicToDelete()"
+      (click)="activeMode.set('explore')"
+    >
+      Explorar señales
+    </button>
+  </nav>
 
   @if (feedbackNotice()) {
     <div
@@ -59,6 +93,183 @@
     </div>
   }
 
+  @if (activeMode() === 'explore') {
+  <section class="ui-card grid gap-5" aria-labelledby="explore-ideas-title">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="ui-meta">INVESTIGACIÓN E IDEACIÓN</p>
+        <h2 id="explore-ideas-title" class="ui-section-title mt-1">Explorar un nicho</h2>
+        <p class="ui-muted mt-1 max-w-2xl">
+          Consulta conversaciones públicas de Hacker News y genera propuestas editoriales. Los resultados representan esa comunidad, no tendencias de toda la web.
+        </p>
+      </div>
+      <span class="ui-status">Tú eliges qué guardar</span>
+    </div>
+    <form class="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/40 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end" (submit)="$event.preventDefault(); searchRecentSignals()">
+      <label class="grid min-w-0 gap-1.5 text-sm font-medium" for="explore-niche">
+        Tema o nicho
+        <input
+          id="explore-niche"
+          name="explore-niche"
+          [(ngModel)]="explorationNiche"
+          maxlength="160"
+          required
+          class="ui-input w-full"
+          placeholder="Ej.: seguridad en APIs con Spring Boot"
+        />
+      </label>
+      <div class="ui-actions sm:justify-end">
+        <button type="button" class="ui-button" (click)="exploreNiche()" [disabled]="!explorationNiche.trim() || exploring()">
+          {{ exploring() ? 'Generando…' : 'Proponer ideas con IA' }}
+        </button>
+        <button type="submit" class="ui-button ui-button--primary" [disabled]="!explorationNiche.trim() || loadingSignals()">
+          {{ loadingSignals() ? 'Buscando…' : 'Buscar señales' }}
+        </button>
+      </div>
+    </form>
+    <div class="ui-toolbar" aria-label="Filtros de señales recientes">
+      <label class="grid gap-1 text-sm font-medium" for="trend-period">
+        Periodo de búsqueda
+        <select
+          id="trend-period"
+          class="ui-input min-w-40"
+          [ngModel]="signalsPeriod()"
+          (ngModelChange)="setSignalsPeriod($event)"
+        >
+          <option value="24h">Últimas 24 horas</option>
+          <option value="7d">Últimos 7 días</option>
+          <option value="30d">Últimos 30 días</option>
+        </select>
+      </label>
+      <p class="ui-meta max-w-xl self-end pb-2">
+        La búsqueda consulta Hacker News por medio de Algolia. Las categorías se estiman a partir del título.
+      </p>
+    </div>
+    @if (explorationError()) {
+      <p class="ui-alert" role="alert">{{ explorationError() }}</p>
+    }
+    @if (exploredIdeas().length) {
+      <div class="grid gap-3 border-t border-slate-200 pt-4 dark:border-neutral-800">
+        <p class="ui-meta">Propuestas generadas · elige cuáles añadir al banco</p>
+        @for (idea of exploredIdeas(); track idea.title) {
+          <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+            <input
+              type="checkbox"
+              class="mt-1 accent-[var(--accent)]"
+              [checked]="idea.selected"
+              [disabled]="idea.alreadyInBank"
+              (change)="toggleExploredIdea(idea.title)"
+            />
+            <span class="min-w-0 flex-1 text-sm">{{ idea.title }}</span>
+            @if (idea.alreadyInBank) {
+              <span class="ui-meta">Ya está en el banco</span>
+            }
+          </label>
+        }
+        <div class="ui-toolbar justify-between">
+          <span class="ui-meta">{{ selectedExploredIdeas().length }} seleccionadas</span>
+          <button
+            type="button"
+            class="ui-button ui-button--primary"
+            (click)="saveExploredIdeas()"
+            [disabled]="savingExploredIdeas() || !selectedExploredIdeas().length"
+          >
+            {{ savingExploredIdeas() ? 'Guardando…' : 'Añadir selección al banco' }}
+          </button>
+        </div>
+      </div>
+    }
+    @if (signalsError()) {
+      <div class="ui-alert flex flex-wrap items-center justify-between gap-3" role="alert">
+        <span>{{ signalsError() }}</span>
+        <button type="button" class="ui-button" (click)="searchRecentSignals()" [disabled]="loadingSignals()">
+          Reintentar búsqueda
+        </button>
+      </div>
+    }
+    @if (loadingSignals()) {
+      <p class="ui-empty" role="status">Consultando Hacker News de las {{ signalsWindowLabel() }}…</p>
+    }
+    @if (signalsSource()) {
+      <div class="grid gap-4 border-t border-slate-200 pt-5 dark:border-neutral-800">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p class="ui-meta">{{ signalsSource() }}</p>
+            <h3 class="ui-section-title mt-1">Conversaciones encontradas</h3>
+            <p class="ui-meta mt-1">
+              @if (signalsNiche()) { Tema: {{ signalsNiche() }} · }
+              @if (signalsFetchedAt()) { Consultado {{ signalsFetchedAt() | date: 'short' }} }
+            </p>
+          </div>
+          <label class="grid gap-1 text-sm font-medium" for="trend-category">
+            Categoría estimada
+            <select
+              id="trend-category"
+              class="ui-input min-w-48"
+              [ngModel]="signalCategory()"
+              (ngModelChange)="signalCategory.set($event)"
+            >
+              <option value="ALL">Todas</option>
+              @for (category of trendCategories; track category) {
+                <option [value]="category">{{ category }}</option>
+              }
+            </select>
+          </label>
+        </div>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Resumen de resultados filtrados">
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Coincidencias</span>
+            <strong class="mt-1 block text-xl">{{ signalSummary().count }}</strong>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Puntos en los resultados</span>
+            <strong class="mt-1 block text-xl">{{ signalSummary().points }}</strong>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Comentarios en los resultados</span>
+            <strong class="mt-1 block text-xl">{{ signalSummary().comments }}</strong>
+          </div>
+        </div>
+        @for (signal of filteredRecentSignals(); track signal.id) {
+          <article class="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <div class="min-w-0 flex-1">
+              <a class="font-medium underline-offset-2 hover:underline focus-visible:outline-2" [href]="signal.discussionUrl" target="_blank" rel="noopener noreferrer">
+                {{ signal.title }}
+              </a>
+              <p class="ui-meta mt-1">{{ categoryForSignal(signal.title) }} · {{ signal.createdAt | date: 'short' }} · {{ signal.points }} puntos · {{ signal.comments }} comentarios</p>
+              @if (signalSaveErrorId() === signal.id) {
+                <p class="mt-1 text-sm text-rose-700 dark:text-rose-300" role="alert">
+                  No se pudo guardar. La señal sigue disponible para reintentar.
+                </p>
+              }
+            </div>
+            <button type="button" class="ui-button" (click)="saveSignal(signal)" [disabled]="signalAlreadySaved(signal) || savingSignalId() === signal.id">
+              {{ signalAlreadySaved(signal) ? 'Guardada' : savingSignalId() === signal.id ? 'Guardando…' : signalSaveErrorId() === signal.id ? 'Reintentar guardado' : 'Guardar como idea' }}
+            </button>
+          </article>
+        } @empty {
+          <p class="ui-empty">
+            @if (recentSignals().length) {
+              No hay señales de Hacker News en la categoría elegida para este periodo.
+            } @else {
+              No encontramos publicaciones para este nicho en el periodo elegido. Prueba con términos más generales.
+            }
+          </p>
+        }
+      </div>
+    } @else if (hasSearchedSignals() && !loadingSignals() && !signalsError()) {
+      <p class="ui-empty" role="status">La búsqueda terminó sin resultados para este tema.</p>
+    } @else if (!hasSearchedSignals()) {
+      <p class="ui-empty">
+        Elige un tema y busca conversaciones recientes. También puedes pedir a la IA propuestas editoriales sin guardarlas.
+      </p>
+    }
+  </section>
+  }
+
+  @if (activeMode() === 'bank') {
+  <div class="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+    <div class="grid min-w-0 gap-5">
   @if (showClearAllModal()) {
     <app-dialog title="Vaciar banco de ideas" (closed)="showClearAllModal.set(false)"
       ><p>
@@ -281,12 +492,89 @@
           </details>
         </article>
       } @empty {
-        <div class="ui-empty">
-          <strong class="block text-slate-900 dark:text-neutral-100"
-            >No hay ideas para mostrar</strong
-          ><span class="ui-meta">Cambia los filtros o agrega un tema nuevo.</span>
-        </div>
+        @if (topicsLoadFailed()) {
+          <div class="ui-empty" role="status">
+            <strong class="block text-slate-900 dark:text-neutral-100"
+              >No pudimos comprobar el contenido del banco</strong
+            ><span class="ui-meta">Revisa el aviso de error y vuelve a intentarlo.</span>
+          </div>
+        } @else {
+          <div class="ui-empty">
+            <strong class="block text-slate-900 dark:text-neutral-100"
+              >No hay ideas para mostrar</strong
+            ><span class="ui-meta">Cambia los filtros o agrega un tema nuevo.</span>
+          </div>
+        }
       }
     }
   </section>
+    </div>
+
+    <aside class="grid gap-4 xl:sticky xl:top-5" aria-label="Resumen del banco de ideas">
+      <section class="ui-card grid gap-4" aria-labelledby="ideas-summary-title">
+        <div>
+          <p class="ui-meta">TU CONTENIDO</p>
+          <h2 id="ideas-summary-title" class="ui-section-title mt-1">Resumen del banco</h2>
+          <p class="ui-muted mt-1 text-sm">Datos de las ideas guardadas en tu cuenta.</p>
+        </div>
+
+        @if (topicsLoading()) {
+          <p class="ui-empty" role="status">Actualizando el resumen del banco…</p>
+        } @else if (topicsLoadFailed()) {
+          <div class="grid gap-3" role="alert">
+            <p class="ui-muted text-sm">No se pueden confirmar los conteos hasta recuperar la conexión.</p>
+            <button type="button" class="ui-button" (click)="loadTopics()">Reintentar carga</button>
+          </div>
+        } @else {
+        <div class="grid grid-cols-2 gap-2">
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Total</span>
+            <strong class="mt-1 block text-xl">{{ topics().length }}</strong>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Disponibles</span>
+            <strong class="mt-1 block text-xl">{{ countAvailable() }}</strong>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Investigadas</span>
+            <strong class="mt-1 block text-xl">{{ countInvestigated() }}</strong>
+          </div>
+          <div class="rounded-lg border border-slate-200 p-3 dark:border-neutral-800">
+            <span class="ui-meta block">Categorías</span>
+            <strong class="mt-1 block text-xl">{{ categoryCount() }}</strong>
+          </div>
+        </div>
+
+        @if (categoryBreakdown().length) {
+          <div class="grid gap-2 border-t border-slate-200 pt-4 dark:border-neutral-800">
+            <h3 class="text-sm font-semibold">Categorías principales</h3>
+            @for (category of categoryBreakdown(); track category.name) {
+              <div class="flex items-center justify-between gap-3 text-sm">
+                <span class="min-w-0 truncate text-slate-600 dark:text-neutral-300">{{ category.name }}</span>
+                <span class="ui-status shrink-0">{{ category.count }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="ui-empty rounded-lg bg-slate-50 dark:bg-neutral-900/60">
+            Las categorías aparecerán cuando añadas ideas.
+          </p>
+        }
+        }
+      </section>
+
+      <section class="ui-card grid gap-3" aria-labelledby="ideas-sources-title">
+        <div>
+          <p class="ui-meta">FUENTE DE SEÑALES</p>
+          <h2 id="ideas-sources-title" class="mt-1 text-base font-semibold">Hacker News</h2>
+        </div>
+        <p class="ui-muted text-sm">
+          La búsqueda consulta publicaciones recientes mediante Algolia. Muestra actividad de esa
+          comunidad tecnológica, no tendencias de toda la web.
+        </p>
+        <p class="ui-meta">Ventana seleccionada: {{ signalsWindowLabel() }}</p>
+      </section>
+    </aside>
+  </div>
+  }
 </main>

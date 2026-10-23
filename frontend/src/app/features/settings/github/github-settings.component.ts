@@ -4,11 +4,6 @@ import { SlicePipe, DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { CredentialService } from '../../../core/services/credential.service';
 import { GitHubRepo, GitHubStatus } from '../../../core/models/credential.model';
-import { LinkedInAccount } from '../../../core/models/credential.model';
-import {
-  GitHubLinkedInBinding,
-  GitHubLinkedInBindingService,
-} from '../../../core/services/github-linkedin-binding.service';
 
 @Component({
   selector: 'app-github-settings',
@@ -19,15 +14,10 @@ import {
 export class GithubSettingsComponent implements OnInit {
   private fb = inject(FormBuilder);
   private credentialService = inject(CredentialService);
-  private bindingService = inject(GitHubLinkedInBindingService);
   private router = inject(Router);
 
   status = signal<GitHubStatus | null>(null);
   repos = signal<GitHubRepo[]>([]);
-  personalAccounts = signal<LinkedInAccount[]>([]);
-  private bindings = signal<Record<string, GitHubLinkedInBinding>>({});
-  private accountChoices = signal<Record<string, string>>({});
-  bindingBusy = signal<string | null>(null);
   isDragging = signal(false);
   repoUrl = signal('');
   adding = signal(false);
@@ -85,132 +75,14 @@ export class GithubSettingsComponent implements OnInit {
     this.credentialService.getMonitoredRepos().subscribe({
       next: (r) => {
         this.repos.set(r || []);
-        this.loadBindings(r || []);
       },
       error: (err) => console.warn('Error cargando repos:', err),
-    });
-    this.credentialService.getLinkedInAccounts().subscribe({
-      next: (accounts) => {
-        const personal = accounts.filter(
-          (account) => account.accountType === 'PERSON' && account.isEnabled && account.isValid,
-        );
-        this.personalAccounts.set(personal);
-        this.accountChoices.update((current) => {
-          const next = { ...current };
-          for (const repo of this.repos())
-            if (!next[repo.id])
-              next[repo.id] =
-                personal.find((account) => account.isPrimary)?.id || personal[0]?.id || '';
-          return next;
-        });
-      },
-      error: () =>
-        this.testMessage.set(
-          'No se pudo cargar la cuenta LinkedIn. Conéctala y vuelve a actualizar.',
-        ),
-    });
-  }
-
-  binding(repoId: string): GitHubLinkedInBinding | null {
-    return this.bindings()[repoId] || null;
-  }
-  accountChoice(repoId: string): string {
-    return this.accountChoices()[repoId] || '';
-  }
-  setAccountChoice(repoId: string, accountId: string): void {
-    this.accountChoices.update((value) => ({ ...value, [repoId]: accountId }));
-  }
-  bindingErrorText(code: string | null): string {
-    return code === 'GITHUB_NOT_CONNECTED'
-      ? 'Conecta GitHub primero.'
-      : code?.startsWith('GITHUB_HTTP_')
-        ? 'GitHub rechazó el acceso; revisa los permisos del PAT y el entorno production.'
-        : 'No se pudo sincronizar. Revisa el repositorio y vuelve a intentar.';
-  }
-
-  private loadBindings(repos: GitHubRepo[]): void {
-    for (const repo of repos)
-      this.bindingService.get(repo.id).subscribe({
-        next: (binding) => this.bindings.update((current) => ({ ...current, [repo.id]: binding })),
-        error: (response) => {
-          if (response?.status !== 404)
-            this.testMessage.set('No se pudo consultar una vinculación de Actions.');
-        },
-      });
-  }
-
-  saveBinding(repoId: string): void {
-    const accountId = this.accountChoice(repoId);
-    if (!accountId || this.bindingBusy()) return;
-    this.bindingBusy.set(repoId);
-    this.bindingService.save(repoId, accountId).subscribe({
-      next: (result) => {
-        this.bindings.update((current) => ({ ...current, [repoId]: result }));
-        this.bindingBusy.set(null);
-        this.testSuccess.set(result.status === 'SYNCED');
-        this.testMessage.set(
-          result.status === 'SYNCED'
-            ? 'Cuenta vinculada. Actions permanece pausado hasta que actives la publicación.'
-            : `Vinculación guardada, sincronización pendiente: ${this.bindingErrorText(result.errorCode)}.`,
-        );
-      },
-      error: () => {
-        this.bindingBusy.set(null);
-        this.testSuccess.set(false);
-        this.testMessage.set(
-          'No se pudo vincular esta cuenta. Revisa que el repositorio y la cuenta pertenezcan a tu espacio.',
-        );
-      },
-    });
-  }
-
-  retryBinding(repoId: string): void {
-    if (this.bindingBusy()) return;
-    this.bindingBusy.set(repoId);
-    this.bindingService.retry(repoId).subscribe({
-      next: (result) => {
-        this.bindings.update((current) => ({ ...current, [repoId]: result }));
-        this.bindingBusy.set(null);
-      },
-      error: () => {
-        this.bindingBusy.set(null);
-        this.testMessage.set(
-          'No se pudo reintentar la sincronización. Revisa los permisos GitHub del entorno.',
-        );
-      },
-    });
-  }
-
-  disconnectBinding(repoId: string): void {
-    if (
-      !confirm(
-        'Se pausará la publicación de este repositorio y AutoPost intentará retirar la credencial de production. Una ejecución ya iniciada puede continuar. ¿Desvincular?',
-      )
-    )
-      return;
-    if (this.bindingBusy()) return;
-    this.bindingBusy.set(repoId);
-    this.bindingService.disconnect(repoId).subscribe({
-      next: () => {
-        this.bindings.update((current) => {
-          const next = { ...current };
-          delete next[repoId];
-          return next;
-        });
-        this.bindingBusy.set(null);
-      },
-      error: () => {
-        this.bindingBusy.set(null);
-        this.testMessage.set(
-          'La limpieza remota falló; la vinculación se conserva. Reintenta antes de desconectar GitHub.',
-        );
-      },
     });
   }
 
   requestEditToken(): void {
     const ok = confirm(
-      'Advertencia:\n\nModificar las credenciales activas de GitHub puede interrumpir la sincronización automática de repositorios y publicaciones en curso.\n\n¿Deseas desbloquear y editar el token?',
+      'Advertencia:\n\nModificar las credenciales activas de GitHub puede interrumpir la lectura de repositorios configurados.\n\n¿Deseas desbloquear y editar el token?',
     );
     if (ok) {
       this.isEditingToken.set(true);

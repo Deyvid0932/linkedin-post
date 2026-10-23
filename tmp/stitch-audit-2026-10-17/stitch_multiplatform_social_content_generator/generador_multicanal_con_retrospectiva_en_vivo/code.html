@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"inverse-surface":"#dae2fd","primary":"#adc6ff","secondary-fixed":"#d3e4fe","secondary":"#b7c8e1","primary-fixed-dim":"#adc6ff","on-primary-container":"#00285d","secondary-container":"#3a4a5f","on-secondary":"#213145","on-background":"#dae2fd","outline":"#8c909f","surface-tint":"#adc6ff","tertiary":"#7bd0ff","secondary-fixed-dim":"#b7c8e1","surface-container-lowest":"#060e20","surface":"#0b1326","surface-container-highest":"#2d3449","outline-variant":"#424754","on-error":"#690005","error-container":"#93000a","on-tertiary":"#00354a","surface-container-low":"#131b2e","tertiary-fixed":"#c4e7ff","on-tertiary-fixed-variant":"#004c69","tertiary-container":"#009bd1","on-primary-fixed":"#001a42","on-surface-variant":"#c2c6d6","background":"#0b1326","on-error-container":"#ffdad6","on-tertiary-container":"#002d40","on-primary-fixed-variant":"#004395","surface-variant":"#2d3449","surface-container-high":"#222a3d","surface-dim":"#0b1326","error":"#ffb4ab","surface-bright":"#31394d","inverse-primary":"#005ac2","inverse-on-surface":"#283044","primary-container":"#4d8eff","tertiary-fixed-dim":"#7bd0ff","on-secondary-fixed-variant":"#38485d","primary-fixed":"#d8e2ff","on-primary":"#002e6a","on-secondary-fixed":"#0b1c30","surface-container":"#171f33","on-secondary-container":"#a9bad3","on-surface":"#dae2fd","on-tertiary-fixed":"#001e2c"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter-desktop":"1.5rem","gutter":"1rem","space-xl":"2rem","margin":"1rem","margin-desktop":"2rem","space-md":"0.75rem","space-sm":"0.5rem","space-xs":"0.25rem","space-lg":"1.25rem"},"fontFamily":{"body-sm":["Inter"],"headline-md":["Geist"],"label-sm":["Geist"],"body-md":["Inter"],"label-md":["Geist"],"code-sm":["Geist"],"headline-lg":["Geist"],"body-lg":["Inter"],"headline-xl-mobile":["Geist"],"headline-xl":["Geist"]},"fontSize":{"body-sm":["12px",{"lineHeight":"16px","letterSpacing":"0","fontWeight":"400"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"20px","letterSpacing":"-0.005em","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"500"}],"code-sm":["12px",{"lineHeight":"16px","letterSpacing":"0","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"400"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","letterSpacing":"-0.025em","fontWeight":"600"}],"headline-xl":["36px",{"lineHeight":"44px","letterSpacing":"-0.03em","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="OmniPost AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XTB6Cp02vCLeLcW4mP4rsfMec4FLohExAzNrzTmw94XVZ43qV81tfUeVTqDu2-JIuseKcUCUftSKPXKGwVFuWmI-0xIre7L0YbXCZ6fMiM5lsA6vsYW4Jm6SAItTxo0Nte0nRtdHgZTyP1xpN4nsgTYRrGLoLmRZxh_CEGzlmxSblzdY9Gq1Fc912YoGEcbbwr3uR31-eAj_BSzdqGWzD38H7YSr89YVp_T8SYlBq7urpkTWREY0tj0Q"/><span class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface">OmniPost</span></div><span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm uppercase bg-surface-container-highest text-tertiary">SaaS</span></div><div class="px-space-md py-space-sm"><div class="flex items-center p-0.5 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 px-space-sm rounded-lg text-label-md font-label-md font-medium text-center bg-surface-container-high text-on-surface shadow-[0_1px_4px_rgba(0,0,0,0.3)] transition-colors" type="button">Creador</button><button class="flex-1 py-1 px-space-sm rounded-lg text-label-md font-label-md font-medium text-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">Admin</button></div></div><nav class="flex flex-col gap-space-xs px-space-sm mt-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-medium"><a aria-current="page" class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg transition-colors bg-primary-container text-on-primary-container font-medium" data-path="generador" href="#"><span class="material-symbols-outlined text-[18px]">auto_awesome</span><span class="font-label-md text-label-md">Generador</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="ideas-y-nichos-web" href="#"><span class="material-symbols-outlined text-[18px]">lightbulb</span><span class="font-label-md text-label-md">Ideas y Nichos Web</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="historial" href="#"><span class="material-symbols-outlined text-[18px]">history</span><span class="font-label-md text-label-md">Historial</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="conexiones-de-redes-sociales" href="#"><span class="material-symbols-outlined text-[18px]">share</span><span class="font-label-md text-label-md">Conexiones Sociales</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="metricas-y-sugerencias-ia" href="#"><span class="material-symbols-outlined text-[18px]">query_stats</span><span class="font-label-md text-label-md">Métricas y Sugerencias</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="configuracion-de-proveedor-ia" href="#"><span class="material-symbols-outlined text-[18px]">key</span><span class="font-label-md text-label-md">Configuración BYOK</span></a></nav></div><div class="p-space-md bg-surface-container-lowest/60 m-space-sm rounded-lg flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant">Modelo Activo</span><span class="font-code-sm text-code-sm text-tertiary truncate max-w-[140px]">Claude 3.5 Sonnet</span></div><span class="h-2 w-2 rounded-full bg-tertiary animate-pulse"></span></div></aside><div class="pl-64 flex flex-col min-h-screen"><header class="fixed top-0 left-64 right-0 h-16 z-40 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md flex-1 max-w-md"><div class="relative w-full"><span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-[18px] text-outline">search</span><input class="w-full h-9 pl-9 pr-space-md bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar posts, ideas o tags (Cmd + K)..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-low"><span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span><span class="font-label-sm text-label-sm text-on-surface-variant">API: <strong class="text-on-surface font-medium">Online</strong></span></div><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">help_outline</span></button><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYHKlQPNSSeINJw0VrvtGrb8BnH-IzaTlirN9RqRqnpA7KwUU5OV4NURKjz-vRjBKHBjrKXmKXPVgDP1p_F3t8aggdSXSW2LtfG5gkFVrpJi2jLNnoFs4chXhO0F78GbJgbjg3ZoLt0ToeP_BHIO-DX60HhTLD6lM36i1NPCftl0g1QXsf1CkhpiU2uWBCzdtG7d3lWiBu5FqtFHW_oXmA42XKPNdjSo1cJQ_FzLJESxbuF_csD3Sa"/><div class="hidden lg:flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-tight">Elena Rostova</span><span class="font-label-sm text-label-sm text-on-surface-variant">Director Editorial</span></div></div></div></div></header><main class="w-full pt-16 bg-background flex-1 px-gutter-desktop py-space-xl"><div class="flex flex-col w-full gap-space-lg">
+<!-- Top Command Ribbon: High-Throughput Status & Operational Metrics -->
+<section class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-space-md p-space-md rounded-xl bg-surface-container shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center justify-center w-10 h-10 rounded-lg bg-surface-container-high text-primary shadow-sm">
+<span class="material-symbols-outlined text-[22px]">hub</span>
+</div>
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">Orquestador Multicanal</span>
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm uppercase bg-surface-container-highest text-tertiary">v3.4 Production</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Generación simultánea sintonizada con heurísticas nativas por plataforma</p>
+</div>
+</div>
+<!-- Telemetry Badges & Dispatch Actions -->
+<div class="flex flex-wrap items-center gap-space-sm w-full lg:w-auto">
+<div class="flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">speed</span>
+<span>Latencia Promedio: <span class="font-code-sm text-code-sm text-on-surface font-medium">840ms</span></span>
+</div>
+<div class="flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">token</span>
+<span>Presupuesto BYOK: <span class="font-code-sm text-code-sm text-primary font-medium">$42.80 / 1.2M tok</span></span>
+</div>
+<div class="h-6 w-px bg-surface-container-highest hidden sm:block"></div>
+<button class="flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-container-highest font-label-md text-label-md transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+<span>Programación Automática</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-primary-container text-on-primary-container hover:bg-primary font-label-md text-label-md transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]">send</span>
+<span class="font-semibold">Despachar a Todos</span>
+</button>
+</div>
+</section>
+<!-- Workspace Grid: 2 High-Density Operational Columns -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- LEFT COLUMN: Creation & Prompting Engine (xl:col-span-5) -->
+<div class="xl:col-span-5 flex flex-col gap-space-md">
+<!-- Studio Control Card -->
+<div class="flex flex-col rounded-xl bg-surface-container p-space-lg shadow-sm gap-space-md">
+<!-- Mode Switcher Tabs -->
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-space-xs">Modo de Ingesta</label>
+<div class="grid grid-cols-3 gap-0.5 p-0.5 rounded-lg bg-surface-container-lowest">
+<button class="mode-btn py-1.5 px-space-xs rounded-lg text-label-sm font-label-sm text-center bg-surface-container-high text-on-surface font-medium shadow-sm transition-colors" data-mode="free" type="button">
+              Prompt Libre
+            </button>
+<button class="mode-btn py-1.5 px-space-xs rounded-lg text-label-sm font-label-sm text-center text-on-surface-variant hover:text-on-surface transition-colors" data-mode="url" type="button">
+              URL / Tendencia
+            </button>
+<button class="mode-btn py-1.5 px-space-xs rounded-lg text-label-sm font-label-sm text-center text-on-surface-variant hover:text-on-surface transition-colors" data-mode="template" type="button">
+              Plantilla Nicho
+            </button>
+</div>
+</div>
+<!-- Dynamic Context Bar (Changes with mode) -->
+<div class="hidden flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low" id="url-input-container">
+<span class="material-symbols-outlined text-[16px] text-tertiary">link</span>
+<input class="w-full bg-transparent text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none" placeholder="https://techcrunch.com/article... o @trending-topic" type="text"/>
+<button class="text-label-sm font-label-sm px-space-xs py-0.5 rounded bg-surface-container-high text-primary hover:bg-surface-container-highest" type="button">Extraer</button>
+</div>
+<!-- Master Prompt Area -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Concepto Semilla / Instrucción</label>
+<span class="font-code-sm text-code-sm text-outline">182 / 2,000 caracteres</span>
+</div>
+<div class="relative rounded-lg bg-surface-container-lowest p-space-sm focus-within:ring-1 focus-within:ring-primary shadow-inner">
+<textarea class="w-full bg-transparent text-body-md font-body-md text-on-surface placeholder:text-outline resize-none focus:outline-none" id="master-prompt" placeholder="Escribe la idea central, lanzamiento, aprendizaje técnico o tesis que deseas propagar a todas las redes..." rows="5">Lanzamos OmniPost AI v3.4: Motor determinista de adaptación algorítmica para ejecutivos de tecnología. Reduce el tiempo de curación multicanal en 83% sin caer en clichés genéricos de IA, manteniendo rigor analítico.</textarea>
+<div class="flex items-center justify-between pt-space-xs mt-space-xs border-t-0 bg-surface-container-lowest/80">
+<div class="flex items-center gap-space-xs">
+<button class="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="Insertar métrica verificada" type="button">
+<span class="material-symbols-outlined text-[16px]">query_stats</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="Añadir framework Hook-Problem-Solve" type="button">
+<span class="material-symbols-outlined text-[16px]">account_tree</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors" title="Referenciar activos multimedia" type="button">
+<span class="material-symbols-outlined text-[16px]">attach_file</span>
+</button>
+</div>
+<div class="flex items-center gap-space-xs text-label-sm font-label-sm text-tertiary">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+<span>Contexto Enriquecido</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Strategic Parameters: Tone, Goal & Scope -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm">
+<!-- Tone Selector -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Tono Editorial</label>
+<div class="relative">
+<select class="w-full h-9 pl-space-sm pr-7 bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer">
+<option selected="" value="corp">Corporativo / C-Suite</option>
+<option value="provocative">Provocador / Contrarian</option>
+<option value="educational">Educativo / Técnico</option>
+<option value="storytelling">Storytelling / Fundador</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Conversion Goal -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Objetivo de Campaña</label>
+<div class="relative">
+<select class="w-full h-9 pl-space-sm pr-7 bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer">
+<option selected="" value="engagement">High Engagement</option>
+<option value="conversion">Conversión / Lead Gen</option>
+<option value="branding">Brand Authority</option>
+<option value="retention">Comunidad Activa</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Longitude / Density -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Densidad / Formato</label>
+<div class="relative">
+<select class="w-full h-9 pl-space-sm pr-7 bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer">
+<option selected="" value="optimal">Óptima por Red</option>
+<option value="micro">Micro-Posts Rápidos</option>
+<option value="deep">Ensayos Extensos</option>
+<option value="carousel">Estructura Carrusel</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[16px] text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Target Channels Multi-Select -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Canales de Destino Sincronizados</label>
+<button class="text-label-sm font-label-sm text-primary hover:underline" type="button">Seleccionar Todos</button>
+</div>
+<div class="grid grid-cols-2 gap-space-xs">
+<label class="channel-toggle flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded flex items-center justify-center bg-surface-container-lowest text-primary">
+<span class="material-symbols-outlined text-[16px]">work</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-medium">LinkedIn</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">3k chars • PDF/Text</span>
+</div>
+</div>
+<input checked="" class="w-4 h-4 rounded bg-surface-container-lowest accent-primary cursor-pointer" type="checkbox"/>
+</label>
+<label class="channel-toggle flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded flex items-center justify-center bg-surface-container-lowest text-tertiary">
+<span class="material-symbols-outlined text-[16px]">tag</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-medium">X (Twitter)</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">280 chars • Threading</span>
+</div>
+</div>
+<input checked="" class="w-4 h-4 rounded bg-surface-container-lowest accent-primary cursor-pointer" type="checkbox"/>
+</label>
+<label class="channel-toggle flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded flex items-center justify-center bg-surface-container-lowest text-error">
+<span class="material-symbols-outlined text-[16px]">smart_display</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-medium">YouTube</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">Shorts Script / Post</span>
+</div>
+</div>
+<input checked="" class="w-4 h-4 rounded bg-surface-container-lowest accent-primary cursor-pointer" type="checkbox"/>
+</label>
+<label class="channel-toggle flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex items-center gap-space-xs">
+<div class="w-7 h-7 rounded flex items-center justify-center bg-surface-container-lowest text-secondary">
+<span class="material-symbols-outlined text-[16px]">play_circle</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface font-medium">TikTok</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">Hook & Script Telemetry</span>
+</div>
+</div>
+<input checked="" class="w-4 h-4 rounded bg-surface-container-lowest accent-primary cursor-pointer" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- BYOK AI Provider Inline Strip -->
+<div class="p-space-sm rounded-lg bg-surface-container-lowest flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Motor de Inferencia</span>
+<span class="font-code-sm text-code-sm text-tertiary">Activo: claude-3-5-sonnet-20241022</span>
+</div>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-space-xs">
+<button class="provider-btn flex flex-col p-space-xs rounded bg-surface-container-high text-left transition-all" type="button">
+<span class="font-label-sm text-label-sm text-on-surface font-semibold truncate">Claude 3.5 Sonnet</span>
+<div class="flex items-center justify-between mt-1 text-[10px] text-on-surface-variant font-code-sm">
+<span class="text-tertiary">720ms</span>
+<span>$0.003/k</span>
+</div>
+</button>
+<button class="provider-btn flex flex-col p-space-xs rounded bg-surface-container-low text-left hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" type="button">
+<span class="font-label-sm text-label-sm font-semibold truncate">GPT-4o Omnichannel</span>
+<div class="flex items-center justify-between mt-1 text-[10px] text-outline font-code-sm">
+<span>650ms</span>
+<span>$0.005/k</span>
+</div>
+</button>
+<button class="provider-btn flex flex-col p-space-xs rounded bg-surface-container-low text-left hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" type="button">
+<span class="font-label-sm text-label-sm font-semibold truncate">Gemini 1.5 Pro</span>
+<div class="flex items-center justify-between mt-1 text-[10px] text-outline font-code-sm">
+<span>890ms</span>
+<span>$0.001/k</span>
+</div>
+</button>
+<button class="provider-btn flex flex-col p-space-xs rounded bg-surface-container-low text-left hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all" type="button">
+<span class="font-label-sm text-label-sm font-semibold truncate">DeepSeek V3</span>
+<div class="flex items-center justify-between mt-1 text-[10px] text-outline font-code-sm">
+<span>1.1s</span>
+<span>$0.0002/k</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Master Dispatch & Execution Triggers -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<button class="relative group w-full h-11 px-space-lg rounded-lg bg-primary text-on-primary hover:bg-inverse-surface hover:text-inverse-on-surface flex items-center justify-center gap-space-sm font-label-md text-label-md font-semibold transition-all shadow-md" id="btn-generate" type="button">
+<span class="material-symbols-outlined text-[20px] transition-transform group-hover:rotate-12">auto_awesome</span>
+<span>Generar y Adaptar con IA</span>
+<kbd class="hidden sm:inline-block ml-2 px-1.5 py-0.5 rounded text-[10px] font-code-sm bg-on-primary/15 text-on-primary font-mono tracking-tight">Cmd + ↵</kbd>
+</button>
+<div class="grid grid-cols-2 gap-space-sm mt-space-xs">
+<button class="h-9 px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface flex items-center justify-center gap-space-xs font-label-sm text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary">history</span>
+<span>Guardar como Borrador</span>
+</button>
+<button class="h-9 px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface flex items-center justify-center gap-space-xs font-label-sm text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">tune</span>
+<span>Reglas de Sistema (Prompts)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Live Heuristics Card -->
+<div class="rounded-xl bg-surface-container p-space-md flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-container-lowest text-tertiary">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md font-medium text-on-surface">Validación de Directrices 2025</span>
+<span class="block font-label-sm text-label-sm text-on-surface-variant">Evita shadowban por links externos tempranos</span>
+</div>
+</div>
+<span class="px-space-sm py-1 rounded-full text-label-sm font-label-sm font-medium bg-tertiary/10 text-tertiary">98% Fit Algorítmico</span>
+</div>
+</div>
+<!-- RIGHT COLUMN: Interactive Multi-Channel Retrospective (xl:col-span-7) -->
+<div class="xl:col-span-7 flex flex-col gap-space-md">
+<!-- Studio Preview Container -->
+<div class="rounded-xl bg-surface-container p-space-lg flex flex-col gap-space-md shadow-sm">
+<!-- Channels Navigation Tab Bar -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-sm pb-space-sm">
+<div class="flex items-center p-1 rounded-lg bg-surface-container-lowest w-full sm:w-auto overflow-x-auto">
+<button class="preview-tab active flex items-center gap-space-xs py-1.5 px-space-md rounded-lg text-label-md font-label-md bg-surface-container-high text-on-surface font-medium transition-all" data-target="linkedin" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">work</span>
+<span>LinkedIn</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary ml-1"></span>
+</button>
+<button class="preview-tab flex items-center gap-space-xs py-1.5 px-space-md rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all" data-target="twitter" type="button">
+<span class="material-symbols-outlined text-[16px]">tag</span>
+<span>X (Twitter)</span>
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary ml-1"></span>
+</button>
+<button class="preview-tab flex items-center gap-space-xs py-1.5 px-space-md rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all" data-target="youtube" type="button">
+<span class="material-symbols-outlined text-[16px]">smart_display</span>
+<span>YouTube Shorts</span>
+<span class="w-1.5 h-1.5 rounded-full bg-error ml-1"></span>
+</button>
+<button class="preview-tab flex items-center gap-space-xs py-1.5 px-space-md rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all" data-target="tiktok" type="button">
+<span class="material-symbols-outlined text-[16px]">play_circle</span>
+<span>TikTok Script</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary ml-1"></span>
+</button>
+</div>
+<!-- Simulator Telemetry Controls -->
+<div class="flex items-center gap-space-xs text-on-surface-variant">
+<span class="font-code-sm text-code-sm bg-surface-container-low px-space-sm py-1 rounded">Simulador Realista</span>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Copiar al portapapeles" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Expandir a pantalla completa" type="button">
+<span class="material-symbols-outlined text-[18px]">open_in_full</span>
+</button>
+</div>
+</div>
+<!-- DYNAMIC PREVIEWS VIEWPORT -->
+<div class="relative min-h-[460px] bg-surface-container-lowest rounded-xl p-space-md flex flex-col justify-start">
+<!-- TAB 1: REALISTIC LINKEDIN FEED CARD -->
+<div class="preview-panel flex flex-col gap-space-md w-full max-w-xl mx-auto rounded-xl bg-surface-container-low p-space-lg shadow-sm" id="preview-linkedin">
+<!-- Author Row -->
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-space-sm">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="High-resolution executive portrait of Elena Rostova, VP of Content Operations, neutral dark slate studio lighting, sharp focus, professional tech company headshot" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgO2-ANlt9pw4rZFvxwes_xC3JKP8oAr5ZIslqUJMRuM7PObtohW0NcEQKGU2VoeacQtL5OW2UERZe6OfnYRNfPrjYDmmAMOaQCfohq04KqsdEsjqdHLGL6vyC4IEL_puejgy8yqDmxdl9Iy3GTMHucriQZuO9fCQPo32HiT2IWzSxTGwpoufbWAExYwXGvaKhSzo1m-Tx5ncG3fohgUlc4PW_t7NE7JxKcbZwCS1qiaEkAmKc3m_e"/>
+<div>
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Elena Rostova</span>
+<span class="font-label-sm text-label-sm text-outline">• 1st</span>
+</div>
+<span class="block font-body-sm text-body-sm text-on-surface-variant">Head of Growth & Content Architecture | Ex-Fintech</span>
+<div class="flex items-center gap-1 text-[11px] text-outline font-label-sm">
+<span>14m • Editado</span>
+<span>•</span>
+<span class="material-symbols-outlined text-[12px]">public</span>
+</div>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<!-- Post Content -->
+<div class="flex flex-col gap-space-sm font-body-md text-body-md text-on-surface leading-relaxed">
+<p>El 80% del tiempo de un equipo de contenidos no se va en idear, sino en re-formatear.</p>
+<p>Hoy liberamos la arquitectura de <strong>OmniPost AI v3.4</strong>. El problema nunca fue la falta de prompts, sino el ruido del contexto genérico al adaptar un insight central entre canales.</p>
+<p class="text-on-surface-variant">Optimizamos para:</p>
+<ul class="list-disc pl-5 space-y-1 text-on-surface-variant font-body-sm text-body-sm">
+<li><strong class="text-on-surface">Retención algorítmica:</strong> Detección de caída de lectura antes del fold.</li>
+<li><strong class="text-on-surface">Cero alucinaciones:</strong> BYOK sobre modelos frontera (Claude 3.5 / DeepSeek V3).</li>
+<li><strong class="text-on-surface">Ahorro de $12k/mes</strong> en agencias de repurposing repetitivo.</li>
+</ul>
+<div class="flex flex-wrap gap-1 text-primary font-label-md text-label-md pt-1">
+<span>#SaaSMetrics</span> <span>#ContentOps</span> <span>#MarketingAI</span> <span>#GrowthEngineering</span>
+</div>
+</div>
+<!-- Simulated Media / Rich Snippet -->
+<div class="rounded-lg bg-surface-container overflow-hidden">
+<div class="w-full h-48 bg-cover bg-center" data-alt="High tech dark mode telemetry dashboard displaying real-time metrics, automated marketing pipelines, and sleek data visualizations with blue and slate cyan glowing accents" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC7-pywGvJ08wubc2CYC1eEyVbmHQkdThSFpoktNwNPqXCt0Ibtv4u8wLMS-FujeZ2KgjTtLn5J4nAGPMpd7YZ6Wd9mm_Rkvh38AfHzGQRlWZ9P5gTYgHPBPT_UdUxLNyyLKszzth9OEDH3evUJb3i_AsPKMZNpkVBwvOxfulzbaryVQdKZd_Ks5KJ4DPXSnhUW6frHxkvnv3gWd0WGyMpqaKd7T5o1-pYqK1bHFo6ocEEBarHeF4zr')"></div>
+<div class="p-space-md flex flex-col gap-0.5 bg-surface-container-high">
+<span class="font-label-sm text-label-sm text-tertiary uppercase tracking-wider">omnipost.ai/v3-telemetry</span>
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">Arquitectura de Inferencia Multicanal Determinista</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Lectura de 4 min • Documento Técnico con Benchmarks de Conversión</span>
+</div>
+</div>
+<!-- Reaction Metrics Counter -->
+<div class="flex items-center justify-between py-1 text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="flex -space-x-1">
+<span class="w-4 h-4 rounded-full bg-primary flex items-center justify-center text-[10px] text-on-primary">👍</span>
+<span class="w-4 h-4 rounded-full bg-tertiary flex items-center justify-center text-[10px] text-on-tertiary">💡</span>
+</span>
+<span class="text-label-sm font-label-sm ml-1">428 interacciones</span>
+</div>
+<span class="text-label-sm font-label-sm">37 comentarios • 19 compartidos</span>
+</div>
+<!-- Social Action Bar -->
+<div class="grid grid-cols-4 gap-1 pt-space-xs">
+<button class="flex items-center justify-center gap-1 py-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+<span>Recomendar</span>
+</button>
+<button class="flex items-center justify-center gap-1 py-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">mode_comment</span>
+<span>Comentar</span>
+</button>
+<button class="flex items-center justify-center gap-1 py-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">repeat</span>
+<span>Republicar</span>
+</button>
+<button class="flex items-center justify-center gap-1 py-1.5 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span>
+<span>Enviar</span>
+</button>
+</div>
+</div>
+<!-- TAB 2: REALISTIC X (TWITTER) POST -->
+<div class="preview-panel hidden flex flex-col gap-space-md w-full max-w-xl mx-auto rounded-xl bg-surface-container-low p-space-lg shadow-sm" id="preview-twitter">
+<div class="flex items-start gap-space-md">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Square avatar portrait of tech executive Elena Rostova in dark monochrome aesthetics with soft blue rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxn4l4Dldd519AOX6KDxzdHAg4fw4EGZdzm4RmaHw7h1_jgDg_oBvsgJfrUD6EP4I6lL4v5hoE7rZgqufPKVoi8sjCq2yXyEEv9wVu95DJNdvSPTVgBeBBbkDs3iveVxVWBJzFnD83T48gxPQ4pEvdOjlhox1x2KIC915L1HPGhndiHr1aZtAA42DYouDX0NzBLGoXS60t1et7UaYlWYugcMRm9ux0XNcQcbVylN7an32oItGK38Mh"/>
+<div class="flex flex-col flex-1">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Elena Rostova</span>
+<span class="material-symbols-outlined text-[16px] text-tertiary">verified</span>
+<span class="font-body-sm text-body-sm text-outline">@elena_rostova</span>
+<span class="font-body-sm text-body-sm text-outline">· 12m</span>
+</div>
+<!-- Tweet Copy -->
+<p class="font-body-md text-body-md text-on-surface mt-space-xs leading-relaxed">
+                  Lanzamos OmniPost AI v3.4.
+                  <br/><br/>
+                  La mayoría de herramientas queman tokens redactando el mismo texto con emojis diferentes.
+                  <br/><br/>
+                  Construimos heurísticas nativas: X premia los contrastes punzantes, LinkedIn el desglose estructurado.
+                  <br/><br/>
+                  Benchmark abierto abajo 👇
+                </p>
+<!-- Media Embed -->
+<div class="mt-space-md rounded-xl overflow-hidden bg-surface-container shadow-inner">
+<div class="w-full h-52 bg-cover bg-center" data-alt="High contrast performance chart comparing social media output speeds and engagement uplift with minimalistic glowing blue lines on deep obsidian background" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDpL5K_hACAcxoMihbTKoStrrdrVDotd5-mOgcWYBDQyT6U9WKahe7kB9_-WyA-j3bsGwEqTa0C5sRQTDvsjSWoo4rnUPd7edxm9rff1M4-KcWRhluR52rqqYcqgXOH3WtDpLU7Uy6YRNQhClEfAjzy0wffeE24Zb1JtBxr_lg9kHScdhlu-H9lHjworLG6TenmsLn2SLtFvyj7cIXedJSAr2fkHaHsdnULekAs5pU-SEiUjl75WUcp')"></div>
+</div>
+<!-- Live Character Meter Badge -->
+<div class="flex items-center justify-between mt-space-md pt-space-xs">
+<div class="flex items-center gap-space-xs font-code-sm text-code-sm text-tertiary">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span>234 / 280 caracteres (Óptimo)</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">X Pro Verified Thread</span>
+</div>
+<!-- Tweet Metric Buttons -->
+<div class="flex items-center justify-between text-on-surface-variant pt-space-sm text-body-sm font-body-sm">
+<div class="flex items-center gap-1 hover:text-tertiary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+<span>42</span>
+</div>
+<div class="flex items-center gap-1 hover:text-primary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px]">repeat</span>
+<span>128</span>
+</div>
+<div class="flex items-center gap-1 hover:text-error cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px]">favorite_border</span>
+<span>1,894</span>
+</div>
+<div class="flex items-center gap-1 hover:text-tertiary cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px]">bar_chart</span>
+<span>48.2K</span>
+</div>
+<div class="flex items-center gap-1 hover:text-on-surface cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+<span class="material-symbols-outlined text-[18px]">share</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 3: REALISTIC YOUTUBE SHORTS SCRIPT & MINIATURE -->
+<div class="preview-panel hidden flex flex-col gap-space-md w-full max-w-2xl mx-auto rounded-xl bg-surface-container-low p-space-lg shadow-sm" id="preview-youtube">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-error text-[20px]">smart_display</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">Estructura Short / Video Script (60s)</span>
+</div>
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-tertiary">Ritmo: 145 wpm</span>
+</div>
+<!-- Split Preview: Visual & Script Breakdown -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-md items-start">
+<!-- Vertical Frame Mockup (md:col-span-5) -->
+<div class="md:col-span-5 rounded-xl bg-surface-container-lowest p-space-xs flex flex-col shadow-inner">
+<div class="relative w-full aspect-[9/16] rounded-lg overflow-hidden bg-surface-container-high">
+<div class="w-full h-full bg-cover bg-center flex flex-col justify-between p-space-md" data-alt="Vertical 9:16 mobile video frame showing an executive woman speaking with bold kinetic typography subtitle overlay in electric blue and white saying '83% MAS RAPIDO', cinematic corporate studio" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBKFVJm-Z3J-DG8oe-SjySpXbcbRjitYryQysnTbev2YMSrxYYU9KC5PbSQMsDCNLVMGgIVEpiJr2wpKoFDTiGy1tF83etr_g7-4iXS4gB4GfXHF50aYNEEI184U6mTLPsQESTAgSp23telWpEQS7f600SmHmsxAPalnmONX9Lcx7od_ZPIvg2-fvhwN23VugvB0KyTrBM8tzYOs3p4Rw7QTyuO4W12MtNJFsWSYkFPtRSXq2KgbThz')">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 rounded bg-surface/80 text-[10px] font-code-sm text-tertiary">PREVIEW 9:16</span>
+<span class="material-symbols-outlined text-on-surface text-[18px]">volume_up</span>
+</div>
+<div class="flex flex-col gap-1 bg-surface/80 p-space-sm rounded-lg backdrop-blur-sm">
+<span class="font-label-sm text-label-sm text-tertiary uppercase">Gancho Visual</span>
+<span class="font-headline-md text-headline-md font-bold text-on-surface leading-tight">"Por qué tu equipo pierde 4 horas al día en LinkedIn"</span>
+</div>
+</div>
+</div>
+<div class="py-space-xs px-1 text-center font-label-sm text-label-sm text-on-surface-variant">
+                  Duración calculada: <strong>48 segundos</strong>
+</div>
+</div>
+<!-- Interactive Telemetry Script (md:col-span-7) -->
+<div class="md:col-span-7 flex flex-col gap-space-sm">
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1">
+<div class="flex items-center justify-between text-tertiary font-label-sm text-label-sm">
+<span class="font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">bolt</span> 00:00 - 00:03 • GANCHO
+                    </span>
+<span class="font-code-sm">Retención crítica</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface italic">"Si tu equipo todavía reescribe manualmente cada post para 4 redes, estás pagando un salario entero solo en copiado y pegado."</p>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1">
+<div class="flex items-center justify-between text-primary font-label-sm text-label-sm">
+<span class="font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">data_object</span> 00:03 - 00:32 • NÚCLEO DE VALOR
+                    </span>
+<span class="font-code-sm">Demostración UI</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Analizamos 50,000 publicaciones con Claude 3.5. La diferencia no está en las palabras clave, sino en cómo el algoritmo interpreta el espaciado y el primer link."</p>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col gap-1">
+<div class="flex items-center justify-between text-secondary font-label-sm text-label-sm">
+<span class="font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">call_to_action</span> 00:32 - 00:48 • CTA DIRECTO
+                    </span>
+<span class="font-code-sm">Comentario fijado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">"Dejamos el benchmark completo de latencia y costo token en el primer comentario. Pruébalo en tu consola."</p>
+</div>
+</div>
+</div>
+</div>
+<!-- TAB 4: REALISTIC TIKTOK SCRIPT & CAPTION -->
+<div class="preview-panel hidden flex flex-col gap-space-md w-full max-w-xl mx-auto rounded-xl bg-surface-container-low p-space-lg shadow-sm" id="preview-tiktok">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs text-secondary">
+<span class="material-symbols-outlined text-[20px]">play_circle</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">TikTok Content Model</span>
+</div>
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-secondary">Algoritmo For You (FYP)</span>
+</div>
+<div class="flex flex-col gap-space-sm bg-surface-container-lowest p-space-md rounded-xl">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Caption + SEO Tags</span>
+<span class="font-code-sm text-code-sm text-tertiary">148 chars</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface">
+                Automatizar sin sonar a robot existe y te ahorra 15h semanales. Así adaptamos contenido corporativo con modelos BYOK ⚡️ #techtok #productividad #saasgrowth #creaciondecontenido
+              </p>
+</div>
+<!-- Telemetry Matrix for TikTok -->
+<div class="grid grid-cols-3 gap-space-sm">
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hook Score</span>
+<span class="font-headline-md text-headline-md font-semibold text-tertiary mt-1">94/100</span>
+<span class="font-body-sm text-body-sm text-outline">Provocación alta</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Audio Match</span>
+<span class="font-headline-md text-headline-md font-semibold text-primary mt-1">Tech Minimal</span>
+<span class="font-body-sm text-body-sm text-outline">120 BPM Lo-Fi</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Trending Niche</span>
+<span class="font-headline-md text-headline-md font-semibold text-secondary mt-1">B2B Creators</span>
+<span class="font-body-sm text-body-sm text-outline">+34% esta semana</span>
+</div>
+</div>
+<!-- Visual Director Instructions -->
+<div class="p-space-sm rounded-lg bg-surface-container-high flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px] mt-0.5">videocam</span>
+<div class="text-body-sm font-body-sm text-on-surface-variant">
+<strong class="text-on-surface">Pauta de Grabación:</strong> Grabar plano cerrado con luz cenital fría. Mostrar pantalla en segundo 00:04 con corte rápido para romper el patrón de scroll.
+              </div>
+</div>
+</div>
+</div>
+<!-- Quick Tuning Bottom Toolbar -->
+<div class="flex flex-col gap-space-xs pt-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">tune</span>
+              Afinación Rápida con 1 Clic
+            </span>
+<span class="font-label-sm text-label-sm text-outline">Afecta al canal activo o a la matriz global</span>
+</div>
+<div class="flex flex-wrap items-center gap-space-xs">
+<button class="tune-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-tertiary">coffee</span>
+<span>Regenerar con tono más casual</span>
+</button>
+<button class="tune-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-primary">compress</span>
+<span>Hacer más conciso (-30%)</span>
+</button>
+<button class="tune-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-error">local_fire_department</span>
+<span>Añadir gancho controversial</span>
+</button>
+<button class="tune-pill flex items-center gap-space-xs px-space-md py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">trending_up</span>
+<span>Inyectar métricas de caso</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Cross-Channel Pipeline Health Matrix -->
+<div class="rounded-xl bg-surface-container p-space-md grid grid-cols-2 sm:grid-cols-4 gap-space-md shadow-sm">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Calidad de Copy Global</span>
+<span class="font-headline-md text-headline-md font-semibold text-tertiary">9.6 / 10</span>
+<span class="font-body-sm text-body-sm text-outline">Sin clichés GPT</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Tiempo Estimado Ahorrado</span>
+<span class="font-headline-md text-headline-md font-semibold text-primary">3h 45m</span>
+<span class="font-body-sm text-body-sm text-outline">Por esta ejecución</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Canales Validados</span>
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">4 de 4</span>
+<span class="font-body-sm text-body-sm text-tertiary">Listos para disparo</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Costo de Inferencia</span>
+<span class="font-headline-md text-headline-md font-semibold text-secondary">$0.0084</span>
+<span class="font-body-sm text-body-sm text-outline">2,410 tokens procesados</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Interactive UI State Management
+  (function() {
+    // 1. Channel Preview Switcher
+    const previewTabs = document.querySelectorAll('.preview-tab');
+    const previewPanels = document.querySelectorAll('.preview-panel');
+
+    previewTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.getAttribute('data-target');
+        
+        // Reset tab styles
+        previewTabs.forEach(t => {
+          t.classList.remove('bg-surface-container-high', 'text-on-surface', 'font-medium');
+          t.classList.add('text-on-surface-variant');
+        });
+        tab.classList.add('bg-surface-container-high', 'text-on-surface', 'font-medium');
+        tab.classList.remove('text-on-surface-variant');
+
+        // Toggle Preview Panels
+        previewPanels.forEach(panel => {
+          panel.classList.add('hidden');
+        });
+        const targetPanel = document.getElementById(`preview-${target}`);
+        if (targetPanel) {
+          targetPanel.classList.remove('hidden');
+        }
+      });
+    });
+
+    // 2. Mode Selector Logic
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    const urlContainer = document.getElementById('url-input-container');
+    const masterPrompt = document.getElementById('master-prompt');
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        modeButtons.forEach(b => {
+          b.classList.remove('bg-surface-container-high', 'text-on-surface', 'font-medium', 'shadow-sm');
+          b.classList.add('text-on-surface-variant');
+        });
+        btn.classList.add('bg-surface-container-high', 'text-on-surface', 'font-medium', 'shadow-sm');
+        btn.classList.remove('text-on-surface-variant');
+
+        const mode = btn.getAttribute('data-mode');
+        if (mode === 'url') {
+          urlContainer.classList.remove('hidden');
+          masterPrompt.placeholder = "Indica qué ángulo deseas extraer o priorizar de la URL analizada...";
+        } else if (mode === 'template') {
+          urlContainer.classList.add('hidden');
+          masterPrompt.value = "[Framework Problema-Agitación-Solución]: Describir cómo los equipos enterprise sufren con pipelines de contenido fragmentados y cómo unificar el stack en un orquestador BYOK resuelve la fuga de atención.";
+        } else {
+          urlContainer.classList.add('hidden');
+          masterPrompt.value = "Lanzamos OmniPost AI v3.4: Motor determinista de adaptación algorítmica para ejecutivos de tecnología. Reduce el tiempo de curación multicanal en 83% sin caer en clichés genéricos de IA, manteniendo rigor analítico.";
+        }
+      });
+    });
+
+    // 3. Provider Selector Visual Feedback
+    const providerButtons = document.querySelectorAll('.provider-btn');
+    providerButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        providerButtons.forEach(b => {
+          b.classList.remove('bg-surface-container-high', 'text-on-surface');
+          b.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+        });
+        btn.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+        btn.classList.add('bg-surface-container-high', 'text-on-surface');
+      });
+    });
+
+    // 4. Keyboard Shortcut Listener (Cmd+Enter / Ctrl+Enter)
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        const btnGen = document.getElementById('btn-generate');
+        if (btnGen) {
+          btnGen.classList.add('scale-95');
+          setTimeout(() => btnGen.classList.remove('scale-95'), 150);
+          btnGen.click();
+        }
+      }
+    });
+
+    // 5. Quick Tune Pills micro-animation
+    const tunePills = document.querySelectorAll('.tune-pill');
+    tunePills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const originalText = pill.innerHTML;
+        pill.innerHTML = `<span class="material-symbols-outlined text-[16px] text-tertiary animate-spin">sync</span><span>Sintonizando...</span>`;
+        setTimeout(() => {
+          pill.innerHTML = originalText;
+        }, 600);
+      });
+    });
+  })();
+</script></main></div></body></html>

@@ -6,76 +6,35 @@ import { ProfileComponent } from './profile.component';
 import { AuthService } from '../../core/services/auth.service';
 
 describe('ProfileComponent', () => {
-  const currentUserSignal = signal({
-    userId: 'u1',
-    tenantId: 't1',
-    name: 'Deyvid Silva',
-    email: 'deyvid@example.com',
-    roles: ['USER'],
-  });
-  let component: ProfileComponent;
-  let auth: {
-    currentUserSignal: typeof currentUserSignal;
-    updateProfile: ReturnType<typeof vi.fn>;
-    logout: ReturnType<typeof vi.fn>;
-  };
-
+  let auth: { currentUserSignal: ReturnType<typeof signal>; updateProfile: ReturnType<typeof vi.fn> };
   beforeEach(() => {
-    currentUserSignal.set({
-      userId: 'u1',
-      tenantId: 't1',
-      name: 'Deyvid Silva',
-      email: 'deyvid@example.com',
-      roles: ['USER'],
-    });
     auth = {
-      currentUserSignal,
-      updateProfile: vi.fn(() => of({ name: 'Deyvid Nuevo' })),
-      logout: vi.fn(),
+      currentUserSignal: signal({ userId:'u1',tenantId:'t1',name:'Deyvid Silva',email:'deyvid@example.test',roles:['ROLE_USER'] }),
+      updateProfile: vi.fn(() => of({ name:'Deyvid Nuevo' })),
     };
-    TestBed.configureTestingModule({
-      imports: [ProfileComponent],
-      providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
-    });
-    component = TestBed.createComponent(ProfileComponent).componentInstance;
+    TestBed.configureTestingModule({ imports:[ProfileComponent], providers:[provideRouter([]),{provide:AuthService,useValue:auth}] });
   });
-
-  it('updates name and leaves the email read-only in the UI model', () => {
+  it('updates only the name and keeps email read-only', () => {
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
     component.form.controls.name.setValue('Deyvid Nuevo');
     component.save();
-    expect(auth.updateProfile).toHaveBeenCalledWith('Deyvid Nuevo', '', '');
+    expect(auth.updateProfile).toHaveBeenCalledWith('Deyvid Nuevo','','');
     expect(component.message()).toBe('Tu perfil se actualizó.');
+    expect((fixture.nativeElement.querySelector('#profile-email') as HTMLInputElement).readOnly).toBe(true);
+    expect(fixture.nativeElement.querySelector('input[type="password"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/settings/security"]')).not.toBeNull();
   });
-
-  it('requires current password and matching confirmation before password update', () => {
-    component.form.patchValue({ newPassword: 'nueva123', confirmPassword: 'diferente' });
+  it('rejects blank names and keeps the input after a server failure', () => {
+    const component = TestBed.createComponent(ProfileComponent).componentInstance;
+    component.form.controls.name.setValue('   ');
     component.save();
     expect(auth.updateProfile).not.toHaveBeenCalled();
-    expect(component.error()).toContain('contraseña actual');
-  });
-
-  it('shows API failures without discarding the form values', () => {
-    auth.updateProfile.mockReturnValue(
-      throwError(() => ({ error: { message: 'Contraseña actual incorrecta' } })),
-    );
-    component.form.patchValue({
-      name: 'Deyvid Nuevo',
-      currentPassword: 'badpass',
-      newPassword: 'newpass',
-      confirmPassword: 'newpass',
-    });
+    auth.updateProfile.mockReturnValue(throwError(() => ({ error:{message:'No disponible'} })));
+    component.form.controls.name.setValue('Deyvid Nuevo');
     component.save();
-    expect(component.error()).toBe('Contraseña actual incorrecta');
+    expect(component.error()).toBe('No disponible');
     expect(component.form.controls.name.value).toBe('Deyvid Nuevo');
-  });
-
-  it('ends the old session after a password change and explains why on the login page', () => {
-    component.form.patchValue({
-      currentPassword: 'oldpass',
-      newPassword: 'newpass',
-      confirmPassword: 'newpass',
-    });
-    component.save();
-    expect(auth.logout).toHaveBeenCalledWith({ passwordUpdated: 'true' });
   });
 });

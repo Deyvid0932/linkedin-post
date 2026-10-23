@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"inverse-surface":"#dae2fd","primary":"#adc6ff","secondary-fixed":"#d3e4fe","secondary":"#b7c8e1","primary-fixed-dim":"#adc6ff","on-primary-container":"#00285d","secondary-container":"#3a4a5f","on-secondary":"#213145","on-background":"#dae2fd","outline":"#8c909f","surface-tint":"#adc6ff","tertiary":"#7bd0ff","secondary-fixed-dim":"#b7c8e1","surface-container-lowest":"#060e20","surface":"#0b1326","surface-container-highest":"#2d3449","outline-variant":"#424754","on-error":"#690005","error-container":"#93000a","on-tertiary":"#00354a","surface-container-low":"#131b2e","tertiary-fixed":"#c4e7ff","on-tertiary-fixed-variant":"#004c69","tertiary-container":"#009bd1","on-primary-fixed":"#001a42","on-surface-variant":"#c2c6d6","background":"#0b1326","on-error-container":"#ffdad6","on-tertiary-container":"#002d40","on-primary-fixed-variant":"#004395","surface-variant":"#2d3449","surface-container-high":"#222a3d","surface-dim":"#0b1326","error":"#ffb4ab","surface-bright":"#31394d","inverse-primary":"#005ac2","inverse-on-surface":"#283044","primary-container":"#4d8eff","tertiary-fixed-dim":"#7bd0ff","on-secondary-fixed-variant":"#38485d","primary-fixed":"#d8e2ff","on-primary":"#002e6a","on-secondary-fixed":"#0b1c30","surface-container":"#171f33","on-secondary-container":"#a9bad3","on-surface":"#dae2fd","on-tertiary-fixed":"#001e2c"},"borderRadius":{"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},"spacing":{"gutter-desktop":"1.5rem","gutter":"1rem","space-xl":"2rem","margin":"1rem","margin-desktop":"2rem","space-md":"0.75rem","space-sm":"0.5rem","space-xs":"0.25rem","space-lg":"1.25rem"},"fontFamily":{"body-sm":["Inter"],"headline-md":["Geist"],"label-sm":["Geist"],"body-md":["Inter"],"label-md":["Geist"],"code-sm":["Geist"],"headline-lg":["Geist"],"body-lg":["Inter"],"headline-xl-mobile":["Geist"],"headline-xl":["Geist"]},"fontSize":{"body-sm":["12px",{"lineHeight":"16px","letterSpacing":"0","fontWeight":"400"}],"headline-md":["20px",{"lineHeight":"28px","letterSpacing":"-0.015em","fontWeight":"500"}],"label-sm":["11px",{"lineHeight":"14px","letterSpacing":"0.04em","fontWeight":"500"}],"body-md":["14px",{"lineHeight":"20px","letterSpacing":"-0.005em","fontWeight":"400"}],"label-md":["13px",{"lineHeight":"18px","letterSpacing":"0.01em","fontWeight":"500"}],"code-sm":["12px",{"lineHeight":"16px","letterSpacing":"0","fontWeight":"400"}],"headline-lg":["24px",{"lineHeight":"32px","letterSpacing":"-0.02em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"24px","letterSpacing":"-0.01em","fontWeight":"400"}],"headline-xl-mobile":["28px",{"lineHeight":"36px","letterSpacing":"-0.025em","fontWeight":"600"}],"headline-xl":["36px",{"lineHeight":"44px","letterSpacing":"-0.03em","fontWeight":"600"}]}}}};</script></head><body class="bg-background font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="flex flex-col"><div class="h-16 px-space-md flex items-center justify-between"><div class="flex items-center gap-space-sm"><img alt="OmniPost AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XTB6Cp02vCLeLcW4mP4rsfMec4FLohExAzNrzTmw94XVZ43qV81tfUeVTqDu2-JIuseKcUCUftSKPXKGwVFuWmI-0xIre7L0YbXCZ6fMiM5lsA6vsYW4Jm6SAItTxo0Nte0nRtdHgZTyP1xpN4nsgTYRrGLoLmRZxh_CEGzlmxSblzdY9Gq1Fc912YoGEcbbwr3uR31-eAj_BSzdqGWzD38H7YSr89YVp_T8SYlBq7urpkTWREY0tj0Q"/><span class="font-headline-md text-headline-md font-semibold tracking-tight text-on-surface">OmniPost</span></div><span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm uppercase bg-surface-container-highest text-tertiary">SaaS</span></div><div class="px-space-md py-space-sm"><div class="flex items-center p-0.5 rounded-lg bg-surface-container-lowest"><button class="flex-1 py-1 px-space-sm rounded-lg text-label-md font-label-md font-medium text-center bg-surface-container-high text-on-surface shadow-[0_1px_4px_rgba(0,0,0,0.3)] transition-colors" type="button">Creador</button><button class="flex-1 py-1 px-space-sm rounded-lg text-label-md font-label-md font-medium text-center text-on-surface-variant hover:text-on-surface transition-colors" type="button">Admin</button></div></div><nav class="flex flex-col gap-space-xs px-space-sm mt-space-sm" data-active-classes="bg-primary-container text-on-primary-container font-medium"><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="generador" href="#"><span class="material-symbols-outlined text-[18px]">auto_awesome</span><span class="font-label-md text-label-md">Generador</span></a><a aria-current="page" class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg transition-colors bg-primary-container text-on-primary-container font-medium" data-path="ideas-y-nichos-web" href="#"><span class="material-symbols-outlined text-[18px]">lightbulb</span><span class="font-label-md text-label-md">Ideas y Nichos Web</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="historial" href="#"><span class="material-symbols-outlined text-[18px]">history</span><span class="font-label-md text-label-md">Historial</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="conexiones-de-redes-sociales" href="#"><span class="material-symbols-outlined text-[18px]">share</span><span class="font-label-md text-label-md">Conexiones Sociales</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="metricas-y-sugerencias-ia" href="#"><span class="material-symbols-outlined text-[18px]">query_stats</span><span class="font-label-md text-label-md">Métricas y Sugerencias</span></a><a class="flex items-center gap-space-md px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="configuracion-de-proveedor-ia" href="#"><span class="material-symbols-outlined text-[18px]">key</span><span class="font-label-md text-label-md">Configuración BYOK</span></a></nav></div><div class="p-space-md bg-surface-container-lowest/60 m-space-sm rounded-lg flex items-center justify-between"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-on-surface-variant">Modelo Activo</span><span class="font-code-sm text-code-sm text-tertiary truncate max-w-[140px]">Claude 3.5 Sonnet</span></div><span class="h-2 w-2 rounded-full bg-tertiary animate-pulse"></span></div></aside><div class="pl-64 flex flex-col min-h-screen"><header class="fixed top-0 left-64 right-0 h-16 z-40 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md flex-1 max-w-md"><div class="relative w-full"><span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-[18px] text-outline">search</span><input class="w-full h-9 pl-9 pr-space-md bg-surface-container-low rounded-lg text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Buscar posts, ideas o tags (Cmd + K)..." type="text"/></div></div><div class="flex items-center gap-space-md"><div class="hidden md:flex items-center gap-space-xs px-space-sm py-1 rounded bg-surface-container-low"><span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span><span class="font-label-sm text-label-sm text-on-surface-variant">API: <strong class="text-on-surface font-medium">Online</strong></span></div><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">help_outline</span></button><div class="flex items-center gap-space-sm pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYHKlQPNSSeINJw0VrvtGrb8BnH-IzaTlirN9RqRqnpA7KwUU5OV4NURKjz-vRjBKHBjrKXmKXPVgDP1p_F3t8aggdSXSW2LtfG5gkFVrpJi2jLNnoFs4chXhO0F78GbJgbjg3ZoLt0ToeP_BHIO-DX60HhTLD6lM36i1NPCftl0g1QXsf1CkhpiU2uWBCzdtG7d3lWiBu5FqtFHW_oXmA42XKPNdjSo1cJQ_FzLJESxbuF_csD3Sa"/><div class="hidden lg:flex flex-col text-left"><span class="font-label-md text-label-md text-on-surface leading-tight">Elena Rostova</span><span class="font-label-sm text-label-sm text-on-surface-variant">Director Editorial</span></div></div></div></div></header><main class="w-full pt-16 bg-background flex-1 px-gutter-desktop py-space-xl"><div class="flex flex-col w-full">
+<!-- Live Telemetry Status & Breadcrumb Micro-bar -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm mb-space-lg">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm uppercase bg-surface-container-highest text-tertiary">SERP Telemetry v3.4</span>
+<span class="text-on-surface-variant font-code-sm text-code-sm">/</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Pipeline de Oportunidades Orgánicas</span>
+</div>
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+</span>
+<span class="font-code-sm text-code-sm text-tertiary">Web Crawl: Latencia 84ms</span>
+</div>
+<div class="hidden sm:flex items-center gap-space-xs bg-surface-container-low px-space-sm py-1 rounded text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary">public</span>
+<span>42 Fuentes Indexadas</span>
+</div>
+</div>
+</div>
+<!-- Radar Search Command Hub (L2 Elevation) -->
+<div class="relative bg-surface-container-low p-space-lg rounded-xl shadow-xl overflow-hidden mb-space-xl">
+<!-- Ambient Radial Glow -->
+<div class="absolute -right-20 -top-24 w-80 h-80 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+<div class="flex flex-col gap-space-md relative z-10">
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]">radar</span>
+<span class="font-headline-md text-headline-md text-on-surface">Radar Autónomo de Tendencias y Nichos</span>
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-tertiary-container/30 text-tertiary font-medium">Web Scraping & SERP Live Active</span>
+</div>
+<div class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">bolt</span>
+<span>Modelo de Extracción: <strong>Heurística Perplexity + Reddit SERP API</strong></span>
+</div>
+</div>
+<!-- Radar Search Bar -->
+<form class="flex flex-col lg:flex-row items-stretch gap-space-sm pt-space-xs" id="radar-search-form" onsubmit="event.preventDefault(); triggerRadarScan();">
+<div class="relative flex-1 group">
+<div class="absolute inset-y-0 left-0 pl-space-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[20px] text-outline group-focus-within:text-primary transition-colors">travel_explore</span>
+</div>
+<input class="w-full h-12 pl-12 pr-28 bg-surface-container-lowest rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" id="radar-search-input" placeholder="Buscar nicho, palabra clave o URL de competidor en la web..." type="text" value="Devin AI vs Autonomous Agents in B2B SaaS"/>
+<div class="absolute inset-y-0 right-2 flex items-center gap-space-xs pointer-events-none">
+<kbd class="px-1.5 py-0.5 text-label-sm font-code-sm bg-surface-container text-on-surface-variant rounded">Enter</kbd>
+</div>
+</div>
+<button class="h-12 px-space-lg bg-primary-container hover:bg-inverse-primary text-on-primary-container hover:text-on-primary font-label-md text-label-md rounded-lg flex items-center justify-center gap-space-sm shadow-md transition-all active:scale-[0.99]" id="radar-scan-btn" type="submit">
+<span class="material-symbols-outlined text-[18px]">satellite_alt</span>
+<span>Escanear Tendencias en Tiempo Real</span>
+</button>
+</form>
+<!-- Active Filter Pill Segment -->
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-xs" id="industry-filters">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase mr-space-xs">Industria:</span>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container-highest text-on-surface" onclick="setIndustryFilter(this, 'all')" type="button">Todos (18)</button>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface" onclick="setIndustryFilter(this, 'saas')" type="button">SaaS</button>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface" onclick="setIndustryFilter(this, 'fintech')" type="button">Finanzas</button>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface" onclick="setIndustryFilter(this, 'creators')" type="button">Creadores Tech</button>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface" onclick="setIndustryFilter(this, 'ecommerce')" type="button">E-commerce</button>
+<button class="industry-btn px-space-sm py-1 rounded text-label-md font-label-md bg-surface-container text-on-surface-variant hover:text-on-surface" onclick="setIndustryFilter(this, 'b2b')" type="button">Marketing B2B</button>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="text-on-surface-variant font-label-sm text-label-sm">Rango Temporal:</span>
+<select class="bg-surface-container-lowest text-on-surface font-label-sm text-label-sm rounded px-space-sm py-1 focus:outline-none focus:ring-1 focus:ring-primary">
+<option>Últimas 6 horas (SERP Live)</option>
+<option>Últimas 24 horas</option>
+<option>Semana en curso</option>
+</select>
+</div>
+</div>
+</div>
+</div>
+<!-- Metric Overview Pulse Ribbon -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md mb-space-xl">
+<div class="bg-surface-container p-space-md rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Señales Calientes</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-0.5">38</span>
+<span class="font-body-sm text-body-sm text-tertiary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +14 nuevos tópicos hoy
+        </span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">dataset</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Índice Viral Promedio</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-0.5">88.4<span class="font-body-sm text-body-sm text-on-surface-variant">/100</span></span>
+<span class="font-body-sm text-body-sm text-tertiary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">local_fire_department</span> High conversion band
+        </span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined">rocket_launch</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Velocidad SERP</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-0.5">3.8x</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">vs media mensual</span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">speed</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-md rounded-xl flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Nichos Huérfanos</span>
+<span class="font-headline-lg text-headline-lg text-on-surface mt-0.5">6</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">star</span> Competencia nula
+        </span>
+</div>
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">lightbulb_circle</span>
+</div>
+</div>
+</div>
+<!-- Primary Split: Hot Niches Grid vs Smart Suggestions Drawer -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-xl items-start">
+<!-- LEFT 8 COLUMNS: Hot Trending Niches Grid -->
+<div class="xl:col-span-8 flex flex-col gap-space-lg">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">whatshot</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Nichos Calientes Detectados por Rastreador Web</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ordenado por Índice de Conversión</span>
+</div>
+<!-- Card 1: Multi-Agent AI Ops (SaaS / Tech) -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col gap-space-md">
+<!-- Card Header & Telemetry -->
+<div class="flex flex-wrap items-start justify-between gap-space-sm">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-highest text-tertiary uppercase">SaaS Enterprise</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Detectado hace 18 min</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold group-hover:text-primary transition-colors">
+                Agentes Autónomos Multi-LLM reemplazando flujos Zapier y n8n
+              </h3>
+</div>
+<!-- Score Pill -->
+<div class="flex items-center gap-space-sm bg-surface-container-lowest px-space-md py-1.5 rounded-lg">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Índice Viral</span>
+<span class="font-headline-md text-headline-md text-tertiary font-bold leading-none">96<span class="text-body-sm text-on-surface-variant font-normal">/100</span></span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<!-- Mini Progress Ring SVG -->
+<svg class="w-7 h-7 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="96, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Editorial Narrative / Key Angle -->
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Pico masivo de discusiones sobre el paso de automatizaciones estáticas (APIs rígidas) a orquestación de prompts autónomos con validación humana en el loop. Alto interés en directores de operaciones y CTOs de scaleups.
+          </p>
+<!-- Metrics Band -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Volumen Búsqueda SERP</span>
+<span class="font-headline-md text-headline-md text-on-surface font-semibold">142.8K <span class="text-body-sm text-tertiary font-normal">(+310%)</span></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Canales Óptimos</span>
+<div class="flex items-center gap-space-xs mt-1">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">LinkedIn Pulse</span>
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">X Threads</span>
+</div>
+</div>
+<div class="flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Dificultad de Penetración</span>
+<span class="font-body-md text-body-md text-tertiary font-medium mt-0.5">Baja (Océano Azul)</span>
+</div>
+</div>
+<!-- Web Sources Strip & Action CTA -->
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fuentes Web Validadas:</span>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">open_in_new</span> TechCrunch Live
+              </a>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">forum</span> HackerNews (#2 Frontpage)
+              </a>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">article</span> arXiv Paper: Agentic Loops
+              </a>
+</div>
+<button class="px-space-md py-2 rounded-lg bg-primary text-on-primary hover:bg-inverse-primary font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all" onclick="convertNicheToPost('Agentes Autónomos Multi-LLM en operaciones B2B', 'saas')" type="button">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+<span>Convertir esta Idea en Posts</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Micro-SaaS Solo Founders & Fractional CMOs (Marketing B2B) -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-wrap items-start justify-between gap-space-sm">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-highest text-secondary uppercase">Marketing B2B</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Detectado hace 42 min</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold group-hover:text-primary transition-colors">
+                La muerte de los SDRs tradicionales y el auge del Outbound Impulsado por Graph Databases
+              </h3>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container-lowest px-space-md py-1.5 rounded-lg">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Índice Viral</span>
+<span class="font-headline-md text-headline-md text-tertiary font-bold leading-none">92<span class="text-body-sm text-on-surface-variant font-normal">/100</span></span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<svg class="w-7 h-7 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="92, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Fuerte debate en redes ejecutivas sobre la saturación del cold email estándar y la migración hacia señales contextuales profundas (intent data + Neo4j) para prospectar en cuentas Enterprise con ratios del 38% de respuesta.
+          </p>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Volumen Búsqueda SERP</span>
+<span class="font-headline-md text-headline-md text-on-surface font-semibold">89.4K <span class="text-body-sm text-tertiary font-normal">(+180%)</span></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Canales Óptimos</span>
+<div class="flex items-center gap-space-xs mt-1">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">LinkedIn Carousel</span>
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">Newsletter Substack</span>
+</div>
+</div>
+<div class="flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Relevancia de Conversión</span>
+<span class="font-body-md text-body-md text-primary font-medium mt-0.5">Crítica (B2B SaaS Founders)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fuentes Web Validadas:</span>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">groups</span> Reddit r/sales & r/entrepreneur
+              </a>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">insights</span> Gartner Rep Trends 2025
+              </a>
+</div>
+<button class="px-space-md py-2 rounded-lg bg-primary text-on-primary hover:bg-inverse-primary font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all" onclick="convertNicheToPost('La evolución del Outbound B2B y fin del SDR spam', 'b2b')" type="button">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+<span>Convertir esta Idea en Posts</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3: AI Video Generation for E-commerce Ads (Creators / E-comm) -->
+<div class="bg-surface-container p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="flex flex-col gap-space-md">
+<div class="flex flex-wrap items-start justify-between gap-space-sm">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-space-sm">
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-highest text-primary uppercase">E-commerce & Creadores</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Detectado hace 1h 15 min</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold group-hover:text-primary transition-colors">
+                Frameworks de UGC Sintético: Renderizado de Producto con Sora + Kling para Reducción de CPA
+              </h3>
+</div>
+<div class="flex items-center gap-space-sm bg-surface-container-lowest px-space-md py-1.5 rounded-lg">
+<div class="flex flex-col text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Índice Viral</span>
+<span class="font-headline-md text-headline-md text-tertiary font-bold leading-none">89<span class="text-body-sm text-on-surface-variant font-normal">/100</span></span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+<svg class="w-7 h-7 -rotate-90" viewbox="0 0 36 36">
+<path class="text-surface-variant" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-tertiary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="89, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Marcas DTC están reemplazando grabaciones presenciales con micro-modelos locales de generación de video publicitario, reduciendo tiempos de prueba creativa de 3 semanas a 45 minutos.
+          </p>
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm bg-surface-container-lowest p-space-sm rounded-lg">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Volumen Búsqueda SERP</span>
+<span class="font-headline-md text-headline-md text-on-surface font-semibold">210.5K <span class="text-body-sm text-tertiary font-normal">(+420%)</span></span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Canales Óptimos</span>
+<div class="flex items-center gap-space-xs mt-1">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">TikTok / Reels</span>
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface">YouTube Shorts</span>
+</div>
+</div>
+<div class="flex flex-col col-span-2 sm:col-span-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Intención Comercial</span>
+<span class="font-body-md text-body-md text-secondary font-medium mt-0.5">Directa a Compra (Software)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex flex-wrap items-center gap-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fuentes Web Validadas:</span>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">videocam</span> TikTok Creative Center Analytics
+              </a>
+<a class="inline-flex items-center gap-1 px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container-high text-on-surface hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[13px] text-tertiary">newspaper</span> Marketing Brew Pulse
+              </a>
+</div>
+<button class="px-space-md py-2 rounded-lg bg-primary text-on-primary hover:bg-inverse-primary font-label-md text-label-md flex items-center gap-space-xs shadow-sm transition-all" onclick="convertNicheToPost('E-commerce UGC sintético con IA generativa', 'ecommerce')" type="button">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+<span>Convertir esta Idea en Posts</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT 4 COLUMNS: Interactive Smart Suggestions Drawer (Underserved Niches) -->
+<div class="xl:col-span-4 flex flex-col gap-space-lg">
+<div class="bg-surface-container-low p-space-lg rounded-xl shadow-lg relative">
+<div class="flex items-center justify-between mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[22px]">psychology</span>
+<h3 class="font-headline-md text-headline-md text-on-surface font-semibold">Nichos Desatendidos</h3>
+</div>
+<span class="px-space-xs py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-on-surface-variant">IA Oportunidades</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-space-lg">
+          Segmentos con alta intención de búsqueda pero saturación de contenido inferior al 14%. Ganchos validados para despliegue instantáneo.
+        </p>
+<!-- Suggestions Stack -->
+<div class="flex flex-col gap-space-md">
+<!-- Opportunity 1 -->
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary font-medium">Fintech & WealthTech</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded">Gap: 87% Desatendido</span>
+</div>
+<h4 class="font-headline-md text-body-lg text-on-surface font-medium leading-snug">
+              Tokenización RWA para Family Offices en LatAm y España
+            </h4>
+<!-- Quick Hooks Accordion/Box -->
+<div class="bg-surface-container-lowest p-space-sm rounded text-body-sm text-on-surface flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase">Gancho Sugerido (LinkedIn):</span>
+<p class="italic text-on-surface-variant text-[13px] leading-relaxed">
+                "El 91% de los family offices ignoran cómo mover bienes raíces ilíquidos a contratos inteligentes regulados. Aquí está el roadmap fiscal exacto..."
+              </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<button class="text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" onclick="copyHookToClipboard(this, 'El 91% de los family offices ignoran cómo mover bienes raíces ilíquidos a contratos inteligentes regulados. Aquí está el roadmap fiscal exacto...')" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span> Copiar Gancho
+              </button>
+<button class="px-space-sm py-1 rounded bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-on-primary text-label-sm font-label-sm transition-colors" onclick="convertNicheToPost('Tokenización RWA en Family Offices', 'fintech')" type="button">
+                Usar en Generador
+              </button>
+</div>
+</div>
+<!-- Opportunity 2 -->
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary font-medium">DevOps & Cloud SaaS</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded">Gap: 92% Desatendido</span>
+</div>
+<h4 class="font-headline-md text-body-lg text-on-surface font-medium leading-snug">
+              FinOps Preventivo: Auditoría de Tokens LLM en Producción
+            </h4>
+<div class="bg-surface-container-lowest p-space-sm rounded text-body-sm text-on-surface flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase">Gancho Sugerido (X / Twitter):</span>
+<p class="italic text-on-surface-variant text-[13px] leading-relaxed">
+                "Una startup con $1M de ARR acaba de quemar $42k en 72 horas por un loop ciego de embeddings. 4 guardrails que deberías encender en tus lambdas hoy 🧵👇"
+              </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<button class="text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" onclick="copyHookToClipboard(this, 'Una startup con $1M de ARR acaba de quemar $42k en 72 horas por un loop ciego de embeddings. 4 guardrails que deberías encender en tus lambdas hoy 🧵👇')" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span> Copiar Gancho
+              </button>
+<button class="px-space-sm py-1 rounded bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-on-primary text-label-sm font-label-sm transition-colors" onclick="convertNicheToPost('FinOps Preventivo en LLMs y costos cloud', 'saas')" type="button">
+                Usar en Generador
+              </button>
+</div>
+</div>
+<!-- Opportunity 3 -->
+<div class="bg-surface-container p-space-md rounded-lg flex flex-col gap-space-sm hover:bg-surface-container-high transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary font-medium">HealthTech & Longevity</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-lowest px-1.5 py-0.5 rounded">Gap: 79% Desatendido</span>
+</div>
+<h4 class="font-headline-md text-body-lg text-on-surface font-medium leading-snug">
+              Microbioma y Ritmos Circadianos en el Rendimiento de Fundadores
+            </h4>
+<div class="bg-surface-container-lowest p-space-sm rounded text-body-sm text-on-surface flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-outline uppercase">Gancho Sugerido (LinkedIn / News):</span>
+<p class="italic text-on-surface-variant text-[13px] leading-relaxed">
+                "El error clásico del fundador es optimizar el café a las 2 PM en vez del pico de adenosina a las 10 AM. Así rediseñé mi horario biológico para doblar output cognitivo:"
+              </p>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<button class="text-label-sm font-label-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1 transition-colors" onclick="copyHookToClipboard(this, 'El error clásico del fundador es optimizar el café a las 2 PM en vez del pico de adenosina a las 10 AM. Así rediseñé mi horario biológico para doblar output cognitivo:')" type="button">
+<span class="material-symbols-outlined text-[15px]">content_copy</span> Copiar Gancho
+              </button>
+<button class="px-space-sm py-1 rounded bg-secondary-container text-on-secondary-container hover:bg-primary hover:text-on-primary text-label-sm font-label-sm transition-colors" onclick="convertNicheToPost('Biomarcadores y Ritmos Circadianos para C-Levels', 'creators')" type="button">
+                Usar en Generador
+              </button>
+</div>
+</div>
+</div>
+<!-- Real-time Crawler Log Status Box -->
+<div class="mt-space-lg p-space-md bg-surface-container-lowest rounded-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant flex items-center gap-1">
+<span class="h-1.5 w-1.5 rounded-full bg-tertiary"></span> Monitor SERP Webhook
+            </span>
+<span class="text-tertiary font-code-sm">SYNCING 24/7</span>
+</div>
+<p class="font-code-sm text-code-sm text-on-surface-variant truncate">
+            > Ultimo ping: Reddit r/entrepreneur + TechCrunch RSS digest procesado OK.
+          </p>
+</div>
+</div>
+<!-- Quick Export / Notification Banner -->
+<div class="bg-surface-container p-space-md rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Alertas de Nicho por Email/Slack</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Notificarme cuando un nicho supere 95/100</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Notification Toast Container (Dynamic Micro-interaction) -->
+<div class="fixed bottom-space-lg right-space-lg z-50 flex flex-col gap-space-xs pointer-events-none" id="toast-container"></div>
+<!-- Client-side Interactive Logic -->
+<script>
+    // Visual Notification Toast Trigger
+    function showToast(message, icon = 'check_circle') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'flex items-center gap-space-sm bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-lg shadow-xl pointer-events-auto transform translate-y-4 opacity-0 transition-all duration-200';
+      toast.innerHTML = `
+        <span class="material-symbols-outlined text-tertiary text-[18px]">${icon}</span>
+        <span class="font-label-md text-label-md">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Trigger appearance
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-4', 'opacity-0');
+      });
+
+      // Auto dismiss
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 200);
+      }, 3200);
+    }
+
+    // Copy Hook to Clipboard
+    function copyHookToClipboard(button, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<span class="material-symbols-outlined text-[15px] text-tertiary">done</span> Copiado!';
+        showToast('Gancho copiado al portapapeles');
+        setTimeout(() => {
+          button.innerHTML = originalHTML;
+        }, 2000);
+      }).catch(() => {
+        showToast('No se pudo copiar automáticamente', 'error');
+      });
+    }
+
+    // Convert Niche to Post (Bridges to Generator Tab)
+    function convertNicheToPost(topic, industry) {
+      showToast(`Inyectando "${topic}" en Generador Omnipost...`, 'auto_awesome');
+      // Micro simulation: store in session and provide visual feedback
+      try {
+        sessionStorage.setItem('omnipost_pending_prompt', JSON.stringify({
+          topic: topic,
+          industry: industry,
+          timestamp: new Date().toISOString()
+        }));
+      } catch (e) {}
+
+      // Visual focus feedback
+      setTimeout(() => {
+        const navGenerator = document.querySelector('aside a[data-path="generador"]');
+        if (navGenerator) {
+          navGenerator.classList.add('ring-2', 'ring-primary');
+          setTimeout(() => navGenerator.classList.remove('ring-2', 'ring-primary'), 1200);
+        }
+      }, 400);
+    }
+
+    // Filter Buttons Toggle
+    function setIndustryFilter(button, category) {
+      document.querySelectorAll('.industry-btn').forEach(btn => {
+        btn.classList.remove('bg-surface-container-highest', 'text-on-surface');
+        btn.classList.add('bg-surface-container', 'text-on-surface-variant');
+      });
+      button.classList.remove('bg-surface-container', 'text-on-surface-variant');
+      button.classList.add('bg-surface-container-highest', 'text-on-surface');
+      showToast(`Filtro aplicado: ${button.innerText}`, 'filter_alt');
+    }
+
+    // Radar Live Scan Button Simulator
+    function triggerRadarScan() {
+      const btn = document.getElementById('radar-scan-btn');
+      const input = document.getElementById('radar-search-input');
+      const term = input.value.trim() || 'Nuevas Tendencias';
+
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>Rastreando SERP & Web...</span>';
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showToast(`Rastreo completado: 14 nuevos clusters hallados para "${term}"`, 'travel_explore');
+      }, 1400);
+    }
+  </script>
+</div></main></div></body></html>

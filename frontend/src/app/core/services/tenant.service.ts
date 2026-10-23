@@ -2,13 +2,20 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { DashboardStats, TenantProfileRequest, TenantResponse } from '../models/tenant.model';
+import {
+  AppearanceSettings,
+  DashboardStats,
+  TenantAppearancePolicyRequest,
+  TenantProfileRequest,
+  TenantResponse,
+} from '../models/tenant.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TenantService {
   private readonly API_URL = `${environment.apiUrl}/tenant`;
+  private readonly APPEARANCE_URL = `${environment.apiUrl}/appearance`;
 
   constructor(private http: HttpClient) {}
 
@@ -26,6 +33,20 @@ export class TenantService {
 
   updateTenant(systemPrompt: string, timezone: string): Observable<TenantResponse> {
     return this.updateProfile({ systemPrompt, timezone });
+  }
+
+  getAppearance(): Observable<AppearanceSettings> {
+    return this.http.get<AppearanceSettings>(this.APPEARANCE_URL);
+  }
+
+  updateAppearancePolicy(data: TenantAppearancePolicyRequest): Observable<AppearanceSettings> {
+    return this.http.put<AppearanceSettings>(`${this.APPEARANCE_URL}/policy`, data);
+  }
+
+  updateUserAccent(accentColor: AppearanceSettings['userAccentColor']): Observable<AppearanceSettings> {
+    return this.http.put<AppearanceSettings>(`${environment.apiUrl}/users/me/appearance`, {
+      accentColor,
+    });
   }
 
   testPrompt(testPrompt: string, sampleTopic: string) {

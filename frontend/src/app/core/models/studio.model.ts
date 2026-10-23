@@ -5,9 +5,10 @@ export interface SwipeVersion {
   textoGenerado: string;
   imageUrl?: string;
   imageUrls?: string[];
-  tokensUsed: number;
-  costUsd: number;
-  percentMonthlyCredit: number;
+  tokensUsed: number | null;
+  costUsd: number | null;
+  percentMonthlyCredit: number | null;
+  model: string | null;
 }
 
 export interface SwipeBatch {
@@ -20,13 +21,13 @@ export interface SwipeBatch {
 export type ImageAspectRatio = '16:9' | '1:1' | '4:5';
 
 export interface TokenEstimateResponse {
-  characterCount: number;
   estimatedPromptTokens: number;
   estimatedCompletionTokens: number;
-  estimatedTotalTokens: number;
-  model: string;
-  costEstimateUSD: number;
-  creditDeductionPercent: number;
+  totalEstimatedTokens: number;
+  estimatedCostUsd: number | null;
+  remainingBalanceTokens: number | null;
+  modelName: string;
+  note: string;
 }
 
 export interface GeneratedPreviewResponse {
@@ -35,9 +36,9 @@ export interface GeneratedPreviewResponse {
   generatedText: string;
   imageUrl?: string;
   imageUrls?: string[];
-  estimatedTokens: number;
-  estimatedCostUsd: number;
-  creditPercent: number;
+  estimatedTokens: number | null;
+  estimatedCostUsd: number | null;
+  creditPercent: number | null;
   sourceMode: string;
   status: string;
   createdAt: string;
