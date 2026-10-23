@@ -41,3 +41,4 @@ ENV/
 backups/
 output/
 tmp_cv_template.png
+/tmp/
